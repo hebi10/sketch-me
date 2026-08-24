@@ -6,6 +6,12 @@ import { findSketchbookByPublicId, listVisibleDrawings } from '@/lib/sketchbooks
 
 export const dynamic = 'force-dynamic';
 
+function timeAgo(createdAt: Date) {
+  const elapsedHours = Math.max(1, Math.floor((Date.now() - createdAt.getTime()) / 3_600_000));
+  if (elapsedHours < 24) return `${elapsedHours}시간 전`;
+  return `${Math.floor(elapsedHours / 24)}일 전`;
+}
+
 export default async function PublicSketchbookPage({
   params,
   searchParams,
@@ -19,36 +25,81 @@ export default async function PublicSketchbookPage({
   if (!sketchbook || sketchbook.status !== 'PUBLIC') notFound();
 
   const drawings = await listVisibleDrawings(sketchbook.id);
+  const bestDrawings = drawings
+    .filter((drawing) => drawing.bestRank)
+    .sort((left, right) => (left.bestRank ?? 5) - (right.bestRank ?? 5));
+  const recentDrawing = drawings[0];
 
   return (
     <main className="public-sketchbook-shell">
       <header className="public-header">
+        <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">⌂</Link>
         <Link className="wordmark" href="/">스캐치북</Link>
-        <span>공개 스케치북</span>
+        <Link className="header-draw-link" href={`/s/${publicId}/draw`}>그리기</Link>
       </header>
-      <section className="public-intro">
-        <p className="eyebrow">{sketchbook.name}님의 스캐치북</p>
-        <h1>{sketchbook.name}님을 그려주세요</h1>
-        <p>기억나는 모습대로 자유롭게 그려주세요.</p>
-        <p className="participant-copy">친구 {sketchbook.participantCount}명이 그림을 남겼어요.</p>
+
+      <section className="public-intro" aria-labelledby="public-title">
+        <div className="public-intro-copy">
+          <p className="eyebrow">친구들이 기억하는 모습</p>
+          <h1 id="public-title">{sketchbook.name}의 스캐치북</h1>
+          <h2 className="intro-invitation">{sketchbook.name}님을 그려주세요</h2>
+          <p>기억나는 모습, 성격, 분위기 모두 좋아요.</p>
+          <p className="participant-copy">♧ 친구 <strong>{sketchbook.participantCount}명</strong>이 그림을 남겼어요.</p>
+        </div>
+        <figure className="owner-sketch">
+          <span aria-hidden="true" className="paper-tape" />
+          <Image alt={`${sketchbook.name}님이 직접 그린 모습`} height={640} priority src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={480} />
+        </figure>
       </section>
-      <section className="owner-sketch" aria-labelledby="owner-sketch-heading">
-        <div><p className="eyebrow">내가 그린 나</p><h2 id="owner-sketch-heading">{sketchbook.name}님의 첫 스케치</h2></div>
-        <Image alt={`${sketchbook.name}님이 직접 그린 모습`} height={640} priority src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={480} />
-      </section>
+
       {submitted ? <p className="submission-success" role="status">그림을 남겼어요. 고마워요!</p> : null}
-      <section aria-labelledby="friend-drawings-heading">
-        <h2 className="public-section-title" id="friend-drawings-heading">친구들이 그린 나</h2>
+
+      <section className="friend-board" aria-labelledby="friend-drawings-heading">
+        <div className="section-title-row">
+          <h2 className="public-section-title" id="friend-drawings-heading">친구들이 그린 나</h2>
+          <span>{sketchbook.participantCount} / {sketchbook.participantLimit}</span>
+        </div>
         <div className="friend-drawing-grid">
         {drawings.length ? drawings.map((drawing) => (
           <article className="friend-drawing-card" key={drawing.id}>
             <Image alt={`${drawing.authorName}님의 그림`} height={340} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} />
-            <p>{drawing.authorName}</p>
-            {drawing.message ? <span>{drawing.message}</span> : null}
+            <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{timeAgo(drawing.createdAt)}</span></div>
           </article>
         )) : <p className="empty-drawings">아직 첫 번째 그림을 기다리고 있어요.</p>}
         </div>
+        <Link className="button button--primary board-draw-button" href={`/s/${publicId}/draw`}>✎ 그림 남기기</Link>
+        <div className="board-progress"><span>친구 그림 {sketchbook.participantLimit}개까지 무료</span><strong>{sketchbook.participantCount} / {sketchbook.participantLimit}</strong></div>
       </section>
+
+      <section className="public-feed-section" aria-labelledby="best-drawings-heading">
+        <div className="section-title-row"><h2 id="best-drawings-heading">♕ 베스트 그림</h2><span>BEST 4</span></div>
+        <div className="best-drawing-grid">
+          {[1, 2, 3, 4].map((rank) => {
+            const drawing = bestDrawings.find((item) => item.bestRank === rank);
+            return (
+              <article className="best-drawing-card" key={rank}>
+                <div className="best-drawing-image">
+                  <b>BEST {rank}</b>
+                  {drawing ? <Image alt={`BEST ${rank}, ${drawing.authorName}님의 그림`} height={340} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} /> : <span>선정 전</span>}
+                </div>
+                <p>{drawing?.authorName ?? '기다리는 중'}</p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="public-feed-section recent-section" aria-labelledby="recent-drawing-heading">
+        <div className="section-title-row"><h2 id="recent-drawing-heading">◷ 최근 올라온 그림</h2></div>
+        {recentDrawing ? (
+          <article className="recent-drawing-card">
+            <Image alt={`${recentDrawing.authorName}님의 최근 그림`} height={120} src={`/api/sketchbooks/${publicId}/drawings/${recentDrawing.id}/image`} width={90} />
+            <div><strong>{recentDrawing.authorName}</strong><span>{timeAgo(recentDrawing.createdAt)}</span>{recentDrawing.message ? <p>{recentDrawing.message}</p> : null}</div>
+          </article>
+        ) : <p className="empty-drawings">첫 그림을 남겨주세요.</p>}
+        <p className="kind-comment">✎ 따뜻한 말 한마디가 큰 힘이 돼요. 서로 존중하는 댓글을 남겨주세요!</p>
+      </section>
+
       <div className="sticky-draw-action">
         <Link className="button button--primary" href={`/s/${publicId}/draw`}>친구 스케치 하기</Link>
       </div>

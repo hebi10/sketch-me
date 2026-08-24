@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-24T14:45:00+09:00",
+  "title": "Design System: 스캐치북",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "잉크 블랙",
+        "canonical": "#181818",
+        "tonalRamp": ["#181818", "#2d2d2d", "#464646", "#646464", "#858585", "#ababab", "#d2d2d2", "#f3f3f3"]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "그래파이트",
+        "canonical": "#6e6e6e",
+        "tonalRamp": ["#1d1d1d", "#363636", "#505050", "#6e6e6e", "#8d8d8d", "#adadad", "#cecece", "#f1f1f1"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "흰 종이",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#222222", "#444444", "#666666", "#888888", "#aaaaaa", "#cccccc", "#eeeeee", "#ffffff"]
+      },
+      "pencil-line": {
+        "role": "neutral",
+        "displayName": "연필선",
+        "canonical": "#d8d3c9",
+        "tonalRamp": ["#282722", "#494740", "#6b685f", "#8f8b80", "#b1ada3", "#d1cdc4", "#ebe8e2", "#faf9f7"]
+      },
+      "sketch-blue": {
+        "role": "primary",
+        "displayName": "스케치 블루",
+        "canonical": "#506f8f",
+        "tonalRamp": ["#13202d", "#20384f", "#31516e", "#506f8f", "#7290ae", "#96b1cb", "#bfd2e3", "#edf4fa"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "큰 질문", "purpose": "랜딩의 핵심 질문 한 개에만 사용한다." },
+      "headline": { "displayName": "화면 제목", "purpose": "스케치북 이름과 주요 화면 제목에 사용한다." },
+      "body": { "displayName": "본문", "purpose": "짧은 모바일 안내와 설명에 사용한다." },
+      "label": { "displayName": "라벨", "purpose": "입력, 상태, 순위에 사용한다." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "control-state", "value": "160ms ease", "purpose": "버튼 색상과 테두리 상태 전환에만 사용한다." }
+    ],
+    "breakpoints": [
+      { "name": "narrow-single-column", "value": "319px" },
+      { "name": "mobile-canvas-max", "value": "650px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "스케치 블루로 다음 핵심 행동을 명확히 표시한다.",
+      "html": "<button class=\"ds-btn-primary\">내 스캐치북 만들기</button>",
+      "css": ".ds-btn-primary { min-height:48px; padding:12px 18px; border:1px solid transparent; border-radius:8px; background:#506f8f; color:#fff; font:600 1rem 'Apple SD Gothic Neo','Malgun Gothic',sans-serif; } .ds-btn-primary:hover { background:#3f5f82; } .ds-btn-primary:focus-visible { outline:3px solid #bfcddd; outline-offset:2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "흰 종이와 연필선으로 보조 행동을 표시한다.",
+      "html": "<button class=\"ds-btn-secondary\">사진 선택하기</button>",
+      "css": ".ds-btn-secondary { min-height:48px; padding:12px 18px; border:1px solid #d8d3c9; border-radius:8px; background:#fff; color:#181818; font:600 1rem 'Apple SD Gothic Neo','Malgun Gothic',sans-serif; } .ds-btn-secondary:hover { border-color:#506f8f; } .ds-btn-secondary:focus-visible { outline:3px solid #bfcddd; outline-offset:2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "description": "모바일에서 충분한 높이를 가진 흰 종이 입력 필드다.",
+      "html": "<input class=\"ds-text-field\" placeholder=\"예: 도영\" />",
+      "css": ".ds-text-field { box-sizing:border-box; width:100%; min-height:52px; padding:12px 14px; border:1px solid #d8d3c9; border-radius:8px; background:#fff; color:#181818; font:400 1rem 'Apple SD Gothic Neo','Malgun Gothic',sans-serif; } .ds-text-field:focus { border-color:#506f8f; outline:3px solid #dce5ee; }"
+    },
+    {
+      "name": "Sketch Card",
+      "kind": "card",
+      "refersTo": "paper-card",
+      "description": "그림 전체를 잘리지 않게 보여주는 3:4 흰 종이 카드다.",
+      "html": "<article class=\"ds-sketch-card\"><div class=\"ds-sketch-art\">그림</div><strong>친구 이름</strong><span>2시간 전</span></article>",
+      "css": ".ds-sketch-card { display:grid; grid-template-columns:1fr auto; gap:6px; padding:6px; border:1px solid #d8d3c9; border-radius:6px; background:#fff; color:#181818; font:400 .82rem 'Apple SD Gothic Neo','Malgun Gothic',sans-serif; } .ds-sketch-art { grid-column:1/-1; display:grid; place-items:center; aspect-ratio:3/4; border-bottom:1px solid #d8d3c9; color:#6e6e6e; } .ds-sketch-card span { color:#6e6e6e; }"
+    },
+    {
+      "name": "Mobile Navigation",
+      "kind": "nav",
+      "description": "한 권의 책 표지처럼 워드마크를 가운데 둔 58px 상단 바다.",
+      "html": "<nav class=\"ds-nav\"><button>⌂</button><strong>스캐치북</strong><a href=\"#\">그리기</a></nav>",
+      "css": ".ds-nav { display:grid; grid-template-columns:54px 1fr 54px; align-items:center; min-height:58px; border-bottom:1px solid #d8d3c9; color:#181818; font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif; } .ds-nav strong { text-align:center; font-size:1.45rem; } .ds-nav button,.ds-nav a { display:grid; place-items:center; min-height:44px; border:0; background:transparent; color:#506f8f; } .ds-nav a:focus-visible,.ds-nav button:focus-visible { outline:3px solid #bfcddd; }"
+    },
+    {
+      "name": "Best Badge",
+      "kind": "custom",
+      "description": "선정된 친구 그림의 순위를 작은 블루 탭으로 표시한다.",
+      "html": "<span class=\"ds-best-badge\">BEST 1</span>",
+      "css": ".ds-best-badge { display:inline-block; padding:5px 7px; background:#506f8f; color:#fff; font:700 .68rem 'Apple SD Gothic Neo','Malgun Gothic',sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "손으로 넘기는 모바일 스케치북",
+    "overview": "화면은 앱 프레임보다 친구들이 남긴 그림을 먼저 보여주는 조용한 종이 책처럼 느껴져야 한다. 검은 잉크와 연필선 같은 중성색을 기본으로 쓰고, 행동과 순위 표시에만 절제된 블루를 사용한다. 바깥 페이지에는 배경색이나 질감을 깔지 않고, 실제 그림 카드와 테이프·연필선 모티프가 스케치북의 물성을 만든다.",
+    "keyCharacteristics": ["최대 650px의 한 권짜리 모바일 캔버스", "연필선처럼 얇은 경계와 흰 종이 카드", "검은 잉크 텍스트와 절제된 블루 CTA", "테이프, 기울어진 종이, 작은 손그림 표식", "친구 그림이 먼저 읽히는 2열 갤러리"],
+    "rules": [
+      { "name": "The One Blue Rule", "body": "한 화면의 주목 색은 스케치 블루 하나이며, CTA와 상태 정보 외의 넓은 면적에는 사용하지 않는다.", "section": "colors" },
+      { "name": "The Whole Korean Word Rule", "body": "한국어 제목과 본문은 word-break: keep-all을 유지하고 제목에는 균형 줄바꿈을 적용해 한 글자만 다음 줄에 남기지 않는다.", "section": "typography" },
+      { "name": "The Single Book Rule", "body": "모든 기능 화면은 동일한 650px 책 폭 안에서만 구성하며, 데스크톱용 보조 패널이나 다단 확장을 만들지 않는다.", "section": "layout" },
+      { "name": "The Flat Paper Rule", "body": "카드가 떠 보이게 하는 그림자보다 종이 경계와 실제 콘텐츠의 겹침을 우선한다.", "section": "elevation" }
+    ],
+    "dos": ["Do 모든 새 화면을 최대 650px 중앙 정렬 모바일 흐름으로 만든다.", "Do 실제 그림을 자르지 않고 흰 종이 카드 안에 온전히 보여준다.", "Do 주요 행동과 활성 상태에만 스케치 블루를 사용한다.", "Do 한국어 단어 단위 줄바꿈과 44px 이상의 터치 영역을 유지한다."],
+    "donts": ["Don't 바깥 html 또는 body에 배경색, 종이 질감, 그라데이션을 넣지 않는다.", "Don't 650px 이후 데스크톱 다단 레이아웃으로 확장하지 않는다.", "Don't 그림자, 과한 둥근 모서리, 여러 포인트 색으로 사용자 그림과 경쟁하지 않는다.", "Don't 실제 사용자 그림 영역을 장식용 생성 이미지로 대체하지 않는다."]
+  }
+}

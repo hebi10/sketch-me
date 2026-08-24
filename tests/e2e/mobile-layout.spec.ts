@@ -1,10 +1,32 @@
 import { expect, test } from '@playwright/test';
 
 const viewports = [
+  { width: 280, height: 700 },
   { width: 320, height: 700 },
   { width: 390, height: 844 },
-  { width: 844, height: 390 },
+  { width: 650, height: 900 },
 ];
+
+test('화면은 650px 모바일 캔버스 안에 중앙 정렬되고 바깥 배경은 투명하다', async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 900 });
+
+  for (const path of ['/', '/create']) {
+    await page.goto(path);
+    const layout = await page.locator('main').evaluate((main) => {
+      const rect = main.getBoundingClientRect();
+      return {
+        width: rect.width,
+        left: rect.left,
+        right: window.innerWidth - rect.right,
+        bodyBackground: getComputedStyle(document.body).backgroundColor,
+      };
+    });
+
+    expect(layout.width).toBeLessThanOrEqual(650);
+    expect(Math.abs(layout.left - layout.right)).toBeLessThanOrEqual(1);
+    expect(layout.bodyBackground).toBe('rgba(0, 0, 0, 0)');
+  }
+});
 
 test('핵심 진입 화면이 모바일 뷰포트에서 넘치지 않는다', async ({ page }) => {
   for (const viewport of viewports) {
