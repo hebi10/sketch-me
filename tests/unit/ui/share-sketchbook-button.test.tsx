@@ -15,4 +15,17 @@ describe('ShareSketchbookButton', () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/s/public-1`));
     expect(screen.getByRole('status')).toHaveTextContent('링크를 복사했어요.');
   });
+
+  it('copies the public link when opening Web Share fails', async () => {
+    const share = vi.fn().mockRejectedValue(new DOMException('공유할 수 없음', 'NotAllowedError'));
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+
+    render(<ShareSketchbookButton name="테스트" publicId="public-2" />);
+    fireEvent.click(screen.getByRole('button', { name: '친구에게 공유하기' }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/s/public-2`));
+    expect(screen.getByRole('status')).toHaveTextContent('공유창을 열지 못해 링크를 복사했어요.');
+  });
 });

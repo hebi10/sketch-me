@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 
 import { findSketchbookByPublicId, listVisibleDrawings } from '@/lib/sketchbooks/repository';
 import { isSketchbookFull } from '@/lib/sketchbooks/capacity';
+import { formatTimeAgo } from '@/lib/time/time-ago';
+import { galleryImageLoading } from '@/lib/images/loading';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,12 +36,6 @@ export async function generateMetadata({
       }],
     },
   };
-}
-
-function timeAgo(createdAt: Date) {
-  const elapsedHours = Math.max(1, Math.floor((Date.now() - createdAt.getTime()) / 3_600_000));
-  if (elapsedHours < 24) return `${elapsedHours}시간 전`;
-  return `${Math.floor(elapsedHours / 24)}일 전`;
 }
 
 export default async function PublicSketchbookPage({
@@ -96,10 +92,10 @@ export default async function PublicSketchbookPage({
           <span>{sketchbook.participantCount} / {sketchbook.participantLimit}</span>
         </div>
         <div className="friend-drawing-grid">
-        {drawings.length ? drawings.map((drawing) => (
+        {drawings.length ? drawings.map((drawing, index) => (
           <article className="friend-drawing-card" key={drawing.id}>
-            <Image alt={`${drawing.authorName}님의 그림`} height={340} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} />
-            <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{timeAgo(drawing.createdAt)}</span></div>
+            <Image alt={`${drawing.authorName}님의 그림`} height={340} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} />
+            <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{formatTimeAgo(drawing.createdAt)}</span></div>
           </article>
         )) : <p className="empty-drawings">아직 첫 번째 그림을 기다리고 있어요.</p>}
         </div>
@@ -130,7 +126,7 @@ export default async function PublicSketchbookPage({
         {recentDrawing ? (
           <article className="recent-drawing-card">
             <Image alt={`${recentDrawing.authorName}님의 최근 그림`} height={120} src={`/api/sketchbooks/${publicId}/drawings/${recentDrawing.id}/image`} width={90} />
-            <div><strong>{recentDrawing.authorName}</strong><span>{timeAgo(recentDrawing.createdAt)}</span>{recentDrawing.message ? <p>{recentDrawing.message}</p> : null}</div>
+            <div><strong>{recentDrawing.authorName}</strong><span>{formatTimeAgo(recentDrawing.createdAt)}</span>{recentDrawing.message ? <p>{recentDrawing.message}</p> : null}</div>
           </article>
         ) : <p className="empty-drawings">첫 그림을 남겨주세요.</p>}
         <p className="kind-comment">✎ 따뜻한 말 한마디가 큰 힘이 돼요. 서로 존중하는 댓글을 남겨주세요!</p>

@@ -10,18 +10,23 @@ export function ShareSketchbookButton({ publicId, name }: { publicId: string; na
     setStatus(null);
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: `${name}의 스캐치북`,
-          text: `${name}님을 기억나는 모습대로 그려주세요.`,
-          url,
-        });
-        setStatus('공유창을 열었어요.');
+        try {
+          await navigator.share({
+            title: `${name}의 스캐치북`,
+            text: `${name}님을 기억나는 모습대로 그려주세요.`,
+            url,
+          });
+          setStatus('공유창을 열었어요.');
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') return;
+          await navigator.clipboard.writeText(url);
+          setStatus('공유창을 열지 못해 링크를 복사했어요.');
+        }
       } else {
         await navigator.clipboard.writeText(url);
         setStatus('링크를 복사했어요.');
       }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
+    } catch {
       setStatus('공유하지 못했어요. 링크를 다시 복사해 주세요.');
     }
   }
