@@ -72,6 +72,17 @@ export async function listVisibleDrawings(sketchbookId: string) {
   return snapshot.docs.map((document) => toDrawing(document.id, document.data()));
 }
 
+export async function listDrawings(sketchbookId: string) {
+  const snapshot = await getAdminFirestore()
+    .collection(collectionName)
+    .doc(sketchbookId)
+    .collection('drawings')
+    .orderBy('createdAt', 'desc')
+    .get();
+
+  return snapshot.docs.map((document) => toDrawing(document.id, document.data()));
+}
+
 export async function findDrawing(sketchbookId: string, drawingId: string) {
   const document = await getAdminFirestore()
     .collection(collectionName)
@@ -112,4 +123,43 @@ export async function saveDrawingWithinLimit(sketchbook: Sketchbook, drawing: Dr
   });
 
   return drawing;
+}
+
+export async function updateDrawingForManagement(
+  sketchbookId: string,
+  drawingId: string,
+  update: { status?: Drawing['status']; bestRank?: Drawing['bestRank'] },
+) {
+  const reference = getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('drawings').doc(drawingId);
+  await reference.update({ ...update, updatedAt: new Date() });
+}
+
+export async function setBestDrawing(sketchbookId: string, drawingId: string, bestRank: 1 | 2 | 3 | 4) {
+  const firestore = getAdminFirestore();
+  const collection = firestore.collection(collectionName).doc(sketchbookId).collection('drawings');
+  const target = collection.doc(drawingId);
+
+  await firestore.runTransaction(async (transaction) => {
+    const [targetDocument, ranked] = await Promise.all([
+      transaction.get(target),
+      transaction.get(collection.where('bestRank', '==', bestRank)),
+    ]);
+    if (!targetDocument.exists || targetDocument.data()?.status !== 'VISIBLE') {
+      throw new Error('공개 중인 그림만 BEST로 선정할 수 있습니다.');
+    }
+    ranked.docs.forEach((document) => transaction.update(document.ref, { bestRank: null, updatedAt: new Date() }));
+    transaction.update(target, { bestRank, updatedAt: new Date() });
+  });
+}
+
+export async function addMockPurchase(sketchbook: Sketchbook) {
+  const firestore = getAdminFirestore();
+  const reference = firestore.collection(collectionName).doc(sketchbook.id);
+  const purchaseReference = reference.collection('purchases').doc();
+  await firestore.runTransaction(async (transaction) => {
+    const document = await transaction.get(reference);
+    if (!document.exists) throw new Error('스캐치북을 찾을 수 없습니다.');
+    transaction.update(reference, { participantLimit: Number(document.data()?.participantLimit) + 20, updatedAt: new Date() });
+    transaction.set(purchaseReference, { orderId: `mock_${purchaseReference.id}`, provider: 'MOCK', productType: 'PARTICIPANT_20', amount: 990, additionalLimit: 20, paymentStatus: 'SUCCEEDED', paidAt: new Date(), createdAt: new Date() });
+  });
 }

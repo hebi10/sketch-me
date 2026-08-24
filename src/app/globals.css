@@ -123,6 +123,15 @@ a { color: inherit; text-decoration: none; }
 .drawing-submit-form input, .drawing-submit-form textarea { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); padding: 10px 12px; }
 .drawing-submit-form textarea { resize: vertical; }
 .drawing-submit-form .button { margin-top: 8px; }
+.manage-shell { margin: 0 auto; max-width: 760px; min-height: 100vh; padding: 20px; }
+.manage-heading { padding: 30px 0 20px; }
+.manage-heading h1 { font-size: clamp(2rem, 8vw, 3.4rem); letter-spacing: -0.04em; margin: 0; }
+.manage-summary { background: var(--canvas); border: 1px solid var(--line); display: grid; gap: 12px; padding: 16px; }
+.manage-summary p { margin: 0; }.manage-summary strong { color: var(--accent); font-size: 1.3rem; }
+.manage-summary progress { accent-color: var(--accent); height: 8px; width: 100%; }
+.manage-actions { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; margin: 14px 0 30px; }
+.manage-drawings h2 { font-size: 1.05rem; margin: 0 0 12px; }.drawing-placeholder { align-items: center; background: var(--paper); color: var(--muted); display: flex; justify-content: center; min-height: 180px; }
+.card-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }.card-actions button { background: var(--canvas); border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 0.72rem; padding: 5px; }
 
 @media (max-width: 720px) {
   .marketing-shell { padding: 20px; }

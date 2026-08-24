@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export const MANAGE_COOKIE_NAME = 'sketchbook_manage_token';
 
@@ -8,4 +8,26 @@ export function createManageToken() {
 
 export function hashManageToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
+}
+
+export function parseManageSession(cookieValue?: string) {
+  if (!cookieValue) return null;
+  const separator = cookieValue.indexOf('.');
+  if (separator < 1 || separator === cookieValue.length - 1) return null;
+
+  return {
+    publicId: cookieValue.slice(0, separator),
+    token: cookieValue.slice(separator + 1),
+  };
+}
+
+export function isValidManageSession(
+  session: ReturnType<typeof parseManageSession>,
+  publicId: string,
+  manageTokenHash: string,
+) {
+  if (!session || session.publicId !== publicId) return false;
+  const expected = Buffer.from(manageTokenHash, 'hex');
+  const actual = Buffer.from(hashManageToken(session.token), 'hex');
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
