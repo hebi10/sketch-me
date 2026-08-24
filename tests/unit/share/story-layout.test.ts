@@ -7,7 +7,7 @@ function overlaps(a: (typeof storySlots)[number], b: (typeof storySlots)[number]
 }
 
 describe('story image layout', () => {
-  it('keeps all four slots inside a 1080 by 1920 canvas without overlap', () => {
+  it('keeps all four slots inside a 1080 by 1440 canvas without overlap', () => {
     expect(storySlots).toHaveLength(4);
     storySlots.forEach((slot) => {
       expect(slot.x).toBeGreaterThanOrEqual(0);
@@ -24,5 +24,9 @@ describe('story image layout', () => {
     const [bestOne, ...others] = storySlots;
     const bestOneArea = bestOne.width * bestOne.height;
     expect(others.every((slot) => bestOneArea > slot.width * slot.height)).toBe(true);
+  });
+
+  it('uses square artwork slots for every BEST drawing', () => {
+    expect(storySlots.every((slot) => slot.width === slot.height)).toBe(true);
   });
 });

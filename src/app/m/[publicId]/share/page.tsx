@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { StoryImageMaker, type StoryDrawing } from './StoryImageMaker';
+import { storyStyle } from '@/lib/share/story-style';
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
 import { listDrawings } from '@/lib/sketchbooks/repository';
 
@@ -14,6 +15,7 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
   if (!sketchbook) notFound();
 
   const drawings = await listDrawings(sketchbook.id);
+  const publicPath = `/s/${publicId}`;
   const bestDrawings = drawings
     .filter((drawing) => drawing.status === 'VISIBLE' && drawing.bestRank)
     .map((drawing) => ({
@@ -29,7 +31,14 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
         <span className="header-title">스토리 이미지</span>
         <span aria-hidden="true" className="header-balance" />
       </header>
-      <section className="story-preview">
+      <section
+        aria-label="스토리 이미지 미리보기"
+        className="story-preview"
+        style={{
+          backgroundColor: storyStyle.background,
+          backgroundImage: `url(${storyStyle.backgroundImage})`,
+        }}
+      >
         <p>친구들이 그린 나</p>
         <h1>{sketchbook.name} BEST 4</h1>
         <div className="story-best-grid">
@@ -43,9 +52,13 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
             );
           })}
         </div>
-        <span>1080 × 1920 스토리 이미지</span>
+        <div className="story-preview-cta">
+          <strong>나도 스케치북에 그림 남기기</strong>
+          <span>{publicPath}</span>
+        </div>
       </section>
-      <StoryImageMaker drawings={bestDrawings} name={sketchbook.name} publicUrl={`/s/${publicId}`} />
+      <p className="story-output-meta">1080 × 1440 · 3:4 공유 이미지</p>
+      <StoryImageMaker drawings={bestDrawings} name={sketchbook.name} publicUrl={publicPath} />
     </main>
   );
 }

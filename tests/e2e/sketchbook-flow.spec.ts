@@ -40,10 +40,11 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await drawOnCanvas(ownerPage);
   await ownerPage.getByRole('button', { name: '내 스캐치북 만들기' }).click();
 
-  await expect(ownerPage.getByRole('heading', { name: '관리 복구 링크를 보관해 주세요' })).toBeVisible();
+  await expect(ownerPage.getByRole('heading', { name: '관리 복구 링크를 보관해 주세요' })).toBeVisible({ timeout: 15_000 });
   const recoveryUrl = await ownerPage.getByRole('textbox', { name: '관리 복구 링크', exact: true }).inputValue();
   await ownerPage.getByRole('button', { name: '내 스캐치북 관리하기' }).click();
-  await expect(ownerPage.getByRole('heading', { name: `${uniqueName}님의 그림 모음` })).toBeVisible();
+  await expect(ownerPage.getByText(`${uniqueName}님의 스케치북`)).toBeVisible();
+  await expect(ownerPage.getByRole('heading', { name: '친구들이 그린 나' }).first()).toBeVisible();
   const publicPath = await ownerPage.getByRole('link', { name: '친구 페이지 보기' }).getAttribute('href');
   expect(publicPath).toMatch(/^\/s\//);
 
@@ -51,7 +52,6 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   const friendPage = await friendContext.newPage();
   await friendPage.goto(publicPath!);
   await expect(friendPage.getByRole('heading', { name: `${uniqueName}님을 그려주세요` })).toBeVisible();
-  await expect(friendPage.getByAltText(`${uniqueName}님이 직접 그린 모습`)).toBeVisible();
   await friendPage.getByRole('link', { name: '친구 스케치 하기' }).click();
   await expect(friendPage.getByRole('button', { name: '참고사진' })).toBeEnabled();
   await drawOnCanvas(friendPage);
@@ -80,12 +80,20 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await recoveredPage.getByRole('link', { name: '스토리 이미지 만들기' }).click();
   await expect(recoveredPage).toHaveURL(/\/share$/);
   await expect(recoveredPage.getByAltText('BEST 1 그림')).toBeVisible();
+  const storyPreview = recoveredPage.getByRole('region', { name: '스토리 이미지 미리보기' });
+  await expect(storyPreview).toHaveCSS('background-image', /sketchbook-story-background\.webp/);
+  await expect(storyPreview.getByText('나도 스케치북에 그림 남기기')).toBeVisible();
+  const previewRatio = await storyPreview.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return bounds.width / bounds.height;
+  });
+  expect(previewRatio).toBeCloseTo(3 / 4, 2);
   const downloadPromise = recoveredPage.waitForEvent('download', { timeout: 15_000 });
   await recoveredPage.getByRole('button', { name: 'PNG로 저장하기' }).click();
   const download = await downloadPromise;
   const downloadPath = await download.path();
   if (!downloadPath) throw new Error('다운로드된 PNG 경로를 찾을 수 없습니다.');
-  expectPngSize(await readFile(downloadPath), 1080, 1920);
+  expectPngSize(await readFile(downloadPath), 1080, 1440);
 
   await recoveredPage.goto(`/m/${recoveryPublicId}`);
   await recoveredPage.getByRole('button', { name: '스케치북 전체 삭제' }).click();

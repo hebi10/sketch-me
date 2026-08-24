@@ -100,7 +100,7 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
             <article className="friend-drawing-card manage-drawing-card" key={drawing.id}>
               <div className="manage-drawing-image">
                 {drawing.bestRank ? <span className="best-badge">BEST {drawing.bestRank}</span> : null}
-                <Image alt={`${drawing.authorName}님의 그림`} height={340} loading={index === 0 ? 'eager' : 'lazy'} src={`/api/manage/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} />
+                <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={index === 0 ? 'eager' : 'lazy'} src={`/api/manage/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} />
               </div>
               <p>{drawing.authorName}</p>
               {drawing.message ? <span>{drawing.message}</span> : null}

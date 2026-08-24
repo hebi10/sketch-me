@@ -1,5 +1,6 @@
 export const storyStyle = {
-  background: '#ffffff',
+  background: '#f7f4ee',
+  backgroundImage: '/story/sketchbook-story-background.webp',
   ink: '#181818',
   muted: '#6e6e6e',
   line: '#d8d3c9',

@@ -31,7 +31,7 @@ export async function generateMetadata({
       images: [{
         url: `/api/sketchbooks/${publicId}/owner/image`,
         width: 720,
-        height: 960,
+        height: 720,
         alt: `${sketchbook.name}님의 스케치`,
       }],
     },
@@ -87,7 +87,7 @@ export default async function PublicSketchbookPage({
         <div className="friend-drawing-grid">
         {drawings.length ? drawings.map((drawing, index) => (
           <article className="friend-drawing-card" key={drawing.id}>
-            <Image alt={`${drawing.authorName}님의 그림`} height={340} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} />
+            <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} />
             <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{formatTimeAgo(drawing.createdAt)}</span></div>
           </article>
         )) : <p className="empty-drawings">아직 첫 번째 그림을 기다리고 있어요.</p>}
@@ -105,7 +105,7 @@ export default async function PublicSketchbookPage({
               <article className="best-drawing-card" key={rank}>
                 <div className="best-drawing-image">
                   <b>BEST {rank}</b>
-                  {drawing ? <Image alt={`BEST ${rank}, ${drawing.authorName}님의 그림`} height={340} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} /> : <span>선정 전</span>}
+                  {drawing ? <Image alt={`BEST ${rank}, ${drawing.authorName}님의 그림`} height={255} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} /> : <span>선정 전</span>}
                 </div>
                 <p>{drawing?.authorName ?? '기다리는 중'}</p>
               </article>
@@ -118,7 +118,7 @@ export default async function PublicSketchbookPage({
         <div className="section-title-row"><h2 id="recent-drawing-heading">◷ 최근 올라온 그림</h2></div>
         {recentDrawing ? (
           <article className="recent-drawing-card">
-            <Image alt={`${recentDrawing.authorName}님의 최근 그림`} height={120} src={`/api/sketchbooks/${publicId}/drawings/${recentDrawing.id}/image`} width={90} />
+            <Image alt={`${recentDrawing.authorName}님의 최근 그림`} height={90} src={`/api/sketchbooks/${publicId}/drawings/${recentDrawing.id}/image`} width={90} />
             <div><strong>{recentDrawing.authorName}</strong><span>{formatTimeAgo(recentDrawing.createdAt)}</span>{recentDrawing.message ? <p>{recentDrawing.message}</p> : null}</div>
           </article>
         ) : <p className="empty-drawings">첫 그림을 남겨주세요.</p>}

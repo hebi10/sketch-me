@@ -35,6 +35,20 @@ function drawContainedImage(context: CanvasRenderingContext2D, image: HTMLImageE
   context.drawImage(image, slot.x + (slot.width - width) / 2, slot.y + (slot.height - height) / 2, width, height);
 }
 
+function setFittedFont(
+  context: CanvasRenderingContext2D,
+  text: string,
+  fontFamily: string,
+  { maxSize, minSize, maxWidth, weight }: { maxSize: number; minSize: number; maxWidth: number; weight: number },
+) {
+  let size = maxSize;
+  context.font = `${weight} ${size}px ${fontFamily}`;
+  while (size > minSize && context.measureText(text).width > maxWidth) {
+    size -= 2;
+    context.font = `${weight} ${size}px ${fontFamily}`;
+  }
+}
+
 export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerProps) {
   const [status, setStatus] = useState<string | null>(null);
 
@@ -51,18 +65,15 @@ export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerPr
 
       context.fillStyle = storyStyle.background;
       context.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+      const background = await loadImage(storyStyle.backgroundImage);
+      context.drawImage(background, 0, 0, STORY_WIDTH, STORY_HEIGHT);
       context.fillStyle = storyStyle.ink;
       context.textAlign = 'center';
-      context.font = `600 76px ${storyStyle.fontFamily}`;
-      context.fillText('친구들이 그린 나', 540, 170);
-      context.font = `700 104px ${storyStyle.fontFamily}`;
-      context.fillText(`${name} BEST 4`, 540, 300);
-      context.strokeStyle = storyStyle.accent;
-      context.lineWidth = 10;
-      context.beginPath();
-      context.moveTo(300, 345);
-      context.lineTo(780, 345);
-      context.stroke();
+      context.font = `600 54px ${storyStyle.fontFamily}`;
+      context.fillText('친구들이 그린 나', 540, 88);
+      const title = `${name} BEST 4`;
+      setFittedFont(context, title, storyStyle.fontFamily, { maxSize: 78, minSize: 28, maxWidth: 900, weight: 700 });
+      context.fillText(title, 540, 180);
 
       for (const slot of storySlots) {
         context.fillStyle = '#ffffff';
@@ -90,19 +101,19 @@ export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerPr
 
       const absolutePublicUrl = new URL(publicUrl, window.location.origin).href;
       context.fillStyle = storyStyle.accent;
-      context.fillRect(105, 1690, 870, 112);
+      context.fillRect(210, 1280, 660, 84);
       context.fillStyle = '#ffffff';
-      context.font = `600 39px ${storyStyle.fontFamily}`;
-      context.fillText('나도 스케치북에 그림 남기기', 540, 1760);
+      context.font = `600 32px ${storyStyle.fontFamily}`;
+      context.fillText('나도 스케치북에 그림 남기기', 540, 1334);
       context.fillStyle = storyStyle.muted;
-      context.font = `28px ${storyStyle.fontFamily}`;
-      context.fillText(absolutePublicUrl, 540, 1850);
+      context.font = `22px ${storyStyle.fontFamily}`;
+      context.fillText(absolutePublicUrl, 540, 1408);
 
       const link = document.createElement('a');
       link.download = `${name}-sketchbook-story.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-      setStatus('1080 × 1920 PNG를 저장했어요.');
+      setStatus('1080 × 1440 PNG를 저장했어요.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : '스토리 이미지를 만들지 못했습니다.');
     }

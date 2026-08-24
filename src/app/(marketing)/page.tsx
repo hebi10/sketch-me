@@ -19,9 +19,9 @@ export default function LandingPage() {
 
       <section className="landing-hero" aria-labelledby="landing-title">
         <div className="landing-copy">
-          <p className="eyebrow">친구들이 그린 나를 모으는 스케치북</p>
-          <h1 id="landing-title">친구들은<br />나를 어떻게<br />그리고 있을까?</h1>
-          <p>내 스캐치북을 만들고 친구들에게 그림을 받아보세요.</p>
+          <p className="eyebrow">내 이미지 스케치북</p>
+          <h1 id="landing-title">친구들이 보는 내 이미지는??</h1>
+          <p>내 스캐치북을 채울 수 있게 친구들에게 공유해보세요.</p>
         </div>
 
         <figure className="landing-collage">
@@ -38,7 +38,6 @@ export default function LandingPage() {
           <Link className="button button--primary landing-cta" href="/create">
             내 스캐치북 만들기
           </Link>
-          <p className="free-note">친구 그림 20개까지 무료</p>
         </div>
       </section>
       <footer className="marketing-footer"><Link href="/privacy">개인정보 처리 안내</Link></footer>

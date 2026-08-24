@@ -5,7 +5,7 @@ export type ImageStorageProfile = 'sketch' | 'reference';
 const profiles = {
   sketch: {
     width: 720,
-    height: 960,
+    height: 720,
     quality: 76,
     fallbackQuality: 58,
     maxBytes: 350_000,
@@ -28,14 +28,23 @@ async function encodeWebp(
   scale = 1,
 ) {
   const settings = profiles[profile];
+  const resizeOptions = profile === 'sketch'
+    ? {
+        width: Math.round(settings.width * scale),
+        height: Math.round(settings.height * scale),
+        fit: 'contain' as const,
+        background: { r: 255, g: 255, b: 255, alpha: 1 },
+      }
+    : {
+        width: Math.round(settings.width * scale),
+        height: Math.round(settings.height * scale),
+        fit: 'inside' as const,
+        withoutEnlargement: true,
+      };
+
   return sharp(input, { failOn: 'error', limitInputPixels: 16_000_000 })
     .rotate()
-    .resize({
-      width: Math.round(settings.width * scale),
-      height: Math.round(settings.height * scale),
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
+    .resize(resizeOptions)
     .webp({ quality, effort: 4, smartSubsample: true })
     .toBuffer();
 }
@@ -46,7 +55,7 @@ export async function optimizeImageForStorage(input: Buffer, profile: ImageStora
   try {
     let buffer = await encodeWebp(input, profile, settings.quality);
     if (buffer.byteLength > settings.maxBytes) {
-      buffer = await encodeWebp(input, profile, settings.fallbackQuality, 0.85);
+      buffer = await encodeWebp(input, profile, settings.fallbackQuality, profile === 'sketch' ? 1 : 0.85);
     }
     if (buffer.byteLength > settings.maxBytes) {
       throw new ImageOptimizationError(

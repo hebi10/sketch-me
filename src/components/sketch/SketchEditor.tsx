@@ -13,7 +13,7 @@ import {
 import { sketchColors } from './colors';
 
 const width = 720;
-const height = 960;
+const height = 720;
 
 export interface SketchEditorHandle {
   exportDrawing: () => string | null;

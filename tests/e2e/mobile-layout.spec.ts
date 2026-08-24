@@ -128,3 +128,16 @@ test('브랜드 로고 묶음은 단순 헤더의 가운데에 정렬된다', as
     expect(alignment?.markSize).toBe(32);
   }
 });
+
+test('그리기 캔버스는 모바일에서도 정사각형이다', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/create');
+
+  const canvas = page.getByLabel('내 모습을 그리는 캔버스');
+  await expect(canvas).toHaveAttribute('width', '720');
+  await expect(canvas).toHaveAttribute('height', '720');
+  const bounds = await canvas.boundingBox();
+
+  expect(bounds).not.toBeNull();
+  expect((bounds?.width ?? 0) / (bounds?.height ?? 1)).toBeCloseTo(1, 2);
+});
