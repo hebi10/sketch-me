@@ -11,5 +11,11 @@ export default async function DrawFriendPage({ params }: { params: Promise<{ pub
 
   if (!sketchbook || sketchbook.status !== 'PUBLIC') notFound();
 
-  return <SketchCanvas publicId={sketchbook.publicId} sketchbookName={sketchbook.name} />;
+  return (
+    <SketchCanvas
+      publicId={sketchbook.publicId}
+      referenceImageUrl={sketchbook.referenceImageEnabled ? `/api/sketchbooks/${publicId}/reference/image` : null}
+      sketchbookName={sketchbook.name}
+    />
+  );
 }

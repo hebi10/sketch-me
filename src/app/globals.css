@@ -20,6 +20,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  overflow-wrap: anywhere;
 }
 
 button, input, textarea { font: inherit; }
@@ -104,12 +105,17 @@ a { color: inherit; text-decoration: none; }
 .create-complete input { background: var(--canvas); border: 1px solid var(--line); min-height: 52px; overflow: hidden; padding: 12px; text-overflow: ellipsis; width: 100%; }
 
 .public-sketchbook-shell, .draw-shell { margin: 0 auto; max-width: 640px; min-height: 100vh; padding: 20px 20px 112px; }
-.public-header, .draw-header { align-items: center; display: flex; justify-content: space-between; min-height: 48px; }
+.public-header, .draw-header { align-items: center; display: flex; gap: 12px; justify-content: space-between; min-height: 48px; }
+.public-header > a { align-items: center; display: inline-flex; min-height: 44px; }
 .public-header span { color: var(--muted); font-size: 0.82rem; }
 .public-intro { padding: 40px 0 28px; }
 .public-intro h1 { font-size: clamp(2.2rem, 9vw, 3.6rem); letter-spacing: -0.045em; line-height: 1.12; margin: 0; }
 .public-intro > p:not(.eyebrow):not(.participant-copy) { color: var(--muted); line-height: 1.6; margin: 14px 0 0; }
 .participant-copy { color: var(--accent); font-size: 0.92rem; margin: 22px 0 0; }
+.owner-sketch { align-items: center; border-block: 1px solid var(--line); display: grid; gap: 18px; grid-template-columns: minmax(0, .75fr) minmax(0, 1fr); margin-bottom: 32px; padding-block: 24px; }
+.owner-sketch h2 { font-size: clamp(1.45rem, 5vw, 2rem); letter-spacing: -.035em; margin: 0; }
+.owner-sketch img { background: var(--canvas); border: 1px solid var(--line); display: block; height: auto; width: 100%; }
+.public-section-title { font-size: 1.05rem; margin: 0 0 12px; }
 .submission-success { background: #eaf3eb; border: 1px solid var(--success); color: #285132; margin: 0 0 18px; padding: 12px 14px; }
 .friend-drawing-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .friend-drawing-card { background: var(--canvas); border: 1px solid var(--line); padding: 8px; }
@@ -145,6 +151,7 @@ a { color: inherit; text-decoration: none; }
 .reference-controls input { accent-color: var(--accent); width: 100%; }
 .drawing-submit-form { display: grid; gap: 8px; margin-top: 24px; }
 .drawing-submit-form input, .drawing-submit-form textarea { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); padding: 10px 12px; }
+.drawing-submit-form input { min-height: 48px; }
 .drawing-submit-form textarea { resize: vertical; }
 .drawing-submit-form .button { margin-top: 8px; }
 .manage-shell { margin: 0 auto; max-width: 760px; min-height: 100vh; padding: 20px; }
@@ -193,4 +200,27 @@ a { color: inherit; text-decoration: none; }
   .sample-drawing { min-height: 150px; padding: 14px; }
   .portrait-mark { min-height: 100px; }
   .public-sketchbook-shell, .draw-shell { padding-inline: 16px; }
+}
+
+@media (max-width: 480px) {
+  .form-shell, .manage-shell, .share-shell { padding-inline: 16px; }
+  .simple-header { padding-bottom: 28px; }
+  .owner-sketch { align-items: start; grid-template-columns: minmax(0, 1fr); }
+  .owner-sketch img { margin: 0 auto; max-width: 300px; }
+  .friend-drawing-grid { grid-template-columns: minmax(0, 1fr); }
+  .public-sketchbook-shell .friend-drawing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .manage-actions { grid-template-columns: minmax(0, 1fr); }
+  .draw-header p { font-size: .9rem; text-align: center; }
+  .tool-row { align-items: stretch; }
+  .tool-button { flex: 1 1 92px; }
+  .line-width { flex: 1 1 100%; margin-left: 0; min-height: 44px; }
+  .line-width input { max-width: none; width: 100%; }
+  .story-preview { min-height: 560px; padding: 20px 14px; }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .landing-hero { min-height: auto; }
+  .public-intro { padding-block: 22px; }
+  .draw-header { position: static; }
+  .sticky-draw-action { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 }
