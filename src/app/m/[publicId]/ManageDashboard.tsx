@@ -3,9 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { Drawing } from '@/lib/domain/types';
+import type { PurchaseProductId } from '@/lib/domain/types';
+import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
 
 interface ManageDashboardProps {
@@ -22,7 +24,69 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
   const [message, setMessage] = useState<string | null>(null);
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<PurchaseProductId>('FRIENDS_10');
+  const manageMainRef = useRef<HTMLElement>(null);
+  const purchaseDialogRef = useRef<HTMLDialogElement>(null);
+  const purchaseTriggerRef = useRef<HTMLButtonElement>(null);
+  const purchaseRequestIdRef = useRef('');
+  const isPurchasingRef = useRef(false);
   const items = drawings.filter((drawing) => drawing.status !== 'DELETED');
+
+  useEffect(() => {
+    isPurchasingRef.current = isPurchasing;
+  }, [isPurchasing]);
+
+  useEffect(() => {
+    if (!purchaseOpen) return;
+    const dialog = purchaseDialogRef.current;
+    const main = manageMainRef.current;
+    const trigger = purchaseTriggerRef.current;
+    if (!dialog || !main) return;
+    const previouslyInert = main.hasAttribute('inert');
+    main.setAttribute('inert', '');
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+
+    const focusableSelector = 'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (!isPurchasingRef.current) setPurchaseOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = [...dialog.querySelectorAll<HTMLElement>(focusableSelector)];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    dialog.addEventListener('keydown', handleKeyDown);
+    dialog.querySelector<HTMLElement>(focusableSelector)?.focus();
+
+    return () => {
+      dialog.removeEventListener('keydown', handleKeyDown);
+      if (dialog.open && typeof dialog.close === 'function') dialog.close();
+      if (!previouslyInert) main.removeAttribute('inert');
+      trigger?.focus();
+    };
+  }, [purchaseOpen]);
+
+  function openPurchaseDialog() {
+    purchaseRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? `purchase_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    setMessage(null);
+    setPurchaseError(null);
+    setPurchaseOpen(true);
+  }
 
   async function updateDrawing(drawingId: string, body: Record<string, unknown>) {
     setMessage(null);
@@ -50,14 +114,30 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
   }
 
   async function purchase() {
-    const response = await fetch(`/api/manage/${publicId}/purchase`, { method: 'POST' });
-    const result = await response.json() as { participantLimit?: number; message?: string };
-    if (!response.ok || !result.participantLimit) {
-      setMessage(result.message ?? '결제를 처리하지 못했습니다.');
-      return;
+    const plan = getPurchasePlan(selectedProductId);
+    if (!plan) return;
+    setIsPurchasing(true);
+    setMessage(null);
+    setPurchaseError(null);
+    try {
+      const response = await fetch(`/api/manage/${publicId}/purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: plan.productId, requestId: purchaseRequestIdRef.current }),
+      });
+      const result = await response.json().catch(() => ({})) as { participantLimit?: number; message?: string };
+      if (!response.ok || typeof result.participantLimit !== 'number') {
+        setPurchaseError(result.message ?? '결제를 처리하지 못했습니다.');
+        return;
+      }
+      setLimit(result.participantLimit);
+      setMessage(`모의 결제가 완료되어 친구 그림 ${plan.additionalLimit}개가 추가됐어요.`);
+      setPurchaseOpen(false);
+    } catch {
+      setPurchaseError('결제 연결을 확인하고 다시 시도해 주세요.');
+    } finally {
+      setIsPurchasing(false);
     }
-    setLimit(result.participantLimit);
-    setMessage('모의 결제가 완료되어 친구 그림 20개가 추가됐어요.');
   }
 
   async function deleteSketchbook() {
@@ -76,7 +156,8 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
   }
 
   return (
-    <main className="manage-shell">
+    <>
+    <main className="manage-shell" ref={manageMainRef}>
       <header className="public-header">
         <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">←</Link>
         <span className="header-title">내 스캐치북</span>
@@ -86,7 +167,7 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
       <section className="manage-summary">
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
         <progress max={limit} value={participantCount} />
-        <button className="button button--secondary" onClick={purchase} type="button">+20명 추가 · 990원</button>
+        <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">친구 그림 더 추가하기</button>
       </section>
       {message ? <p className="submission-success" role="status">{message}</p> : null}
       <div className="manage-actions">
@@ -137,5 +218,31 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
         ) : <button className="button button--secondary danger-outline" onClick={() => setDeleteArmed(true)} type="button">스케치북 전체 삭제</button>}
       </section>
     </main>
+      {purchaseOpen ? (
+        <div className="purchase-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isPurchasing) setPurchaseOpen(false); }}>
+          <dialog aria-labelledby="purchase-dialog-title" className="purchase-dialog" onCancel={(event) => { event.preventDefault(); if (!isPurchasing) setPurchaseOpen(false); }} ref={purchaseDialogRef}>
+            <div className="purchase-dialog-heading">
+              <div><p className="eyebrow">모의 결제</p><h2 id="purchase-dialog-title">친구 그림 더 추가하기</h2></div>
+              <button aria-label="결제창 닫기" className="purchase-dialog-close" disabled={isPurchasing} onClick={() => setPurchaseOpen(false)} type="button">×</button>
+            </div>
+            <p className="purchase-dialog-copy">필요한 만큼 친구 그림을 더 받을 수 있어요.</p>
+            <fieldset className="purchase-plan-list">
+              <legend className="sr-only">추가할 친구 그림 수 선택</legend>
+              {purchasePlans.map((plan) => (
+                <label className="purchase-plan" key={plan.productId}>
+                  <input checked={selectedProductId === plan.productId} disabled={isPurchasing} name="purchase-plan" onChange={() => setSelectedProductId(plan.productId)} type="radio" value={plan.productId} />
+                  <span><strong>{plan.additionalLimit}명 추가</strong><small>{plan.amount.toLocaleString('ko-KR')}원</small></span>
+                </label>
+              ))}
+            </fieldset>
+            {purchaseError ? <p className="purchase-error" role="alert">{purchaseError}</p> : null}
+            <button className="button button--primary purchase-submit" disabled={isPurchasing} onClick={purchase} type="button">
+              {isPurchasing ? '모의 결제 처리 중...' : `${getPurchasePlan(selectedProductId)?.amount.toLocaleString('ko-KR')}원 모의 결제하기`}
+            </button>
+            <p className="purchase-mock-note">현재는 실제 금액이 청구되지 않는 모의 결제입니다.</p>
+          </dialog>
+        </div>
+      ) : null}
+    </>
   );
 }

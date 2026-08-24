@@ -1,5 +1,6 @@
 import type { Drawing, Sketchbook } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
+import type { PurchasePlan } from '@/lib/purchases/plans';
 
 const collectionName = 'sketchbooks';
 
@@ -186,15 +187,22 @@ export async function setBestDrawing(sketchbookId: string, drawingId: string, be
   });
 }
 
-export async function addMockPurchase(sketchbook: Sketchbook) {
+export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan, requestId: string) {
   const firestore = getAdminFirestore();
   const reference = firestore.collection(collectionName).doc(sketchbook.id);
-  const purchaseReference = reference.collection('purchases').doc();
-  await firestore.runTransaction(async (transaction) => {
-    const document = await transaction.get(reference);
+  const purchaseReference = reference.collection('purchases').doc(requestId);
+  return firestore.runTransaction(async (transaction) => {
+    const [document, existingPurchase] = await Promise.all([
+      transaction.get(reference),
+      transaction.get(purchaseReference),
+    ]);
     if (!document.exists) throw new Error('스캐치북을 찾을 수 없습니다.');
-    transaction.update(reference, { participantLimit: Number(document.data()?.participantLimit) + 20, updatedAt: new Date() });
-    transaction.set(purchaseReference, { orderId: `mock_${purchaseReference.id}`, provider: 'MOCK', productType: 'PARTICIPANT_20', amount: 990, additionalLimit: 20, paymentStatus: 'SUCCEEDED', paidAt: new Date(), createdAt: new Date() });
+    const currentLimit = Number(document.data()?.participantLimit);
+    if (existingPurchase.exists) return currentLimit;
+    const participantLimit = currentLimit + plan.additionalLimit;
+    transaction.update(reference, { participantLimit, updatedAt: new Date() });
+    transaction.set(purchaseReference, { orderId: `mock_${requestId}`, provider: 'MOCK', productType: plan.productId, amount: plan.amount, additionalLimit: plan.additionalLimit, paymentStatus: 'SUCCEEDED', paidAt: new Date(), createdAt: new Date() });
+    return participantLimit;
   });
 }
 

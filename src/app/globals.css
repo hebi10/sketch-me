@@ -256,6 +256,239 @@ a { color: inherit; text-decoration: none; }
   .draw-shell .editor-tabs { border-top: 1px solid var(--line); }
 }
 
+/* Drawing fullscreen and mock purchase overlays */
+.sr-only {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.fullscreen-entry {
+  background: color-mix(in srgb, var(--canvas) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: .78rem;
+  min-height: 44px;
+  padding: 8px 12px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 3;
+}
+
+.sketch-editor--fullscreen {
+  align-items: center;
+  background: var(--canvas);
+  display: grid;
+  inset: 0;
+  justify-items: center;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  position: fixed;
+  z-index: 100;
+}
+
+.sketch-editor--fullscreen .sketch-stage {
+  border-radius: 0;
+  height: min(650px, calc(100dvh - 16px), calc(100vw - 16px));
+  max-height: none;
+  width: min(650px, calc(100dvh - 16px), calc(100vw - 16px));
+}
+
+.sketch-editor--fullscreen .editor-control-panel {
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: max(10px, env(safe-area-inset-left));
+  max-height: min(52dvh, 430px);
+  overflow-y: auto;
+  position: fixed;
+  right: max(76px, calc(env(safe-area-inset-right) + 76px));
+  z-index: 103;
+}
+
+.sketch-editor--fullscreen .editor-tabs {
+  border-top: 1px solid var(--line);
+  border-radius: 8px 8px 0 0;
+}
+
+.sketch-editor--fullscreen .draw-tools {
+  border-radius: 0 0 8px 8px;
+}
+
+.fullscreen-controls {
+  bottom: max(10px, env(safe-area-inset-bottom));
+  display: grid;
+  gap: 8px;
+  position: fixed;
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 104;
+}
+
+.fullscreen-controls button {
+  align-items: center;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  height: 52px;
+  justify-content: center;
+  padding: 10px;
+  width: 52px;
+}
+
+.fullscreen-controls button[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+
+.fullscreen-controls img {
+  height: 30px;
+  object-fit: contain;
+  width: 30px;
+}
+
+.purchase-dialog-backdrop {
+  align-items: end;
+  background: rgb(24 24 24 / 42%);
+  display: grid;
+  inset: 0;
+  padding: 16px;
+  position: fixed;
+  z-index: 110;
+}
+
+.purchase-dialog {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  margin: 0 auto;
+  max-height: calc(100dvh - 32px);
+  max-width: 618px;
+  overflow-y: auto;
+  padding: 20px;
+  width: 100%;
+}
+
+.purchase-dialog::backdrop {
+  display: none;
+}
+
+.purchase-dialog-heading {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.purchase-dialog-heading .eyebrow {
+  margin: 0 0 4px;
+}
+
+.purchase-dialog-heading h2 {
+  font-size: 1.35rem;
+  line-height: 1.25;
+  margin: 0;
+  word-break: keep-all;
+}
+
+.purchase-dialog-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  font-size: 1.45rem;
+  height: 44px;
+  justify-content: center;
+  margin: -8px -8px 0 0;
+  width: 44px;
+}
+
+.purchase-dialog-copy {
+  color: var(--muted);
+  font-size: .86rem;
+  margin: 10px 0 16px;
+}
+
+.purchase-plan-list {
+  border: 0;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.purchase-plan {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  min-height: 58px;
+  padding: 10px 12px;
+}
+
+.purchase-plan:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.purchase-plan input {
+  accent-color: var(--accent);
+  height: 20px;
+  margin: 0;
+  width: 20px;
+}
+
+.purchase-plan span {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.purchase-plan strong {
+  font-size: .95rem;
+}
+
+.purchase-plan small {
+  color: var(--accent);
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+.purchase-submit {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.purchase-error {
+  color: var(--danger);
+  font-size: .8rem;
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+.purchase-mock-note {
+  color: var(--muted);
+  font-size: .75rem;
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+@media (min-width: 651px) {
+  .purchase-dialog-backdrop {
+    align-items: center;
+  }
+}
+
 /* Mobile-only sketchbook visual system */
 main {
   width: 100%;

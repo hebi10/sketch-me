@@ -1,6 +1,7 @@
 export type SketchbookStatus = 'PUBLIC' | 'PRIVATE' | 'DELETED';
 export type DrawingStatus = 'VISIBLE' | 'HIDDEN' | 'DELETED';
 export type PurchaseStatus = 'READY' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+export type PurchaseProductId = 'FRIENDS_10' | 'FRIENDS_50' | 'FRIENDS_100';
 export type ShareType = 'SELF_VS_FRIENDS' | 'FRIENDS_BEST';
 
 export interface Sketchbook {
@@ -35,9 +36,9 @@ export interface Purchase {
   id: string;
   orderId: string;
   provider: 'MOCK' | 'TOSS';
-  productType: 'PARTICIPANT_20';
-  amount: 990;
-  additionalLimit: 20;
+  productType: PurchaseProductId;
+  amount: 990 | 3900 | 6900;
+  additionalLimit: 10 | 50 | 100;
   paymentStatus: PurchaseStatus;
   paidAt: Date | null;
   createdAt: Date;

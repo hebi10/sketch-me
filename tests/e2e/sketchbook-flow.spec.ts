@@ -45,6 +45,12 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await ownerPage.getByRole('button', { name: '내 스캐치북 관리하기' }).click();
   await expect(ownerPage.getByText(`${uniqueName}님의 스케치북`)).toBeVisible();
   await expect(ownerPage.getByRole('heading', { name: '친구들이 그린 나' }).first()).toBeVisible();
+  await ownerPage.getByRole('button', { name: '친구 그림 더 추가하기' }).click();
+  await expect(ownerPage.getByRole('dialog', { name: '친구 그림 더 추가하기' })).toBeVisible();
+  await ownerPage.getByRole('radio', { name: /50명 추가.*3,900원/ }).check();
+  await ownerPage.getByRole('button', { name: '3,900원 모의 결제하기' }).click();
+  await expect(ownerPage.getByText('모의 결제가 완료되어 친구 그림 50개가 추가됐어요.')).toBeVisible();
+  await expect(ownerPage.locator('.manage-summary p')).toContainText(/친구 그림\s*0\s*\/\s*70/);
   const publicPath = await ownerPage.getByRole('link', { name: '친구 페이지 보기' }).getAttribute('href');
   expect(publicPath).toMatch(/^\/s\//);
 

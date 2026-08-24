@@ -141,3 +141,32 @@ test('그리기 캔버스는 모바일에서도 정사각형이다', async ({ pa
   expect(bounds).not.toBeNull();
   expect((bounds?.width ?? 0) / (bounds?.height ?? 1)).toBeCloseTo(1, 2);
 });
+
+test('전체 화면 그리기에서 우측 하단 아이콘으로 도구를 열고 돌아온다', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/create');
+
+  await page.getByRole('button', { name: '전체 화면으로 그리기' }).click();
+  const fullscreen = page.getByRole('dialog', { name: '전체 화면 그리기' });
+  await expect(fullscreen).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '그림 편집 단계' })).toBeHidden();
+
+  const canvas = page.getByLabel('내 모습을 그리는 캔버스');
+  const canvasBounds = await canvas.boundingBox();
+  expect(canvasBounds).not.toBeNull();
+  expect((canvasBounds?.width ?? 0) / (canvasBounds?.height ?? 1)).toBeCloseTo(1, 2);
+
+  const exitButton = page.getByRole('button', { name: '전체 화면 그리기 종료' });
+  const toolsButton = page.getByRole('button', { name: '그리기 도구 열기' });
+  await expect(exitButton.locator('img')).toHaveAttribute('src', /fullscreen-back\.webp/);
+  await expect(toolsButton.locator('img')).toHaveAttribute('src', /drawing-controls\.webp/);
+  const exitBounds = await exitButton.boundingBox();
+  const toolsBounds = await toolsButton.boundingBox();
+  expect(exitBounds?.x ?? 0).toBeGreaterThan(300);
+  expect(toolsBounds?.x ?? 0).toBeGreaterThan(300);
+
+  await toolsButton.click();
+  await expect(page.getByRole('navigation', { name: '그림 편집 단계' })).toBeVisible();
+  await page.getByRole('button', { name: '전체 화면 그리기 종료' }).click();
+  await expect(fullscreen).toHaveCount(0);
+});

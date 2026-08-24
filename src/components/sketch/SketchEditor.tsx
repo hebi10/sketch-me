@@ -30,6 +30,10 @@ type EditorTab = 'draw' | 'reference' | 'edit';
 export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
   function SketchEditor({ ariaLabel, referenceImageUrl }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const editorRef = useRef<HTMLElement>(null);
+    const fullscreenEntryRef = useRef<HTMLButtonElement>(null);
+    const fullscreenRestoreFocusRef = useRef(false);
+    const fullscreenExitRef = useRef<HTMLButtonElement>(null);
     const drawingRef = useRef(false);
     const lastPointRef = useRef<{ x: number; y: number } | null>(null);
     const referencePointers = useRef(new Map<number, { x: number; y: number }>());
@@ -40,6 +44,8 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [history, setHistory] = useState<CanvasHistory | null>(null);
     const [referenceScale, setReferenceScale] = useState(1);
     const [referenceOffset, setReferenceOffset] = useState({ x: 0, y: 0 });
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [controlsOpen, setControlsOpen] = useState(false);
 
     function context() {
       return canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -94,6 +100,57 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       if (!canvas) return;
       setHistory(createCanvasHistory(canvas.toDataURL('image/png')));
     }, []);
+
+    useEffect(() => {
+      if (!isFullscreen) {
+        if (fullscreenRestoreFocusRef.current) {
+          fullscreenRestoreFocusRef.current = false;
+          fullscreenEntryRef.current?.focus();
+        }
+        return;
+      }
+      const previousOverflow = document.body.style.overflow;
+      const editor = editorRef.current;
+      const inertSiblings: Array<{ element: HTMLElement; wasInert: boolean }> = [];
+      let current: HTMLElement | null = editor;
+      while (current?.parentElement && current.parentElement !== document.body) {
+        [...current.parentElement.children].forEach((sibling) => {
+          if (sibling === current || !(sibling instanceof HTMLElement)) return;
+          inertSiblings.push({ element: sibling, wasInert: sibling.hasAttribute('inert') });
+          sibling.setAttribute('inert', '');
+        });
+        current = current.parentElement;
+      }
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+          setControlsOpen(false);
+          setIsFullscreen(false);
+          return;
+        }
+        if (event.key !== 'Tab' || !editor) return;
+        const focusable = [...editor.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')]
+          .filter((element) => !element.closest('[hidden]'));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+      fullscreenExitRef.current?.focus();
+      return () => {
+        document.body.style.overflow = previousOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+        inertSiblings.forEach(({ element, wasInert }) => { if (!wasInert) element.removeAttribute('inert'); });
+        fullscreenRestoreFocusRef.current = true;
+      };
+    }, [isFullscreen]);
 
     function drawLine(from: { x: number; y: number }, to: { x: number; y: number }) {
       const drawingContext = context();
@@ -180,7 +237,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }
 
     return (
-      <section className="sketch-editor">
+      <section aria-label={isFullscreen ? '전체 화면 그리기' : undefined} aria-modal={isFullscreen || undefined} className={`sketch-editor ${isFullscreen ? 'sketch-editor--fullscreen' : ''}`} ref={editorRef} role={isFullscreen ? 'dialog' : undefined}>
         <div className={`sketch-stage sketch-stage--${tab}`} onPointerCancel={referencePointerEnd} onPointerDown={referencePointerDown} onPointerMove={referencePointerMove} onPointerUp={referencePointerEnd}>
           {referenceImageUrl ? (
             <div className="reference-layer" style={{ transform: `translate(${referenceOffset.x}px, ${referenceOffset.y}px) scale(${referenceScale})` }}>
@@ -188,20 +245,29 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
             </div>
           ) : null}
           <canvas aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
+          {!isFullscreen ? <button className="fullscreen-entry" onClick={() => { setControlsOpen(false); setIsFullscreen(true); }} ref={fullscreenEntryRef} type="button">전체 화면으로 그리기</button> : null}
         </div>
-        <nav aria-label="그림 편집 단계" className="editor-tabs">
-          <button aria-pressed={tab === 'draw'} onClick={() => setTab('draw')} type="button">그리기</button>
-          <button aria-pressed={tab === 'reference'} disabled={!referenceImageUrl} onClick={() => setTab('reference')} type="button">참고사진</button>
-          <button aria-pressed={tab === 'edit'} onClick={() => setTab('edit')} type="button">편집</button>
-        </nav>
-        <div className="draw-tools">
-          {tab === 'reference' ? (
-            <div className="reference-controls"><p>한 손가락으로 이동하고 두 손가락으로 확대·축소하세요.</p><label>확대<input max="3" min="0.6" onChange={(event) => setReferenceScale(Number(event.target.value))} step="0.1" type="range" value={referenceScale} /></label><button className="tool-button" onClick={() => { setReferenceOffset({ x: 0, y: 0 }); setReferenceScale(1); }} type="button">위치 초기화</button></div>
-          ) : (
-            <><div className="tool-row"><button className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button className="tool-button" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button">되돌리기</button><button className="tool-button" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button">다시 실행</button><button className="tool-button" onClick={clear} type="button">전체 삭제</button></div>
-            <div className="tool-row">{sketchColors.map((nextColor) => <button aria-label={`${nextColor.label} 색상`} aria-pressed={color === nextColor.value && !eraser} className={`color-swatch ${color === nextColor.value && !eraser ? 'is-active' : ''}`} key={nextColor.value} onClick={() => { setColor(nextColor.value); setEraser(false); setTab('draw'); }} style={{ backgroundColor: nextColor.value }} type="button" />)}<label className="line-width">굵기<input max="18" min="2" onChange={(event) => setLineWidth(Number(event.target.value))} type="range" value={lineWidth} /></label></div></>
-          )}
+        <div className="editor-control-panel" hidden={isFullscreen && !controlsOpen}>
+          <nav aria-label="그림 편집 단계" className="editor-tabs">
+            <button aria-pressed={tab === 'draw'} onClick={() => setTab('draw')} type="button">그리기</button>
+            <button aria-pressed={tab === 'reference'} disabled={!referenceImageUrl} onClick={() => setTab('reference')} type="button">참고사진</button>
+            <button aria-pressed={tab === 'edit'} onClick={() => setTab('edit')} type="button">편집</button>
+          </nav>
+          <div className="draw-tools">
+            {tab === 'reference' ? (
+              <div className="reference-controls"><p>한 손가락으로 이동하고 두 손가락으로 확대·축소하세요.</p><label>확대<input max="3" min="0.6" onChange={(event) => setReferenceScale(Number(event.target.value))} step="0.1" type="range" value={referenceScale} /></label><button className="tool-button" onClick={() => { setReferenceOffset({ x: 0, y: 0 }); setReferenceScale(1); }} type="button">위치 초기화</button></div>
+            ) : (
+              <><div className="tool-row"><button className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button className="tool-button" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button">되돌리기</button><button className="tool-button" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button">다시 실행</button><button className="tool-button" onClick={clear} type="button">전체 삭제</button></div>
+              <div className="tool-row">{sketchColors.map((nextColor) => <button aria-label={`${nextColor.label} 색상`} aria-pressed={color === nextColor.value && !eraser} className={`color-swatch ${color === nextColor.value && !eraser ? 'is-active' : ''}`} key={nextColor.value} onClick={() => { setColor(nextColor.value); setEraser(false); setTab('draw'); }} style={{ backgroundColor: nextColor.value }} type="button" />)}<label className="line-width">굵기<input max="18" min="2" onChange={(event) => setLineWidth(Number(event.target.value))} type="range" value={lineWidth} /></label></div></>
+            )}
+          </div>
         </div>
+        {isFullscreen ? (
+          <div className="fullscreen-controls">
+            <button aria-label="전체 화면 그리기 종료" onClick={() => { setControlsOpen(false); setIsFullscreen(false); }} ref={fullscreenExitRef} type="button"><Image alt="" height={30} src="/icons/fullscreen-back.webp" width={30} /></button>
+            <button aria-expanded={controlsOpen} aria-label={controlsOpen ? '그리기 도구 닫기' : '그리기 도구 열기'} onClick={() => setControlsOpen((current) => !current)} type="button"><Image alt="" height={30} src="/icons/drawing-controls.webp" width={30} /></button>
+          </div>
+        ) : null}
       </section>
     );
   },
