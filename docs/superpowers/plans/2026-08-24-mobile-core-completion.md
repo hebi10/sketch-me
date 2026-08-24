@@ -252,7 +252,7 @@
 
 - [ ] **Step 4: Impeccable detector 실행**
 
-  Run: `node C:/Users/박도영/.agents/skills/impeccable/scripts/detect.mjs --json src/app src/components`
+  Run: `node "$env:USERPROFILE/.agents/skills/impeccable/scripts/detect.mjs" --json src/app src/components`
 
 - [ ] **Step 5: 최종 확인과 커밋**
 

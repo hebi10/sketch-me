@@ -71,7 +71,7 @@
       "name": "Text Field",
       "kind": "input",
       "description": "모바일에서 충분한 높이를 가진 흰 종이 입력 필드다.",
-      "html": "<input class=\"ds-text-field\" placeholder=\"예: 도영\" />",
+      "html": "<input class=\"ds-text-field\" placeholder=\"내 이름\" />",
       "css": ".ds-text-field { box-sizing:border-box; width:100%; min-height:52px; padding:12px 14px; border:1px solid #d8d3c9; border-radius:8px; background:#fff; color:#181818; font:400 1rem 'Apple SD Gothic Neo','Malgun Gothic',sans-serif; } .ds-text-field:focus { border-color:#506f8f; outline:3px solid #dce5ee; }"
     },
     {

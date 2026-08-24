@@ -7,7 +7,7 @@ describe('createSketchbookDraft', () => {
     const draft = createSketchbookDraft({
       id: 'book_123',
       publicId: 'doyoung-abc123',
-      name: '  도영  ',
+      name: '  테스트사용자  ',
       manageTokenHash: 'hashed-token',
       ownerDrawingPath: 'sketchbooks/book_123/owner/original.png',
       createdAt: new Date('2026-08-24T00:00:00.000Z'),
@@ -16,7 +16,7 @@ describe('createSketchbookDraft', () => {
     expect(draft).toMatchObject({
       id: 'book_123',
       publicId: 'doyoung-abc123',
-      name: '도영',
+      name: '테스트사용자',
       manageTokenHash: 'hashed-token',
       participantLimit: 20,
       participantCount: 0,

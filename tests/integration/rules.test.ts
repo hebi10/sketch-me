@@ -35,7 +35,7 @@ describe('Firebase security rules', () => {
   it('direct client writes are denied for Firestore', async () => {
     const database = testEnvironment.unauthenticatedContext().firestore();
 
-    await assertFails(database.doc('sketchbooks/public-book').set({ name: '도영' }));
+    await assertFails(database.doc('sketchbooks/public-book').set({ name: '테스트사용자' }));
   });
 
   it('direct client uploads are denied for Storage', async () => {

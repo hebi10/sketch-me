@@ -15,7 +15,7 @@ describe('sketchbook input schemas', () => {
   });
 
   it('trims valid creator names and rejects names longer than 24 characters', () => {
-    expect(createSketchbookInputSchema.parse({ name: ' 도영 ', ownerImageDataUrl }).name).toBe('도영');
+    expect(createSketchbookInputSchema.parse({ name: ' 테스트사용자 ', ownerImageDataUrl }).name).toBe('테스트사용자');
     expect(() =>
       createSketchbookInputSchema.parse({ name: '가'.repeat(25), ownerImageDataUrl }),
     ).toThrow();

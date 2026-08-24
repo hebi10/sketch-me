@@ -150,6 +150,6 @@
 
 - [ ] **Step 4: Impeccable 검사와 커밋**
 
-  Run: `node C:/Users/박도영/.agents/skills/impeccable/scripts/detect.mjs --json src/app src/components`
+  Run: `node "$env:USERPROFILE/.agents/skills/impeccable/scripts/detect.mjs" --json src/app src/components`
 
   Commit: `test: verify mobile visual redesign`

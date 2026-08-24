@@ -8,10 +8,10 @@ const ownerImageDataUrl = `data:image/png;base64,${Buffer.from('owner-image').to
 
 describe('owner sketchbook creation', () => {
   it('requires the creator drawing and accepts an optional reference image', () => {
-    expect(createSketchbookInputSchema.safeParse({ name: '도영' }).success).toBe(false);
-    expect(createSketchbookInputSchema.safeParse({ name: '도영', ownerImageDataUrl }).success).toBe(true);
+    expect(createSketchbookInputSchema.safeParse({ name: '테스트사용자' }).success).toBe(false);
+    expect(createSketchbookInputSchema.safeParse({ name: '테스트사용자', ownerImageDataUrl }).success).toBe(true);
     expect(createSketchbookInputSchema.safeParse({
-      name: '도영',
+      name: '테스트사용자',
       ownerImageDataUrl,
       referenceImageDataUrl: `data:image/jpeg;base64,${Buffer.from('reference').toString('base64')}`,
     }).success).toBe(true);
@@ -26,7 +26,7 @@ describe('owner sketchbook creation', () => {
     const draft = createSketchbookDraft({
       id: 'book-1',
       publicId: 'public-1',
-      name: ' 도영 ',
+      name: ' 테스트사용자 ',
       manageTokenHash: 'hash',
       ownerDrawingPath: 'sketchbooks/book-1/owner/original.png',
       referenceImagePath: 'sketchbooks/book-1/reference/source',

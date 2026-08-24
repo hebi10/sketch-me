@@ -88,7 +88,7 @@ export function CreateSketchbookForm() {
         <h1 id="create-title">내 스캐치북 만들기</h1>
         <p>친구들이 부를 이름과, 내가 생각하는 내 모습을 남겨주세요.</p>
         <label className="field-label" htmlFor="sketchbook-name">이름 또는 애칭</label>
-        <input autoComplete="nickname" id="sketchbook-name" maxLength={24} name="name" onChange={(event) => setName(event.target.value)} placeholder="예: 도영" required value={name} />
+        <input autoComplete="nickname" id="sketchbook-name" maxLength={24} name="name" onChange={(event) => setName(event.target.value)} placeholder="내 이름" required value={name} />
       </section>
 
       <section className="reference-picker" aria-labelledby="reference-title">
