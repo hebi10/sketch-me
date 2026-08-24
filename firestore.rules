@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 모든 읽기·쓰기는 Next.js 서버(Route Handler/Server Action)를 통과합니다.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

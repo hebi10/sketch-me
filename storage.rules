@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 파일 업로드와 공개 URL 발급 역시 서버에서만 처리합니다.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
