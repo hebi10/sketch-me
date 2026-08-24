@@ -41,10 +41,10 @@ describe('Firebase security rules', () => {
   it('direct client uploads are denied for Storage', async () => {
     const bucket = testEnvironment.unauthenticatedContext().storage();
 
-    await assertFails(
-      bucket
-        .ref('sketchbooks/public-book/drawings/a.png')
-        .put(new Uint8Array([1, 2, 3]), { contentType: 'image/png' }),
-    );
+    const upload = bucket
+      .ref('sketchbooks/public-book/drawings/a.png')
+      .put(new Uint8Array([1, 2, 3]), { contentType: 'image/png' });
+
+    await assertFails(Promise.resolve(upload));
   });
 });

@@ -1,10 +1,40 @@
 import Image from 'next/image';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { findSketchbookByPublicId, listVisibleDrawings } from '@/lib/sketchbooks/repository';
+import { isSketchbookFull } from '@/lib/sketchbooks/capacity';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ publicId: string }>;
+}): Promise<Metadata> {
+  const { publicId } = await params;
+  const sketchbook = await findSketchbookByPublicId(publicId);
+  if (!sketchbook || sketchbook.status !== 'PUBLIC') return { title: '페이지를 찾을 수 없어요' };
+
+  const title = `${sketchbook.name}의 스케치북`;
+  const description = `${sketchbook.name}님을 기억나는 모습대로 그려주세요.`;
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: [{
+        url: `/api/sketchbooks/${publicId}/owner/image`,
+        width: 720,
+        height: 960,
+        alt: `${sketchbook.name}님의 스케치`,
+      }],
+    },
+  };
+}
 
 function timeAgo(createdAt: Date) {
   const elapsedHours = Math.max(1, Math.floor((Date.now() - createdAt.getTime()) / 3_600_000));
@@ -29,13 +59,14 @@ export default async function PublicSketchbookPage({
     .filter((drawing) => drawing.bestRank)
     .sort((left, right) => (left.bestRank ?? 5) - (right.bestRank ?? 5));
   const recentDrawing = drawings[0];
+  const isFull = isSketchbookFull(sketchbook);
 
   return (
     <main className="public-sketchbook-shell">
       <header className="public-header">
         <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">⌂</Link>
         <Link className="wordmark" href="/">스캐치북</Link>
-        <Link className="header-draw-link" href={`/s/${publicId}/draw`}>그리기</Link>
+        {isFull ? <span className="header-draw-link is-disabled">마감</span> : <Link className="header-draw-link" href={`/s/${publicId}/draw`}>그리기</Link>}
       </header>
 
       <section className="public-intro" aria-labelledby="public-title">
@@ -48,11 +79,16 @@ export default async function PublicSketchbookPage({
         </div>
         <figure className="owner-sketch">
           <span aria-hidden="true" className="paper-tape" />
-          <Image alt={`${sketchbook.name}님이 직접 그린 모습`} height={640} priority src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={480} />
+          <Image alt={`${sketchbook.name}님이 직접 그린 모습`} height={640} preload src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={480} />
         </figure>
       </section>
 
-      {submitted ? <p className="submission-success" role="status">그림을 남겼어요. 고마워요!</p> : null}
+      {submitted ? (
+        <div className="post-submit-action" role="status">
+          <p>그림을 남겼어요. 고마워요!</p>
+          <Link className="button button--secondary" href="/create">내 스케치북 만들기</Link>
+        </div>
+      ) : null}
 
       <section className="friend-board" aria-labelledby="friend-drawings-heading">
         <div className="section-title-row">
@@ -67,7 +103,7 @@ export default async function PublicSketchbookPage({
           </article>
         )) : <p className="empty-drawings">아직 첫 번째 그림을 기다리고 있어요.</p>}
         </div>
-        <Link className="button button--primary board-draw-button" href={`/s/${publicId}/draw`}>✎ 그림 남기기</Link>
+        {isFull ? <span aria-disabled="true" className="button button--disabled board-draw-button">친구 그림 접수 마감</span> : <Link className="button button--primary board-draw-button" href={`/s/${publicId}/draw`}>✎ 그림 남기기</Link>}
         <div className="board-progress"><span>친구 그림 {sketchbook.participantLimit}개까지 무료</span><strong>{sketchbook.participantCount} / {sketchbook.participantLimit}</strong></div>
       </section>
 
@@ -101,7 +137,7 @@ export default async function PublicSketchbookPage({
       </section>
 
       <div className="sticky-draw-action">
-        <Link className="button button--primary" href={`/s/${publicId}/draw`}>친구 스케치 하기</Link>
+        {isFull ? <span aria-disabled="true" className="button button--disabled">친구 그림 접수 마감</span> : <Link className="button button--primary" href={`/s/${publicId}/draw`}>친구 스케치 하기</Link>}
       </div>
     </main>
   );

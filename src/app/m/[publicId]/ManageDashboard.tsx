@@ -2,9 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import type { Drawing } from '@/lib/domain/types';
+import { ShareSketchbookButton } from './ShareSketchbookButton';
 
 interface ManageDashboardProps {
   publicId: string;
@@ -15,8 +17,11 @@ interface ManageDashboardProps {
 }
 
 export function ManageDashboard({ publicId, name, participantCount, participantLimit, drawings }: ManageDashboardProps) {
+  const router = useRouter();
   const [limit, setLimit] = useState(participantLimit);
   const [message, setMessage] = useState<string | null>(null);
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const items = drawings.filter((drawing) => drawing.status !== 'DELETED');
 
   async function updateDrawing(drawingId: string, body: Record<string, unknown>) {
@@ -55,6 +60,21 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
     setMessage('모의 결제가 완료되어 친구 그림 20개가 추가됐어요.');
   }
 
+  async function deleteSketchbook() {
+    setIsDeleting(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/manage/${publicId}/sketchbook`, { method: 'DELETE' });
+      const result = await response.json().catch(() => ({})) as { message?: string };
+      if (!response.ok) throw new Error(result.message ?? '스케치북을 삭제하지 못했습니다.');
+      router.replace('/');
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '스케치북을 삭제하지 못했습니다.');
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <main className="manage-shell">
       <header className="public-header">
@@ -69,17 +89,17 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
       </section>
       {message ? <p className="submission-success" role="status">{message}</p> : null}
       <div className="manage-actions">
-        <Link className="button button--secondary" href={`/s/${publicId}`}>친구에게 공유하기</Link>
+        <ShareSketchbookButton name={name} publicId={publicId} />
         <Link className="button button--primary" href={`/m/${publicId}/share`}>스토리 이미지 만들기</Link>
       </div>
       <section className="manage-drawings">
         <h2>친구들이 그린 나</h2>
         <div className="friend-drawing-grid">
-          {items.length ? items.map((drawing) => (
+          {items.length ? items.map((drawing, index) => (
             <article className="friend-drawing-card manage-drawing-card" key={drawing.id}>
               <div className="manage-drawing-image">
                 {drawing.bestRank ? <span className="best-badge">BEST {drawing.bestRank}</span> : null}
-                <Image alt={`${drawing.authorName}님의 그림`} height={340} src={`/api/manage/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} />
+                <Image alt={`${drawing.authorName}님의 그림`} height={340} loading={index === 0 ? 'eager' : 'lazy'} src={`/api/manage/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} />
               </div>
               <p>{drawing.authorName}</p>
               {drawing.message ? <span>{drawing.message}</span> : null}
@@ -102,6 +122,18 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
             </article>
           )) : <p className="empty-drawings">아직 친구가 남긴 그림이 없어요.</p>}
         </div>
+      </section>
+      <section className="delete-sketchbook" aria-labelledby="delete-sketchbook-title">
+        <h2 id="delete-sketchbook-title">스케치북 삭제</h2>
+        <p>참고 사진과 친구 그림을 포함한 모든 데이터가 영구 삭제되며 되돌릴 수 없어요.</p>
+        {deleteArmed ? (
+          <div className="delete-confirm-actions">
+            <button className="button button--danger" disabled={isDeleting} onClick={deleteSketchbook} type="button">
+              {isDeleting ? '삭제하는 중...' : '정말 삭제하기'}
+            </button>
+            <button className="button button--secondary" disabled={isDeleting} onClick={() => setDeleteArmed(false)} type="button">취소</button>
+          </div>
+        ) : <button className="button button--secondary danger-outline" onClick={() => setDeleteArmed(true)} type="button">스케치북 전체 삭제</button>}
       </section>
     </main>
   );

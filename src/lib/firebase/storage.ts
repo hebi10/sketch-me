@@ -7,15 +7,15 @@ export function assertSupportedImageType(contentType: string) {
 }
 
 export function getReferenceImagePath(sketchbookId: string) {
-  return `sketchbooks/${sketchbookId}/reference/source`;
+  return `sketchbooks/${sketchbookId}/reference/source.webp`;
 }
 
 export function getOwnerDrawingPath(sketchbookId: string) {
-  return `sketchbooks/${sketchbookId}/owner/original.png`;
+  return `sketchbooks/${sketchbookId}/owner/original.webp`;
 }
 
 export function getDrawingImagePath(sketchbookId: string, drawingId: string) {
-  return `sketchbooks/${sketchbookId}/drawings/${drawingId}/original`;
+  return `sketchbooks/${sketchbookId}/drawings/${drawingId}/original.webp`;
 }
 
 export function getShareImagePath(sketchbookId: string, shareImageId: string) {

@@ -197,3 +197,8 @@ export async function addMockPurchase(sketchbook: Sketchbook) {
     transaction.set(purchaseReference, { orderId: `mock_${purchaseReference.id}`, provider: 'MOCK', productType: 'PARTICIPANT_20', amount: 990, additionalLimit: 20, paymentStatus: 'SUCCEEDED', paidAt: new Date(), createdAt: new Date() });
   });
 }
+
+export async function deleteSketchbookPermanently(sketchbookId: string) {
+  const firestore = getAdminFirestore();
+  await firestore.recursiveDelete(firestore.collection(collectionName).doc(sketchbookId));
+}

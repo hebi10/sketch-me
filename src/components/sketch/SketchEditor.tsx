@@ -10,10 +10,10 @@ import {
   undoSnapshot,
   type CanvasHistory,
 } from './canvas-history';
+import { sketchColors } from './colors';
 
 const width = 720;
 const height = 960;
-const colors = ['#181818', '#6e6e6e', '#5c6f8f', '#a35d29', '#c6a878'];
 
 export interface SketchEditorHandle {
   exportDrawing: () => string | null;
@@ -34,7 +34,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const lastPointRef = useRef<{ x: number; y: number } | null>(null);
     const referencePointers = useRef(new Map<number, { x: number; y: number }>());
     const [tab, setTab] = useState<EditorTab>('draw');
-    const [color, setColor] = useState(colors[0]);
+    const [color, setColor] = useState<string>(sketchColors[0].value);
     const [lineWidth, setLineWidth] = useState(5);
     const [eraser, setEraser] = useState(false);
     const [history, setHistory] = useState<CanvasHistory | null>(null);
@@ -85,7 +85,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
         outputContext.fillStyle = '#ffffff';
         outputContext.fillRect(0, 0, width, height);
         outputContext.drawImage(canvas, 0, 0);
-        return output.toDataURL('image/png');
+        return output.toDataURL('image/webp', 0.76);
       },
     }));
 
@@ -199,7 +199,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
             <div className="reference-controls"><p>한 손가락으로 이동하고 두 손가락으로 확대·축소하세요.</p><label>확대<input max="3" min="0.6" onChange={(event) => setReferenceScale(Number(event.target.value))} step="0.1" type="range" value={referenceScale} /></label><button className="tool-button" onClick={() => { setReferenceOffset({ x: 0, y: 0 }); setReferenceScale(1); }} type="button">위치 초기화</button></div>
           ) : (
             <><div className="tool-row"><button className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button className="tool-button" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button">되돌리기</button><button className="tool-button" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button">다시 실행</button><button className="tool-button" onClick={clear} type="button">전체 삭제</button></div>
-            <div className="tool-row">{colors.map((nextColor) => <button aria-label={`${nextColor} 색상`} aria-pressed={color === nextColor && !eraser} className={`color-swatch ${color === nextColor && !eraser ? 'is-active' : ''}`} key={nextColor} onClick={() => { setColor(nextColor); setEraser(false); setTab('draw'); }} style={{ backgroundColor: nextColor }} type="button" />)}<label className="line-width">굵기<input max="18" min="2" onChange={(event) => setLineWidth(Number(event.target.value))} type="range" value={lineWidth} /></label></div></>
+            <div className="tool-row">{sketchColors.map((nextColor) => <button aria-label={`${nextColor.label} 색상`} aria-pressed={color === nextColor.value && !eraser} className={`color-swatch ${color === nextColor.value && !eraser ? 'is-active' : ''}`} key={nextColor.value} onClick={() => { setColor(nextColor.value); setEraser(false); setTab('draw'); }} style={{ backgroundColor: nextColor.value }} type="button" />)}<label className="line-width">굵기<input max="18" min="2" onChange={(event) => setLineWidth(Number(event.target.value))} type="range" value={lineWidth} /></label></div></>
           )}
         </div>
       </section>

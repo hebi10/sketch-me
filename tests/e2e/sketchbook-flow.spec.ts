@@ -87,6 +87,13 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   if (!downloadPath) throw new Error('다운로드된 PNG 경로를 찾을 수 없습니다.');
   expectPngSize(await readFile(downloadPath), 1080, 1920);
 
+  await recoveredPage.goto(`/m/${recoveryPublicId}`);
+  await recoveredPage.getByRole('button', { name: '스케치북 전체 삭제' }).click();
+  await recoveredPage.getByRole('button', { name: '정말 삭제하기' }).click();
+  await expect(recoveredPage).toHaveURL('/');
+  await friendPage.goto(publicPath!);
+  await expect(friendPage.getByRole('heading', { name: '페이지를 찾을 수 없어요' })).toBeVisible();
+
   await friendContext.close();
   await recoveredContext.close();
   await ownerContext.close();

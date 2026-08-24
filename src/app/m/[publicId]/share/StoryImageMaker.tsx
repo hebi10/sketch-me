@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { STORY_HEIGHT, STORY_WIDTH, storySlots, type StorySlot } from '@/lib/share/story-layout';
+import { storyStyle } from '@/lib/share/story-style';
 
 export interface StoryDrawing {
   rank: 1 | 2 | 3 | 4;
@@ -46,15 +47,15 @@ export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerPr
       const context = canvas.getContext('2d');
       if (!context) throw new Error('이미지 편집 기능을 사용할 수 없습니다.');
 
-      context.fillStyle = '#f7f4ee';
+      context.fillStyle = storyStyle.background;
       context.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
-      context.fillStyle = '#181818';
+      context.fillStyle = storyStyle.ink;
       context.textAlign = 'center';
-      context.font = '600 76px Arial, sans-serif';
+      context.font = `600 76px ${storyStyle.fontFamily}`;
       context.fillText('친구들이 그린 나', 540, 170);
-      context.font = '700 104px Arial, sans-serif';
+      context.font = `700 104px ${storyStyle.fontFamily}`;
       context.fillText(`${name} BEST 4`, 540, 300);
-      context.strokeStyle = '#5c6f8f';
+      context.strokeStyle = storyStyle.accent;
       context.lineWidth = 10;
       context.beginPath();
       context.moveTo(300, 345);
@@ -64,7 +65,7 @@ export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerPr
       for (const slot of storySlots) {
         context.fillStyle = '#ffffff';
         context.fillRect(slot.x, slot.y, slot.width, slot.height);
-        context.strokeStyle = '#d8d3c9';
+        context.strokeStyle = storyStyle.line;
         context.lineWidth = 4;
         context.strokeRect(slot.x, slot.y, slot.width, slot.height);
         const drawing = drawings.find((item) => item.rank === slot.rank);
@@ -72,27 +73,27 @@ export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerPr
           const image = await loadImage(drawing.imageUrl);
           drawContainedImage(context, image, slot);
         } else {
-          context.fillStyle = '#6e6e6e';
-          context.font = '34px Arial, sans-serif';
+          context.fillStyle = storyStyle.muted;
+          context.font = `34px ${storyStyle.fontFamily}`;
           context.fillText('아직 선정 전', slot.x + slot.width / 2, slot.y + slot.height / 2);
         }
-        context.fillStyle = '#5c6f8f';
+        context.fillStyle = storyStyle.accent;
         context.fillRect(slot.x, slot.y, slot.rank === 1 ? 150 : 112, slot.rank === 1 ? 58 : 48);
         context.fillStyle = '#ffffff';
-        context.font = slot.rank === 1 ? '600 30px Arial, sans-serif' : '600 24px Arial, sans-serif';
+        context.font = slot.rank === 1 ? `600 30px ${storyStyle.fontFamily}` : `600 24px ${storyStyle.fontFamily}`;
         context.textAlign = 'left';
         context.fillText(`BEST ${slot.rank}`, slot.x + 14, slot.y + (slot.rank === 1 ? 39 : 33));
         context.textAlign = 'center';
       }
 
       const absolutePublicUrl = new URL(publicUrl, window.location.origin).href;
-      context.fillStyle = '#5c6f8f';
+      context.fillStyle = storyStyle.accent;
       context.fillRect(105, 1690, 870, 112);
       context.fillStyle = '#ffffff';
-      context.font = '600 39px Arial, sans-serif';
+      context.font = `600 39px ${storyStyle.fontFamily}`;
       context.fillText('나도 스케치북에 그림 남기기', 540, 1760);
-      context.fillStyle = '#6e6e6e';
-      context.font = '28px Arial, sans-serif';
+      context.fillStyle = storyStyle.muted;
+      context.font = `28px ${storyStyle.fontFamily}`;
       context.fillText(absolutePublicUrl, 540, 1850);
 
       const link = document.createElement('a');

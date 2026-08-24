@@ -22,9 +22,8 @@ export default function LandingPage() {
           <Image
             alt="친구들이 연필로 그린 네 장의 초상화 카드"
             height={1400}
-            priority
-            src="/brand/landing-sketch-collage.png?v=2"
-            unoptimized
+            preload
+            src="/brand/landing-sketch-collage.webp"
             width={1120}
           />
         </figure>
@@ -36,6 +35,7 @@ export default function LandingPage() {
           <p className="free-note">친구 그림 20개까지 무료</p>
         </div>
       </section>
+      <footer className="marketing-footer"><Link href="/privacy">개인정보 처리 안내</Link></footer>
     </main>
   );
 }

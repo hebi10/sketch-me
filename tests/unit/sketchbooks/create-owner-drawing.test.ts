@@ -18,8 +18,8 @@ describe('owner sketchbook creation', () => {
   });
 
   it('stores creator assets in stable sketchbook paths', () => {
-    expect(getOwnerDrawingPath('book-1')).toBe('sketchbooks/book-1/owner/original.png');
-    expect(getReferenceImagePath('book-1')).toBe('sketchbooks/book-1/reference/source');
+    expect(getOwnerDrawingPath('book-1')).toBe('sketchbooks/book-1/owner/original.webp');
+    expect(getReferenceImagePath('book-1')).toBe('sketchbooks/book-1/reference/source.webp');
   });
 
   it('records the creator drawing and enabled reference image', () => {

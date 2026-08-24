@@ -5,6 +5,8 @@ import { NextResponse } from 'next/server';
 import { createSketchbookInputSchema } from '@/lib/domain/schemas';
 import { getAdminStorage } from '@/lib/firebase/admin';
 import { getOwnerDrawingPath, getReferenceImagePath } from '@/lib/firebase/storage';
+import { ImageOptimizationError, optimizeImageForStorage } from '@/lib/images/optimize';
+import { enforcePublicMutationLimit } from '@/lib/security/rate-limit';
 import {
   createManageCookieValue,
   createManageToken,
@@ -28,6 +30,9 @@ function decodeImageDataUrl(imageDataUrl: string) {
 }
 
 export async function POST(request: Request) {
+  const rateLimitResponse = enforcePublicMutationLimit(request, 'createSketchbook');
+  if (rateLimitResponse) return rateLimitResponse;
+
   const payload = await request.json().catch(() => null);
   const parsed = createSketchbookInputSchema.safeParse(payload);
 
@@ -55,11 +60,11 @@ export async function POST(request: Request) {
   const bucket = getAdminStorage().bucket();
   const uploadedPaths: string[] = [];
   try {
-    const ownerImage = decodeImageDataUrl(parsed.data.ownerImageDataUrl);
+    const ownerImage = await optimizeImageForStorage(decodeImageDataUrl(parsed.data.ownerImageDataUrl).buffer, 'sketch');
     await bucket.file(ownerDrawingPath).save(ownerImage.buffer, { metadata: { contentType: ownerImage.contentType, cacheControl: 'private, max-age=0' } });
     uploadedPaths.push(ownerDrawingPath);
     if (referenceImagePath && parsed.data.referenceImageDataUrl) {
-      const referenceImage = decodeImageDataUrl(parsed.data.referenceImageDataUrl);
+      const referenceImage = await optimizeImageForStorage(decodeImageDataUrl(parsed.data.referenceImageDataUrl).buffer, 'reference');
       await bucket.file(referenceImagePath).save(referenceImage.buffer, { metadata: { contentType: referenceImage.contentType, cacheControl: 'private, max-age=0' } });
       uploadedPaths.push(referenceImagePath);
     }
@@ -67,7 +72,7 @@ export async function POST(request: Request) {
   } catch (error) {
     await Promise.all(uploadedPaths.map((path) => bucket.file(path).delete({ ignoreNotFound: true })));
     const message = error instanceof Error ? error.message : '스캐치북을 만들지 못했습니다.';
-    return NextResponse.json({ message }, { status: 500 });
+    return NextResponse.json({ message }, { status: error instanceof ImageOptimizationError ? 400 : 500 });
   }
 
   const response = NextResponse.json({

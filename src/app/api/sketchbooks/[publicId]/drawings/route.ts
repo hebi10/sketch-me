@@ -6,6 +6,8 @@ import { submitDrawingPayloadSchema } from '@/lib/domain/schemas';
 import { createDrawingDraft } from '@/lib/drawings/create';
 import { getAdminStorage } from '@/lib/firebase/admin';
 import { getDrawingImagePath } from '@/lib/firebase/storage';
+import { ImageOptimizationError, optimizeImageForStorage } from '@/lib/images/optimize';
+import { enforcePublicMutationLimit } from '@/lib/security/rate-limit';
 import { findSketchbookByPublicId, saveDrawingWithinLimit } from '@/lib/sketchbooks/repository';
 
 function dataUrlToBuffer(imageDataUrl: string) {
@@ -20,6 +22,9 @@ function dataUrlToBuffer(imageDataUrl: string) {
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
+  const rateLimitResponse = enforcePublicMutationLimit(request, 'submitDrawing');
+  if (rateLimitResponse) return rateLimitResponse;
+
   const { publicId } = await params;
   const payload = await request.json().catch(() => null);
   const parsed = submitDrawingPayloadSchema.safeParse(payload);
@@ -42,11 +47,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
 
   const drawingId = randomUUID();
   const imagePath = getDrawingImagePath(sketchbook.id, drawingId);
-  const { buffer, contentType } = dataUrlToBuffer(parsed.data.imageDataUrl);
-
-  await getAdminStorage().bucket().file(imagePath).save(buffer, {
-    metadata: { contentType, cacheControl: 'private, max-age=0' },
-  });
+  let optimizedImage;
+  try {
+    optimizedImage = await optimizeImageForStorage(dataUrlToBuffer(parsed.data.imageDataUrl).buffer, 'sketch');
+    await getAdminStorage().bucket().file(imagePath).save(optimizedImage.buffer, {
+      metadata: { contentType: optimizedImage.contentType, cacheControl: 'private, max-age=0' },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '그림을 변환하지 못했습니다.';
+    return NextResponse.json({ message }, { status: error instanceof ImageOptimizationError ? 400 : 500 });
+  }
 
   const drawing = createDrawingDraft({
     id: drawingId,
