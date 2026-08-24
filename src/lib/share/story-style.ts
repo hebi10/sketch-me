@@ -4,5 +4,5 @@ export const storyStyle = {
   muted: '#6e6e6e',
   line: '#d8d3c9',
   accent: '#506f8f',
-  fontFamily: '"Malgun Gothic", "Apple SD Gothic Neo", sans-serif',
+  fontFamily: '"Gaegu", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
 } as const;

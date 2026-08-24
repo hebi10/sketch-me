@@ -47,6 +47,8 @@ export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerPr
       const context = canvas.getContext('2d');
       if (!context) throw new Error('이미지 편집 기능을 사용할 수 없습니다.');
 
+      await document.fonts.ready;
+
       context.fillStyle = storyStyle.background;
       context.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
       context.fillStyle = storyStyle.ink;

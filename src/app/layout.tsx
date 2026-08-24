@@ -1,6 +1,15 @@
 import type { Metadata, Viewport } from 'next';
+import { Gaegu } from 'next/font/google';
 import type { PropsWithChildren } from 'react';
 import './globals.css';
+
+const gaegu = Gaegu({
+  display: 'swap',
+  fallback: ['Apple SD Gothic Neo', 'Malgun Gothic', 'sans-serif'],
+  subsets: ['latin'],
+  variable: '--font-handwriting',
+  weight: ['400', '700'],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
@@ -25,7 +34,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: PropsWithChildren) {
   return (
-    <html lang="ko">
+    <html className={gaegu.variable} lang="ko">
       <body>{children}</body>
     </html>
   );

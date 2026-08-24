@@ -13,23 +13,23 @@ colors:
   danger: "#b74b4b"
 typography:
   display:
-    fontFamily: "Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, sans-serif"
+    fontFamily: "Gaegu, Apple SD Gothic Neo, Malgun Gothic, sans-serif"
     fontSize: "clamp(2.05rem, 9.2vw, 3.35rem)"
     fontWeight: 700
     lineHeight: 1.16
     letterSpacing: "-0.055em"
   headline:
-    fontFamily: "Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, sans-serif"
+    fontFamily: "Gaegu, Apple SD Gothic Neo, Malgun Gothic, sans-serif"
     fontSize: "clamp(1.65rem, 7.5vw, 2.75rem)"
     fontWeight: 700
     lineHeight: 1.16
   body:
-    fontFamily: "Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, sans-serif"
+    fontFamily: "Gaegu, Apple SD Gothic Neo, Malgun Gothic, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.7
   label:
-    fontFamily: "Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, sans-serif"
+    fontFamily: "Gaegu, Apple SD Gothic Neo, Malgun Gothic, sans-serif"
     fontSize: "0.82rem"
     fontWeight: 700
     lineHeight: 1.4
@@ -100,10 +100,10 @@ components:
 
 ## Typography
 
-**Display Font:** Apple SD Gothic Neo (Malgun Gothic, Noto Sans KR fallback)
-**Body Font:** Apple SD Gothic Neo (Malgun Gothic, Noto Sans KR fallback)
+**Display Font:** Gaegu 700 (Apple SD Gothic Neo, Malgun Gothic fallback)
+**Body Font:** Gaegu 400 (Apple SD Gothic Neo, Malgun Gothic fallback)
 
-**Character:** 별도 웹폰트 다운로드 없이 기기에서 선명하게 읽히는 한국어 시스템 글꼴을 사용한다. 큰 제목은 굵고 촘촘하지만 본문은 가볍고 여유 있게 유지한다.
+**Character:** 무료 한글 손글씨 폰트 Gaegu를 자체 호스팅해 스케치북의 손맛을 일관되게 전달한다. 큰 제목은 700으로 또렷하게, 본문은 400과 넉넉한 줄 간격으로 읽기 쉽게 유지한다.
 
 ### Hierarchy
 
@@ -138,7 +138,7 @@ components:
 ### Buttons
 
 - **Shape:** 과장되지 않은 8px 모서리와 최소 48px 높이
-- **Primary:** 스케치 블루 바탕, 흰 글자, 600 굵기
+- **Primary:** 스케치 블루 바탕, 흰 글자, 700 굵기
 - **Hover / Focus:** 더 깊은 블루로 변하고, 포커스는 연한 블루 외곽선으로 표시
 - **Secondary:** 흰 종이 바탕과 1px 연필선, 잉크 텍스트
 
