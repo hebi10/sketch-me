@@ -91,6 +91,39 @@ a { color: inherit; text-decoration: none; }
 .field-hint { color: var(--muted); font-size: 0.82rem; margin: 0; }
 .form-error { color: var(--danger); font-size: 0.88rem; margin: 0; }
 
+.public-sketchbook-shell, .draw-shell { margin: 0 auto; max-width: 640px; min-height: 100vh; padding: 20px 20px 112px; }
+.public-header, .draw-header { align-items: center; display: flex; justify-content: space-between; min-height: 48px; }
+.public-header span { color: var(--muted); font-size: 0.82rem; }
+.public-intro { padding: 40px 0 28px; }
+.public-intro h1 { font-size: clamp(2.2rem, 9vw, 3.6rem); letter-spacing: -0.045em; line-height: 1.12; margin: 0; }
+.public-intro > p:not(.eyebrow):not(.participant-copy) { color: var(--muted); line-height: 1.6; margin: 14px 0 0; }
+.participant-copy { color: var(--accent); font-size: 0.92rem; margin: 22px 0 0; }
+.submission-success { background: #eaf3eb; border: 1px solid var(--success); color: #285132; margin: 0 0 18px; padding: 12px 14px; }
+.friend-drawing-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.friend-drawing-card { background: var(--canvas); border: 1px solid var(--line); padding: 8px; }
+.friend-drawing-card img { display: block; height: auto; width: 100%; }
+.friend-drawing-card p { font-size: 0.9rem; margin: 10px 2px 3px; }
+.friend-drawing-card span, .empty-drawings { color: var(--muted); font-size: 0.8rem; }
+.empty-drawings { grid-column: 1 / -1; margin: 32px 0; text-align: center; }
+.sticky-draw-action { background: linear-gradient(transparent, var(--paper) 30%); bottom: 0; left: 0; padding: 24px 20px 20px; position: fixed; right: 0; }
+.sticky-draw-action .button { margin: 0 auto; max-width: 600px; width: 100%; }
+.draw-header { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.draw-header p { font-size: 1rem; margin: 0; }
+.drawing-canvas { background: var(--canvas); border: 1px solid var(--line); display: block; height: auto; touch-action: none; width: 100%; }
+.draw-tools { border: 1px solid var(--line); border-top: 0; padding: 12px; }
+.tool-row { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+.tool-row + .tool-row { margin-top: 12px; }
+.tool-button { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); cursor: pointer; font-size: 0.82rem; min-height: 34px; padding: 6px 8px; }
+.tool-button.is-active { border-color: var(--accent); color: var(--accent); }
+.color-swatch { border: 2px solid var(--canvas); border-radius: 50%; cursor: pointer; height: 26px; outline: 1px solid var(--line); width: 26px; }
+.color-swatch.is-active { outline: 2px solid var(--ink); }
+.line-width { align-items: center; color: var(--muted); display: flex; font-size: 0.82rem; gap: 6px; margin-left: auto; }
+.line-width input { accent-color: var(--accent); max-width: 110px; }
+.drawing-submit-form { display: grid; gap: 8px; margin-top: 24px; }
+.drawing-submit-form input, .drawing-submit-form textarea { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); padding: 10px 12px; }
+.drawing-submit-form textarea { resize: vertical; }
+.drawing-submit-form .button { margin-top: 8px; }
+
 @media (max-width: 720px) {
   .marketing-shell { padding: 20px; }
   .header-note { display: none; }
@@ -100,4 +133,5 @@ a { color: inherit; text-decoration: none; }
   .drawing-stack { max-width: 360px; }
   .sample-drawing { min-height: 150px; padding: 14px; }
   .portrait-mark { min-height: 100px; }
+  .public-sketchbook-shell, .draw-shell { padding-inline: 16px; }
 }

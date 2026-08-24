@@ -13,3 +13,13 @@ export const submitDrawingInputSchema = z.object({
   imagePath: z.string().startsWith('sketchbooks/'),
   usedReferenceImage: z.boolean(),
 });
+
+export const submitDrawingPayloadSchema = z.object({
+  authorName: z.string().trim().min(1, '이름을 입력해 주세요.').max(24, '이름은 24자 이내로 입력해 주세요.'),
+  message: z.string().trim().max(120, '한마디는 120자 이내로 입력해 주세요.').optional(),
+  imageDataUrl: z
+    .string()
+    .regex(/^data:image\/(png|jpeg|webp);base64,/, '그림 데이터를 다시 확인해 주세요.')
+    .max(2_800_000, '그림 파일은 2MB 이하로 올려주세요.'),
+  usedReferenceImage: z.boolean().default(false),
+});
