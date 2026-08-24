@@ -19,7 +19,10 @@ export async function GET(
     return new NextResponse('유효하지 않은 관리 복구 링크입니다.', { status: 403 });
   }
 
-  const response = NextResponse.redirect(new URL(`/m/${publicId}`, request.url));
+  const response = new NextResponse(null, {
+    status: 303,
+    headers: { Location: `/m/${publicId}` },
+  });
   response.cookies.set({
     name: MANAGE_COOKIE_NAME,
     value: createManageCookieValue(publicId, token),

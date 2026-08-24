@@ -221,6 +221,10 @@ a { color: inherit; text-decoration: none; }
 @media (orientation: landscape) and (max-height: 500px) {
   .landing-hero { min-height: auto; }
   .public-intro { padding-block: 22px; }
-  .draw-header { position: static; }
+  .draw-shell { max-width: 920px; }
+  .draw-header { margin-bottom: 8px; position: static; }
+  .draw-shell .sketch-editor { align-items: start; display: grid; gap: 0 12px; grid-template-columns: minmax(220px, .7fr) minmax(340px, 1.3fr); }
+  .draw-shell .sketch-stage { grid-row: 1 / 3; justify-self: center; max-height: calc(100dvh - 96px); width: min(100%, calc((100dvh - 96px) * .75)); }
+  .draw-shell .editor-tabs { border-top: 1px solid var(--line); }
   .sticky-draw-action { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 }

@@ -15,12 +15,15 @@ interface StoryImageMakerProps {
   publicUrl: string;
 }
 
-function loadImage(source: string) {
+async function loadImage(source: string) {
+  const response = await fetch(source, { credentials: 'same-origin' });
+  if (!response.ok) throw new Error('BEST 그림을 불러오지 못했습니다.');
+  const objectUrl = URL.createObjectURL(await response.blob());
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new window.Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('BEST 그림을 불러오지 못했습니다.'));
-    image.src = source;
+    image.onload = () => { URL.revokeObjectURL(objectUrl); resolve(image); };
+    image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('BEST 그림을 불러오지 못했습니다.')); };
+    image.src = objectUrl;
   });
 }
 
