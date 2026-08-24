@@ -89,6 +89,7 @@ a { color: inherit; text-decoration: none; }
 .create-intro input { background: var(--canvas); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 1rem; min-height: 52px; padding: 12px 14px; }
 .create-intro input:focus { border-color: var(--accent); outline: 3px solid color-mix(in srgb, var(--accent) 18%, white); }
 .field-hint { color: var(--muted); font-size: 0.82rem; margin: 0; }
+.form-error { color: var(--danger); font-size: 0.88rem; margin: 0; }
 
 @media (max-width: 720px) {
   .marketing-shell { padding: 20px; }
