@@ -70,7 +70,7 @@ a { color: inherit; text-decoration: none; }
 .landing-hero { align-items: center; display: grid; gap: 48px; grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr); min-height: calc(100vh - 110px); padding: 32px 0 64px; }
 .landing-copy { max-width: 560px; }
 .eyebrow { color: var(--accent); font-size: 0.9rem; font-weight: 700; margin: 0 0 18px; }
-.landing-copy h1 { font-size: clamp(2.15rem, 7vw, 3.75rem); letter-spacing: -0.035em; line-height: 1.1; margin: 0; max-width: 10ch; }
+.landing-copy h1 { font-size: clamp(2.15rem, 7vw, 3.75rem); letter-spacing: -0.03em; line-height: 1.1; margin: 0; max-width: 10ch; }
 .landing-copy > p:not(.eyebrow):not(.free-note) { color: var(--muted); font-size: 1.05rem; line-height: 1.7; margin: 24px 0; }
 .landing-cta { margin-bottom: 12px; min-width: min(100%, 260px); }
 .free-note { margin: 0; }
@@ -87,7 +87,7 @@ a { color: inherit; text-decoration: none; }
 .form-shell { margin: 0 auto; max-width: 650px; min-height: 100vh; padding: 24px; }
 .simple-header { padding: 4px 0 44px; }
 .create-intro { display: grid; gap: 12px; max-width: 430px; }
-.create-intro h1 { font-size: clamp(1.9rem, 8vw, 3.25rem); letter-spacing: -0.035em; line-height: 1.14; margin: 0; }
+.create-intro h1 { font-size: clamp(1.9rem, 8vw, 3.25rem); letter-spacing: -0.03em; line-height: 1.14; margin: 0; }
 .create-intro > p:not(.eyebrow):not(.field-hint) { color: var(--muted); line-height: 1.6; margin: 4px 0 20px; }
 .field-label { font-size: 0.92rem; font-weight: 700; margin-top: 8px; }
 .create-intro input { background: var(--canvas); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-size: 1rem; min-height: 52px; padding: 12px 14px; }
@@ -103,7 +103,7 @@ a { color: inherit; text-decoration: none; }
 .section-heading { margin-bottom: 12px; }
 .create-submit { width: 100%; }
 .create-complete { display: grid; gap: 14px; padding: 48px 0; }
-.create-complete h1 { font-size: clamp(1.85rem, 8vw, 3.15rem); letter-spacing: -.035em; line-height: 1.14; margin: 0; }
+.create-complete h1 { font-size: clamp(1.85rem, 8vw, 3.15rem); letter-spacing: -.03em; line-height: 1.14; margin: 0; }
 .create-complete > p:not(.eyebrow) { color: var(--muted); line-height: 1.6; margin: 0 0 10px; }
 .create-complete input { background: var(--canvas); border: 1px solid var(--line); min-height: 52px; overflow: hidden; padding: 12px; text-overflow: ellipsis; width: 100%; }
 
@@ -112,12 +112,9 @@ a { color: inherit; text-decoration: none; }
 .public-header > a { align-items: center; display: inline-flex; min-height: 44px; }
 .public-header span { color: var(--muted); font-size: 0.82rem; }
 .public-intro { padding: 40px 0 28px; }
-.public-intro h1 { font-size: clamp(1.9rem, 8vw, 3.25rem); letter-spacing: -0.035em; line-height: 1.14; margin: 0; }
+.public-intro h1 { font-size: clamp(1.9rem, 8vw, 3.25rem); letter-spacing: -0.03em; line-height: 1.14; margin: 0; }
 .public-intro > p:not(.eyebrow):not(.participant-copy) { color: var(--muted); line-height: 1.6; margin: 14px 0 0; }
 .participant-copy { color: var(--accent); font-size: 0.92rem; margin: 22px 0 0; }
-.owner-sketch { align-items: center; border-block: 1px solid var(--line); display: grid; gap: 18px; grid-template-columns: minmax(0, .75fr) minmax(0, 1fr); margin-bottom: 32px; padding-block: 24px; }
-.owner-sketch h2 { font-size: clamp(1.3rem, 4.5vw, 1.85rem); letter-spacing: -.025em; margin: 0; }
-.owner-sketch img { background: var(--canvas); border: 1px solid var(--line); display: block; height: auto; width: 100%; }
 .public-section-title { font-size: 1.05rem; margin: 0 0 12px; }
 .submission-success { background: #eaf3eb; border: 1px solid var(--success); color: #285132; margin: 0 0 18px; padding: 12px 14px; }
 .friend-drawing-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -126,8 +123,6 @@ a { color: inherit; text-decoration: none; }
 .friend-drawing-card p { font-size: 0.9rem; margin: 10px 2px 3px; }
 .friend-drawing-card span, .empty-drawings { color: var(--muted); font-size: 0.8rem; }
 .empty-drawings { grid-column: 1 / -1; margin: 32px 0; text-align: center; }
-.sticky-draw-action { background: linear-gradient(transparent, var(--paper) 30%); bottom: 0; left: 0; padding: 24px 20px max(20px, env(safe-area-inset-bottom)); position: fixed; right: 0; }
-.sticky-draw-action .button { margin: 0 auto; max-width: 600px; width: 100%; }
 .draw-header { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
 .draw-header p { font-size: 1rem; margin: 0; }
 .sketch-stage { aspect-ratio: 3 / 4; background: var(--canvas); border: 1px solid var(--line); overflow: hidden; position: relative; touch-action: none; }
@@ -159,7 +154,7 @@ a { color: inherit; text-decoration: none; }
 .drawing-submit-form .button { margin-top: 8px; }
 .manage-shell { margin: 0 auto; max-width: 650px; min-height: 100vh; padding: 20px; }
 .manage-heading { padding: 30px 0 20px; }
-.manage-heading h1 { font-size: clamp(1.85rem, 7.5vw, 3.1rem); letter-spacing: -0.035em; line-height: 1.14; margin: 0; }
+.manage-heading h1 { font-size: clamp(1.85rem, 7.5vw, 3.1rem); letter-spacing: -0.03em; line-height: 1.14; margin: 0; }
 .manage-summary { background: var(--canvas); border: 1px solid var(--line); display: grid; gap: 12px; padding: 16px; }
 .manage-summary p { margin: 0; }.manage-summary strong { color: var(--accent); font-size: 1.3rem; }
 .manage-summary progress { accent-color: var(--accent); height: 8px; width: 100%; }
@@ -181,8 +176,8 @@ a { color: inherit; text-decoration: none; }
 .share-shell > a { color: var(--muted); display: inline-flex; min-height: 44px; align-items: center; font-size: .9rem; }
 .story-preview { align-items: center; background: var(--paper); border: 1px solid var(--line); display: flex; flex-direction: column; margin: 16px 0; min-height: 640px; padding: 26px; text-align: center; }
 .story-preview > p { font-size: 1.1rem; margin: 0; }
-.story-preview > h1 { font-size: clamp(1.8rem, 8vw, 3rem); letter-spacing: -.035em; line-height: 1.14; margin: 12px 0 30px; }
-.landing-copy h1, .create-intro h1, .create-complete h1, .public-intro h1, .owner-sketch h2, .manage-heading h1, .story-preview > h1 {
+.story-preview > h1 { font-size: clamp(1.8rem, 8vw, 3rem); letter-spacing: -.03em; line-height: 1.14; margin: 12px 0 30px; }
+.landing-copy h1, .create-intro h1, .create-complete h1, .public-intro h1, .manage-heading h1, .story-preview > h1 {
   hyphens: none;
   overflow-wrap: break-word;
   text-wrap: balance;
@@ -227,8 +222,6 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 480px) {
   .form-shell, .manage-shell, .share-shell { padding-inline: 16px; }
   .simple-header { padding-bottom: 28px; }
-  .owner-sketch { align-items: start; grid-template-columns: minmax(0, 1fr); }
-  .owner-sketch img { margin: 0 auto; max-width: 300px; }
   .friend-drawing-grid { grid-template-columns: minmax(0, 1fr); }
   .public-sketchbook-shell .friend-drawing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .manage-actions { grid-template-columns: minmax(0, 1fr); }
@@ -248,7 +241,6 @@ a { color: inherit; text-decoration: none; }
   .draw-shell .sketch-editor { align-items: start; display: grid; gap: 0 12px; grid-template-columns: minmax(220px, .7fr) minmax(340px, 1.3fr); }
   .draw-shell .sketch-stage { grid-row: 1 / 3; justify-self: center; max-height: calc(100dvh - 96px); width: min(100%, calc((100dvh - 96px) * .75)); }
   .draw-shell .editor-tabs { border-top: 1px solid var(--line); }
-  .sticky-draw-action { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 }
 
 /* Mobile-only sketchbook visual system */
@@ -280,17 +272,54 @@ main {
 }
 
 .marketing-header {
-  justify-content: center;
+  justify-content: space-between;
   padding: 0;
   position: relative;
 }
 
-.marketing-header::before {
+.header-menu {
+  position: relative;
+}
+
+.header-menu summary {
+  align-items: center;
   color: var(--ink);
-  content: "☷";
-  font-size: 1.35rem;
-  left: 0;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1.3rem;
+  justify-content: center;
+  list-style: none;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.header-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.header-menu nav {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  min-width: 180px;
+  padding: 6px;
   position: absolute;
+  right: 0;
+  top: 46px;
+  z-index: 10;
+}
+
+.header-menu nav a {
+  align-items: center;
+  display: flex;
+  font-size: .82rem;
+  min-height: 44px;
+  padding: 8px 10px;
+}
+
+.header-menu nav a + a {
+  border-top: 1px solid var(--line);
 }
 
 .marketing-header .wordmark,
@@ -323,7 +352,7 @@ main {
 .landing-copy h1 {
   font-size: clamp(2.05rem, 9.2vw, 3.35rem);
   font-weight: 700;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.04em;
   line-height: 1.16;
   max-width: none;
 }
@@ -366,9 +395,19 @@ main {
 
 .simple-header {
   align-items: center;
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   padding: 0;
+  text-align: center;
+}
+
+.simple-header .header-icon-link {
+  justify-self: start;
+}
+
+.header-balance {
+  min-height: 44px;
+  min-width: 44px;
 }
 
 .form-shell,
@@ -391,7 +430,7 @@ main {
 .create-intro h1,
 .create-complete h1,
 .manage-heading h1 {
-  font-size: clamp(1.75rem, 7.6vw, 2.7rem);
+  font-size: clamp(1.55rem, 6.6vw, 2.2rem);
   font-weight: 700;
 }
 
@@ -421,12 +460,12 @@ main {
 }
 
 .public-sketchbook-shell {
-  padding-bottom: 110px;
+  padding-bottom: max(48px, env(safe-area-inset-bottom));
 }
 
 .public-header {
   display: grid;
-  grid-template-columns: 54px 1fr 54px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   padding: 0;
   text-align: center;
 }
@@ -442,87 +481,103 @@ main {
 }
 
 .header-icon-link {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   justify-self: start;
+  justify-content: center;
+  min-width: 44px;
 }
 
 .header-draw-link {
   color: var(--accent);
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
   justify-self: end;
+  justify-content: center;
+  min-width: 44px;
+}
+
+.header-title {
+  align-self: center;
+  display: block;
+  font-size: clamp(.92rem, 4vw, 1.1rem);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  overflow: hidden;
+  padding-inline: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draw-header {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  text-align: center;
+}
+
+.draw-header .icon-button {
+  justify-self: start;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+}
+
+.draw-header p {
+  font-size: clamp(.86rem, 3.7vw, 1rem);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draw-complete-link {
+  align-items: center;
+  color: var(--accent);
+  display: inline-flex;
+  font-size: .82rem;
+  font-weight: 700;
+  justify-content: flex-end;
+  min-height: 44px;
 }
 
 .public-intro {
-  align-items: start;
-  display: grid;
-  gap: clamp(16px, 5vw, 30px);
-  grid-template-columns: minmax(0, 1.12fr) minmax(108px, .88fr);
-  padding: clamp(30px, 7vw, 48px) 0 28px;
+  display: block;
+  padding: clamp(26px, 7vw, 42px) 0 24px;
+  text-align: center;
 }
 
 .public-intro h1 {
-  font-size: clamp(1.65rem, 7.5vw, 2.75rem);
+  font-size: clamp(1.5rem, 6.2vw, 2.15rem);
   font-weight: 700;
-  line-height: 1.16;
+  letter-spacing: -.03em;
+  line-height: 1.2;
 }
 
 .intro-invitation {
-  font-size: clamp(.9rem, 3.5vw, 1.05rem);
+  color: var(--accent);
+  font-size: clamp(.88rem, 3.5vw, 1rem);
   font-weight: 700;
-  margin: 16px 0 0;
+  margin: 12px 0 0;
 }
 
-.public-intro > p:not(.eyebrow):not(.participant-copy),
-.public-intro-copy > p:not(.eyebrow):not(.participant-copy) {
+.public-intro > p:not(.eyebrow):not(.participant-copy) {
   color: var(--muted);
   font-size: clamp(.8rem, 3vw, .95rem);
   line-height: 1.7;
-  margin: 14px 0 0;
+  margin: 7px 0 0;
 }
 
 .participant-copy {
   color: var(--accent);
   font-size: clamp(.8rem, 3vw, .95rem);
-  margin: 20px 0 0;
+  margin: 18px 0 0;
 }
 
 .participant-copy strong {
   font-size: 1.15em;
 }
 
-.owner-sketch {
-  border: 0;
-  display: block;
-  margin: 0;
-  padding: 0;
-  position: relative;
-  transform: rotate(3deg);
-}
-
-.owner-sketch img {
-  aspect-ratio: 3 / 4;
-  background: var(--canvas);
-  border: 1px solid var(--line);
-  height: auto;
-  object-fit: contain;
-  padding: 5px;
-  width: 100%;
-}
-
-.paper-tape {
-  background: #e8ddc9;
-  height: 20px;
-  left: 50%;
-  opacity: .72;
-  position: absolute;
-  top: -9px;
-  transform: translateX(-50%) rotate(-2deg);
-  width: 58%;
-  z-index: 2;
-}
-
 .friend-board {
-  padding: clamp(12px, 3.5vw, 20px);
+  padding: clamp(12px, 3.5vw, 18px);
 }
 
 .section-title-row {
@@ -546,7 +601,7 @@ main {
 }
 
 .friend-drawing-grid {
-  gap: clamp(8px, 2.5vw, 14px);
+  gap: clamp(8px, 2.2vw, 12px);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -557,7 +612,7 @@ main {
 }
 
 .friend-drawing-card img {
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 5;
   object-fit: contain;
 }
 
@@ -603,7 +658,7 @@ main {
 }
 
 .public-feed-section {
-  margin-top: clamp(30px, 8vw, 48px);
+  margin-top: clamp(28px, 7vw, 42px);
 }
 
 .best-drawing-grid {
@@ -703,16 +758,8 @@ main {
   text-align: center;
 }
 
-.sticky-draw-action {
-  padding-inline: max(16px, calc((100vw - 650px) / 2 + 24px));
-}
-
-.sticky-draw-action .button {
-  max-width: 602px;
-}
-
 .manage-heading {
-  padding-top: 34px;
+  padding: 28px 0 18px;
 }
 
 .manage-summary {
@@ -772,17 +819,7 @@ main {
 }
 
 .manage-shell .public-header {
-  display: flex;
-  justify-content: space-between;
-}
-
-.manage-shell .public-header .wordmark {
-  font-size: 1.35rem;
-}
-
-.manage-shell .public-header > a:last-child {
-  color: var(--accent);
-  font-size: .78rem;
+  display: grid;
 }
 
 .manage-drawing-card {
@@ -792,6 +829,10 @@ main {
 .story-preview {
   background: var(--canvas);
   border-radius: 8px;
+}
+
+.share-header {
+  margin-bottom: 16px;
 }
 
 .state-shell {
@@ -826,15 +867,6 @@ main {
 @media (max-width: 319px) {
   .landing-copy h1 {
     font-size: 1.85rem;
-  }
-
-  .public-intro {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .owner-sketch {
-    margin: 4px auto 0;
-    max-width: 160px;
   }
 
   .friend-drawing-grid,

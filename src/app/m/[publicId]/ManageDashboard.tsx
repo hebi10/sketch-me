@@ -78,10 +78,11 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
   return (
     <main className="manage-shell">
       <header className="public-header">
-        <Link className="wordmark" href="/">스캐치북</Link>
-        <Link href={`/s/${publicId}`}>친구 페이지 보기</Link>
+        <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">←</Link>
+        <span className="header-title">내 스캐치북</span>
+        <Link aria-label="친구 페이지 보기" className="header-draw-link" href={`/s/${publicId}`}>↗</Link>
       </header>
-      <section className="manage-heading"><p className="eyebrow">내 스캐치북</p><h1>{name}님의 그림 모음</h1></section>
+      <section className="manage-heading"><p className="eyebrow">{name}님의 스케치북</p><h1>친구들이 그린 나</h1></section>
       <section className="manage-summary">
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
         <progress max={limit} value={participantCount} />

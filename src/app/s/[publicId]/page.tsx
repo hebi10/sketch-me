@@ -60,23 +60,16 @@ export default async function PublicSketchbookPage({
   return (
     <main className="public-sketchbook-shell">
       <header className="public-header">
-        <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">⌂</Link>
-        <Link className="wordmark" href="/">스캐치북</Link>
-        {isFull ? <span className="header-draw-link is-disabled">마감</span> : <Link className="header-draw-link" href={`/s/${publicId}/draw`}>그리기</Link>}
+        <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">←</Link>
+        <span className="header-title">{sketchbook.name}의 스캐치북</span>
+        {isFull ? <span className="header-draw-link is-disabled">마감</span> : <Link aria-label="친구 스케치 하기" className="header-draw-link" href={`/s/${publicId}/draw`}>✎</Link>}
       </header>
 
       <section className="public-intro" aria-labelledby="public-title">
-        <div className="public-intro-copy">
-          <p className="eyebrow">친구들이 기억하는 모습</p>
-          <h1 id="public-title">{sketchbook.name}의 스캐치북</h1>
-          <h2 className="intro-invitation">{sketchbook.name}님을 그려주세요</h2>
-          <p>기억나는 모습, 성격, 분위기 모두 좋아요.</p>
-          <p className="participant-copy">♧ 친구 <strong>{sketchbook.participantCount}명</strong>이 그림을 남겼어요.</p>
-        </div>
-        <figure className="owner-sketch">
-          <span aria-hidden="true" className="paper-tape" />
-          <Image alt={`${sketchbook.name}님이 직접 그린 모습`} height={640} preload src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={480} />
-        </figure>
+        <h1 id="public-title">{sketchbook.name}의 스케치북</h1>
+        <h2 className="intro-invitation">{sketchbook.name}님을 그려주세요</h2>
+        <p>기억나는 모습, 성격, 분위기 모두 좋아요.</p>
+        <p className="participant-copy">♧ 친구 <strong>{sketchbook.participantCount}명</strong>이 그림을 남겼어요.</p>
       </section>
 
       {submitted ? (
@@ -132,9 +125,6 @@ export default async function PublicSketchbookPage({
         <p className="kind-comment">✎ 따뜻한 말 한마디가 큰 힘이 돼요. 서로 존중하는 댓글을 남겨주세요!</p>
       </section>
 
-      <div className="sticky-draw-action">
-        {isFull ? <span aria-disabled="true" className="button button--disabled">친구 그림 접수 마감</span> : <Link className="button button--primary" href={`/s/${publicId}/draw`}>친구 스케치 하기</Link>}
-      </div>
     </main>
   );
 }

@@ -50,10 +50,10 @@ export function SketchCanvas({ publicId, referenceImageUrl, sketchbookName }: Sk
       <header className="draw-header">
         <button aria-label="이전으로" className="icon-button" onClick={() => router.back()} type="button">←</button>
         <p>{sketchbookName}님을 그려주세요</p>
-        <span aria-hidden="true" />
+        <a className="draw-complete-link" href="#drawing-submit">완료</a>
       </header>
       <SketchEditor ariaLabel={`${sketchbookName}님을 위한 그림 캔버스`} ref={editorRef} referenceImageUrl={referenceImageUrl} />
-      <form className="drawing-submit-form" onSubmit={submit}>
+      <form className="drawing-submit-form" id="drawing-submit" onSubmit={submit}>
         <label className="field-label" htmlFor="author-name">내 이름</label>
         <input autoComplete="name" id="author-name" maxLength={24} onChange={(event) => setAuthorName(event.target.value)} required value={authorName} />
         <label className="field-label" htmlFor="drawing-message">한마디 <span>(선택)</span></label>

@@ -24,7 +24,11 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
 
   return (
     <main className="share-shell">
-      <Link href={`/m/${publicId}`}>← 내 스캐치북</Link>
+      <header className="simple-header share-header">
+        <Link aria-label="내 스캐치북으로 돌아가기" className="header-icon-link" href={`/m/${publicId}`}>←</Link>
+        <span className="header-title">스토리 이미지</span>
+        <span aria-hidden="true" className="header-balance" />
+      </header>
       <section className="story-preview">
         <p>친구들이 그린 나</p>
         <h1>{sketchbook.name} BEST 4</h1>

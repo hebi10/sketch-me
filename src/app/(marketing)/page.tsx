@@ -8,7 +8,13 @@ export default function LandingPage() {
         <Link className="wordmark" href="/" aria-label="스캐치북 홈">
           스캐치북
         </Link>
-        <span className="header-note">친구들이 그린 나를 모아보세요</span>
+        <details className="header-menu">
+          <summary aria-label="메뉴 열기">☰</summary>
+          <nav aria-label="빠른 메뉴">
+            <Link href="/create">스케치북 만들기</Link>
+            <Link href="/privacy">개인정보 처리 안내</Link>
+          </nav>
+        </details>
       </header>
 
       <section className="landing-hero" aria-labelledby="landing-title">
