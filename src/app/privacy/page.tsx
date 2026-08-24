@@ -1,9 +1,15 @@
 import Link from 'next/link';
 
+import { BrandWordmark } from '@/components/ui/BrandWordmark';
+
 export default function PrivacyPage() {
   return (
     <main className="legal-shell">
-      <header className="simple-header"><Link className="wordmark" href="/">스캐치북</Link></header>
+      <header className="simple-header">
+        <span aria-hidden="true" className="header-balance" />
+        <BrandWordmark />
+        <span aria-hidden="true" className="header-balance" />
+      </header>
       <article>
         <p className="eyebrow">개인정보 처리 안내</p>
         <h1>그림과 사진을 이렇게 다뤄요</h1>

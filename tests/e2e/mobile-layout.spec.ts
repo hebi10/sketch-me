@@ -102,3 +102,29 @@ test('좁은 화면에서 한글 단어가 음절 중간에 끊기지 않는다'
     expect(splitWords, `${path}에서 중간이 끊긴 단어`).toEqual([]);
   }
 });
+
+test('브랜드 로고 묶음은 단순 헤더의 가운데에 정렬된다', async ({ page }) => {
+  await page.setViewportSize({ width: 280, height: 700 });
+
+  for (const path of ['/create', '/privacy']) {
+    await page.goto(path);
+    const alignment = await page.locator('.simple-header').evaluate((header) => {
+      const mark = header.querySelector('.wordmark-mark');
+      const label = header.querySelector('.wordmark span');
+      if (!mark || !label) return null;
+      const headerRect = header.getBoundingClientRect();
+      const markRect = mark.getBoundingClientRect();
+      const labelRect = label.getBoundingClientRect();
+      const contentCenter = (Math.min(markRect.left, labelRect.left) + Math.max(markRect.right, labelRect.right)) / 2;
+
+      return {
+        centerDelta: Math.abs(contentCenter - (headerRect.left + headerRect.width / 2)),
+        markSize: markRect.width,
+      };
+    });
+
+    expect(alignment).not.toBeNull();
+    expect(alignment?.centerDelta ?? Infinity).toBeLessThanOrEqual(1);
+    expect(alignment?.markSize).toBe(32);
+  }
+});

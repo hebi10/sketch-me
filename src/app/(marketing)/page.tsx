@@ -1,13 +1,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { BrandWordmark } from '@/components/ui/BrandWordmark';
+
 export default function LandingPage() {
   return (
     <main className="marketing-shell">
       <header className="marketing-header">
-        <Link className="wordmark" href="/" aria-label="스캐치북 홈">
-          스캐치북
-        </Link>
+        <BrandWordmark />
         <details className="header-menu">
           <summary aria-label="메뉴 열기">☰</summary>
           <nav aria-label="빠른 메뉴">
