@@ -15,3 +15,13 @@ test('기본 글자 크기를 브라우저 기준의 1.3배로 표시한다', as
   const rootFontSize = await page.locator('html').evaluate((root) => getComputedStyle(root).fontSize);
   expect(rootFontSize).toBe('20.8px');
 });
+
+test('본문과 큰 제목의 자간을 촘촘하게 표시한다', async ({ page }) => {
+  await page.goto('/');
+
+  const bodyLetterSpacing = await page.locator('body').evaluate((body) => getComputedStyle(body).letterSpacing);
+  const headingLetterSpacing = await page.locator('h1').evaluate((heading) => getComputedStyle(heading).letterSpacing);
+
+  expect(Number.parseFloat(bodyLetterSpacing)).toBeLessThan(0);
+  expect(Number.parseFloat(headingLetterSpacing)).toBeLessThan(Number.parseFloat(bodyLetterSpacing));
+});
