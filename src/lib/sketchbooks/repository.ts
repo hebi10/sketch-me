@@ -15,6 +15,7 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     publicId: String(data.publicId),
     name: String(data.name),
     manageTokenHash: String(data.manageTokenHash),
+    ownerDrawingPath: String(data.ownerDrawingPath),
     referenceImagePath: data.referenceImagePath ? String(data.referenceImagePath) : null,
     referenceImageEnabled: Boolean(data.referenceImageEnabled),
     participantLimit: Number(data.participantLimit),

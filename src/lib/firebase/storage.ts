@@ -10,6 +10,10 @@ export function getReferenceImagePath(sketchbookId: string) {
   return `sketchbooks/${sketchbookId}/reference/source`;
 }
 
+export function getOwnerDrawingPath(sketchbookId: string) {
+  return `sketchbooks/${sketchbookId}/owner/original.png`;
+}
+
 export function getDrawingImagePath(sketchbookId: string, drawingId: string) {
   return `sketchbooks/${sketchbookId}/drawings/${drawingId}/original`;
 }

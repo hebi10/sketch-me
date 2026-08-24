@@ -90,6 +90,14 @@ a { color: inherit; text-decoration: none; }
 .create-intro input:focus { border-color: var(--accent); outline: 3px solid color-mix(in srgb, var(--accent) 18%, white); }
 .field-hint { color: var(--muted); font-size: 0.82rem; margin: 0; }
 .form-error { color: var(--danger); font-size: 0.88rem; margin: 0; }
+.create-flow { display: grid; gap: 28px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+.reference-picker { align-items: start; border-block: 1px solid var(--line); display: grid; gap: 10px; padding-block: 18px; }
+.reference-picker h2, .section-heading h2 { font-size: 1.05rem; margin: 0; }
+.reference-picker p, .section-heading p { color: var(--muted); font-size: .84rem; line-height: 1.5; margin: 5px 0 0; }
+.reference-picker input[type="file"] { height: 1px; opacity: 0; position: absolute; width: 1px; }
+.reference-picker .button { width: 100%; }
+.section-heading { margin-bottom: 12px; }
+.create-submit { width: 100%; }
 
 .public-sketchbook-shell, .draw-shell { margin: 0 auto; max-width: 640px; min-height: 100vh; padding: 20px 20px 112px; }
 .public-header, .draw-header { align-items: center; display: flex; justify-content: space-between; min-height: 48px; }
@@ -105,7 +113,7 @@ a { color: inherit; text-decoration: none; }
 .friend-drawing-card p { font-size: 0.9rem; margin: 10px 2px 3px; }
 .friend-drawing-card span, .empty-drawings { color: var(--muted); font-size: 0.8rem; }
 .empty-drawings { grid-column: 1 / -1; margin: 32px 0; text-align: center; }
-.sticky-draw-action { background: linear-gradient(transparent, var(--paper) 30%); bottom: 0; left: 0; padding: 24px 20px 20px; position: fixed; right: 0; }
+.sticky-draw-action { background: linear-gradient(transparent, var(--paper) 30%); bottom: 0; left: 0; padding: 24px 20px max(20px, env(safe-area-inset-bottom)); position: fixed; right: 0; }
 .sticky-draw-action .button { margin: 0 auto; max-width: 600px; width: 100%; }
 .draw-header { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
 .draw-header p { font-size: 1rem; margin: 0; }

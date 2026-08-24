@@ -5,6 +5,15 @@ export const drawingStatusSchema = z.enum(['VISIBLE', 'HIDDEN', 'DELETED']);
 
 export const createSketchbookInputSchema = z.object({
   name: z.string().trim().min(1, '이름 또는 애칭을 입력해 주세요.').max(24, '이름은 24자 이내로 입력해 주세요.'),
+  ownerImageDataUrl: z
+    .string()
+    .regex(/^data:image\/png;base64,/, '본인 그림 데이터를 다시 확인해 주세요.')
+    .max(2_800_000, '본인 그림은 2MB 이하로 저장해 주세요.'),
+  referenceImageDataUrl: z
+    .string()
+    .regex(/^data:image\/(png|jpeg|webp);base64,/, '참고 사진 데이터를 다시 확인해 주세요.')
+    .max(2_800_000, '참고 사진은 2MB 이하로 올려주세요.')
+    .optional(),
 });
 
 export const submitDrawingInputSchema = z.object({
