@@ -109,16 +109,28 @@ a { color: inherit; text-decoration: none; }
 .sticky-draw-action .button { margin: 0 auto; max-width: 600px; width: 100%; }
 .draw-header { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
 .draw-header p { font-size: 1rem; margin: 0; }
-.drawing-canvas { background: var(--canvas); border: 1px solid var(--line); display: block; height: auto; touch-action: none; width: 100%; }
-.draw-tools { border: 1px solid var(--line); border-top: 0; padding: 12px; }
+.sketch-stage { aspect-ratio: 3 / 4; background: var(--canvas); border: 1px solid var(--line); overflow: hidden; position: relative; touch-action: none; }
+.reference-layer { inset: 0; pointer-events: none; position: absolute; transform-origin: center; }
+.reference-layer img { object-fit: contain; }
+.drawing-canvas { background: transparent; display: block; height: 100%; position: relative; touch-action: none; width: 100%; z-index: 1; }
+.sketch-stage--reference .drawing-canvas { pointer-events: none; }
+.editor-tabs { background: var(--canvas); border: 1px solid var(--line); border-top: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
+.editor-tabs button { background: transparent; border: 0; border-bottom: 3px solid transparent; color: var(--muted); min-height: 48px; }
+.editor-tabs button[aria-pressed="true"] { border-bottom-color: var(--accent); color: var(--ink); }
+.editor-tabs button:disabled { color: #9a9892; }
+.draw-tools { background: var(--canvas); border: 1px solid var(--line); border-top: 0; padding: 12px; }
 .tool-row { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
 .tool-row + .tool-row { margin-top: 12px; }
-.tool-button { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); cursor: pointer; font-size: 0.82rem; min-height: 34px; padding: 6px 8px; }
+.tool-button { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); cursor: pointer; font-size: 0.82rem; min-height: 44px; padding: 8px 10px; }
 .tool-button.is-active { border-color: var(--accent); color: var(--accent); }
-.color-swatch { border: 2px solid var(--canvas); border-radius: 50%; cursor: pointer; height: 26px; outline: 1px solid var(--line); width: 26px; }
+.color-swatch { border: 8px solid var(--canvas); border-radius: 50%; cursor: pointer; height: 44px; outline: 1px solid var(--line); width: 44px; }
 .color-swatch.is-active { outline: 2px solid var(--ink); }
 .line-width { align-items: center; color: var(--muted); display: flex; font-size: 0.82rem; gap: 6px; margin-left: auto; }
 .line-width input { accent-color: var(--accent); max-width: 110px; }
+.reference-controls { display: grid; gap: 10px; }
+.reference-controls p { color: var(--muted); font-size: .82rem; line-height: 1.5; margin: 0; }
+.reference-controls label { align-items: center; display: grid; font-size: .82rem; gap: 8px; grid-template-columns: auto 1fr; min-height: 44px; }
+.reference-controls input { accent-color: var(--accent); width: 100%; }
 .drawing-submit-form { display: grid; gap: 8px; margin-top: 24px; }
 .drawing-submit-form input, .drawing-submit-form textarea { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); padding: 10px 12px; }
 .drawing-submit-form textarea { resize: vertical; }
