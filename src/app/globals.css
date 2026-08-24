@@ -132,6 +132,7 @@ a { color: inherit; text-decoration: none; }
 .manage-actions { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; margin: 14px 0 30px; }
 .manage-drawings h2 { font-size: 1.05rem; margin: 0 0 12px; }.drawing-placeholder { align-items: center; background: var(--paper); color: var(--muted); display: flex; justify-content: center; min-height: 180px; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }.card-actions button { background: var(--canvas); border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 0.72rem; padding: 5px; }
+.share-shell { margin: 0 auto; max-width: 560px; padding: 24px; }.share-shell > a { color: var(--muted); font-size: .9rem; }.story-preview { align-items: center; background: var(--paper); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: center; margin: 24px 0; min-height: 640px; padding: 32px; text-align: center; }.story-preview p { font-size: 1.1rem; margin: 0; }.story-preview h1 { font-size: clamp(2rem, 10vw, 3.4rem); letter-spacing: -.04em; margin: 12px 0 40px; }.story-preview div { align-items: center; background: var(--canvas); border: 1px solid var(--line); color: var(--muted); display: flex; height: 280px; justify-content: center; width: 100%; }.story-preview span { color: var(--muted); font-size: .8rem; margin-top: 20px; }
 
 @media (max-width: 720px) {
   .marketing-shell { padding: 20px; }
