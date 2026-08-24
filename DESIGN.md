@@ -100,7 +100,7 @@ components:
 
 ## Typography
 
-**Display Font:** Apple SD Gothic Neo (Malgun Gothic, Noto Sans KR fallback)  
+**Display Font:** Apple SD Gothic Neo (Malgun Gothic, Noto Sans KR fallback)
 **Body Font:** Apple SD Gothic Neo (Malgun Gothic, Noto Sans KR fallback)
 
 **Character:** 별도 웹폰트 다운로드 없이 기기에서 선명하게 읽히는 한국어 시스템 글꼴을 사용한다. 큰 제목은 굵고 촘촘하지만 본문은 가볍고 여유 있게 유지한다.
