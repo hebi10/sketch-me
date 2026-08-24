@@ -5,7 +5,12 @@ import { NextResponse } from 'next/server';
 import { createSketchbookInputSchema } from '@/lib/domain/schemas';
 import { getAdminStorage } from '@/lib/firebase/admin';
 import { getOwnerDrawingPath, getReferenceImagePath } from '@/lib/firebase/storage';
-import { createManageToken, hashManageToken, MANAGE_COOKIE_NAME } from '@/lib/sketchbooks/manage-session';
+import {
+  createManageCookieValue,
+  createManageToken,
+  hashManageToken,
+  MANAGE_COOKIE_NAME,
+} from '@/lib/sketchbooks/manage-session';
 import { createSketchbookDraft } from '@/lib/sketchbooks/create';
 import { saveSketchbook } from '@/lib/sketchbooks/repository';
 
@@ -73,7 +78,7 @@ export async function POST(request: Request) {
 
   response.cookies.set({
     name: MANAGE_COOKIE_NAME,
-    value: `${sketchbook.publicId}.${manageToken}`,
+    value: createManageCookieValue(sketchbook.publicId, manageToken),
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',

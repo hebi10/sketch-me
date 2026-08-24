@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 
 import { SketchEditor, type SketchEditorHandle } from '@/components/sketch/SketchEditor';
 
+interface CreateResult {
+  manageUrl: string;
+  publicUrl: string;
+  recoveryUrl: string;
+}
+
 export function CreateSketchbookForm() {
   const editorRef = useRef<SketchEditorHandle>(null);
   const router = useRouter();
@@ -12,6 +18,7 @@ export function CreateSketchbookForm() {
   const [referenceImageDataUrl, setReferenceImageDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [created, setCreated] = useState<CreateResult | null>(null);
 
   function selectReference(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -49,14 +56,29 @@ export function CreateSketchbookForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, ownerImageDataUrl, referenceImageDataUrl: referenceImageDataUrl ?? undefined }),
       });
-      const data = (await response.json()) as { manageUrl?: string; message?: string };
-      if (!response.ok || !data.manageUrl) throw new Error(data.message ?? '스캐치북을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.');
-      router.push(data.manageUrl);
+      const data = (await response.json()) as Partial<CreateResult> & { message?: string };
+      if (!response.ok || !data.manageUrl || !data.publicUrl || !data.recoveryUrl) throw new Error(data.message ?? '스캐치북을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      setCreated(data as CreateResult);
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : '스캐치북을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (created) {
+    const recoveryUrl = typeof window === 'undefined' ? created.recoveryUrl : `${window.location.origin}${created.recoveryUrl}`;
+    return (
+      <section className="create-complete" aria-labelledby="create-complete-title">
+        <p className="eyebrow">스캐치북 완성</p>
+        <h1 id="create-complete-title">관리 복구 링크를 보관해 주세요</h1>
+        <p>쿠키가 사라지거나 다른 기기에서 관리할 때 필요한 링크예요. 이 화면을 닫으면 다시 표시되지 않습니다.</p>
+        <label className="field-label" htmlFor="recovery-url">관리 복구 링크</label>
+        <input id="recovery-url" readOnly value={recoveryUrl} />
+        <button className="button button--secondary" onClick={() => navigator.clipboard.writeText(recoveryUrl)} type="button">복구 링크 복사</button>
+        <button className="button button--primary" onClick={() => router.push(created.manageUrl)} type="button">내 스캐치북 관리하기</button>
+      </section>
+    );
   }
 
   return (

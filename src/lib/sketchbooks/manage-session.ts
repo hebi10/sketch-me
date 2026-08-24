@@ -10,6 +10,16 @@ export function hashManageToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
 }
 
+export function createManageCookieValue(publicId: string, token: string) {
+  return `${publicId}.${token}`;
+}
+
+export function isValidManageToken(token: string, manageTokenHash: string) {
+  const expected = Buffer.from(manageTokenHash, 'hex');
+  const actual = Buffer.from(hashManageToken(token), 'hex');
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
 export function parseManageSession(cookieValue?: string) {
   if (!cookieValue) return null;
   const separator = cookieValue.indexOf('.');
@@ -27,7 +37,5 @@ export function isValidManageSession(
   manageTokenHash: string,
 ) {
   if (!session || session.publicId !== publicId) return false;
-  const expected = Buffer.from(manageTokenHash, 'hex');
-  const actual = Buffer.from(hashManageToken(session.token), 'hex');
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
+  return isValidManageToken(session.token, manageTokenHash);
 }

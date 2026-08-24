@@ -132,7 +132,40 @@ export async function updateDrawingForManagement(
   update: { status?: Drawing['status']; bestRank?: Drawing['bestRank'] },
 ) {
   const reference = getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('drawings').doc(drawingId);
-  await reference.update({ ...update, updatedAt: new Date() });
+  await reference.update({
+    ...update,
+    ...(update.status === 'HIDDEN' ? { bestRank: null } : {}),
+    updatedAt: new Date(),
+  });
+}
+
+export async function clearBestDrawing(sketchbookId: string, drawingId: string) {
+  const reference = getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('drawings').doc(drawingId);
+  await reference.update({ bestRank: null, updatedAt: new Date() });
+}
+
+export async function deleteDrawingForManagement(sketchbookId: string, drawingId: string) {
+  const firestore = getAdminFirestore();
+  const sketchbookReference = firestore.collection(collectionName).doc(sketchbookId);
+  const drawingReference = sketchbookReference.collection('drawings').doc(drawingId);
+
+  return firestore.runTransaction(async (transaction) => {
+    const [sketchbookDocument, drawingDocument] = await Promise.all([
+      transaction.get(sketchbookReference),
+      transaction.get(drawingReference),
+    ]);
+    if (!sketchbookDocument.exists || !drawingDocument.exists) {
+      throw new Error('삭제할 그림을 찾을 수 없습니다.');
+    }
+    const drawing = drawingDocument.data();
+    if (drawing?.status === 'DELETED') return null;
+    transaction.update(drawingReference, { status: 'DELETED', bestRank: null, updatedAt: new Date() });
+    transaction.update(sketchbookReference, {
+      participantCount: Math.max(0, Number(sketchbookDocument.data()?.participantCount) - 1),
+      updatedAt: new Date(),
+    });
+    return String(drawing?.imagePath ?? '');
+  });
 }
 
 export async function setBestDrawing(sketchbookId: string, drawingId: string, bestRank: 1 | 2 | 3 | 4) {

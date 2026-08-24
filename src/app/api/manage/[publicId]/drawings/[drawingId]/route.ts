@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 
+import { getAdminStorage } from '@/lib/firebase/admin';
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
-import { setBestDrawing, updateDrawingForManagement } from '@/lib/sketchbooks/repository';
+import {
+  clearBestDrawing,
+  deleteDrawingForManagement,
+  setBestDrawing,
+  updateDrawingForManagement,
+} from '@/lib/sketchbooks/repository';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ publicId: string; drawingId: string }> }) {
   const { publicId, drawingId } = await params;
@@ -17,5 +23,24 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pu
     await setBestDrawing(sketchbook.id, drawingId, Number(payload.bestRank) as 1 | 2 | 3 | 4);
     return NextResponse.json({ ok: true });
   }
+  if (payload?.action === 'clearBest') {
+    await clearBestDrawing(sketchbook.id, drawingId);
+    return NextResponse.json({ ok: true });
+  }
   return NextResponse.json({ message: '요청을 확인해 주세요.' }, { status: 400 });
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ publicId: string; drawingId: string }> },
+) {
+  const { publicId, drawingId } = await params;
+  const sketchbook = await getManagedSketchbook(publicId);
+  if (!sketchbook) return NextResponse.json({ message: '관리 권한이 없습니다.' }, { status: 403 });
+
+  const imagePath = await deleteDrawingForManagement(sketchbook.id, drawingId);
+  if (imagePath) {
+    await getAdminStorage().bucket().file(imagePath).delete({ ignoreNotFound: true });
+  }
+  return NextResponse.json({ ok: true });
 }
