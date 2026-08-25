@@ -32,7 +32,44 @@ Firebase 규칙 통합 테스트와 전체 E2E는 Firestore·Storage 에뮬레�
 npm run test:e2e -- --project=mobile-chrome
 ```
 
-Playwright가 Emulator를 직접 시작할 때는 `firebase.json`의 기본 포트(9099/8080/9199)를 사용합니다. 다른 격리 포트가 필요하면 `PLAYWRIGHT_SKIP_WEBSERVER=1`을 설정하고 Auth·Firestore·Storage Emulator와 Next.js를 먼저 직접 실행한 뒤 `PLAYWRIGHT_*_EMULATOR_HOST`를 지정합니다. webServer를 사용하는 상태에서 포트만 바꾸면 설정 오류로 즉시 중단됩니다.
+Playwright가 Emulator를 직접 시작할 때는 `firebase.json`의 기본 포트(9099/8080/9199)를 사용합니다. 다른 격리 포트가 필요하면 `PLAYWRIGHT_SKIP_WEBSERVER=1`을 설정하고, 동일한 포트로 구성한 Auth·Firestore·Storage Emulator와 Next.js를 먼저 직접 실행한 뒤 `PLAYWRIGHT_*_EMULATOR_HOST`를 지정합니다. webServer를 사용하는 상태에서 포트만 바꾸면 설정 오류로 즉시 중단됩니다. `PLAYWRIGHT_BASE_URL`은 경로 없는 HTTP loopback Origin만 허용하며 외부 주소, `0.0.0.0`, 자격 증명, query와 hash는 거부합니다.
+
+기존 로컬 서버를 재사용할 때도 주소만 보고 신뢰하지 않습니다. 다음은 기본 Emulator 포트와 별도 앱 포트 13000을 사용하는 PowerShell 예시입니다. 각 블록을 별도 터미널에서 실행합니다. 계정 값은 고정 테스트 픽스처이며 운영 UID·이메일이나 서비스 계정 키를 넣지 않습니다.
+
+```powershell
+# 터미널 1: 로컬 Emulator
+npm run emulators -- --project sketch-me-local
+```
+
+```powershell
+# 터미널 2: 테스트 전용 Next.js 서버
+$env:FIREBASE_PROJECT_ID='sketch-me-local'
+$env:FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:9099'
+$env:FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'
+$env:FIREBASE_STORAGE_EMULATOR_HOST='127.0.0.1:9199'
+$env:STORAGE_EMULATOR_HOST='http://127.0.0.1:9199'
+$env:NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:9099'
+$env:NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET='sketch-me-local.appspot.com'
+$env:ADMIN_UID='admin-e2e-uid'
+$env:ADMIN_EMAIL='admin@example.com'
+$env:ADMIN_ALLOWED_ORIGIN='http://127.0.0.1:13000'
+$env:PLAYWRIGHT_E2E_SERVER='1'
+npm run dev -- --hostname 127.0.0.1 --port 13000
+```
+
+서버 준비 확인은 `Invoke-WebRequest http://127.0.0.1:13000/api/e2e-readiness -UseBasicParsing`으로 수행합니다. 안전한 테스트 환경이면 상태 204와 `X-Sketch-Me-E2E-Ready: 1`을 반환하며, 설정이 빠졌거나 일치하지 않으면 환경값을 노출하지 않고 404 또는 503을 반환합니다.
+
+```powershell
+# 터미널 3: 이미 시작한 프로세스를 검증한 뒤 E2E 실행
+$env:PLAYWRIGHT_SKIP_WEBSERVER='1'
+$env:PLAYWRIGHT_BASE_URL='http://127.0.0.1:13000'
+$env:PLAYWRIGHT_AUTH_EMULATOR_HOST='127.0.0.1:9099'
+$env:PLAYWRIGHT_FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'
+$env:PLAYWRIGHT_STORAGE_EMULATOR_HOST='127.0.0.1:9199'
+npm run test:e2e -- --project=mobile-chrome
+```
+
+Playwright global setup은 위 readiness 응답을 확인한 뒤에만 고정 Google Emulator 사용자를 만들고 Firestore·Storage 픽스처를 적재합니다. 테스트 전용 서버는 일반 개발 서버와 빌드 잠금을 공유하지 않도록 별도 생성 디렉터리를 사용합니다. 따라서 일반 개발 서버나 운영 서버는 이 E2E 초기화를 승인할 수 없습니다.
 
 Firebase 규칙·동시성 통합 테스트는 `FIREBASE_PROJECT_ID=sketch-me-local`과 loopback Emulator host가 모두 명시된 경우에만 실행됩니다. 일반 `npm test`에서는 해당 환경이 없으면 안전하게 건너뜁니다.
 

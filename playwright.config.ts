@@ -2,10 +2,12 @@ import { defineConfig, devices } from '@playwright/test';
 
 import {
   normalizeFirebaseAdminStorageEmulatorEnvironment,
+  resolvePlaywrightBaseUrl,
   resolvePlaywrightEmulatorHosts,
 } from './tests/helpers/firebase-emulator-safety';
+import { ADMIN_E2E_SERVER_IDENTITY } from './src/lib/testing/e2e-readiness';
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000';
+const baseURL = resolvePlaywrightBaseUrl(process.env.PLAYWRIGHT_BASE_URL);
 const managesFirebaseEmulators = !process.env.PLAYWRIGHT_SKIP_WEBSERVER;
 const emulatorHosts = resolvePlaywrightEmulatorHosts(process.env, managesFirebaseEmulators);
 const storageAdminEnvironment: NodeJS.ProcessEnv = {
@@ -25,10 +27,12 @@ const adminTestEnv = {
   FIREBASE_STORAGE_EMULATOR_HOST: storageHost,
   STORAGE_EMULATOR_HOST: adminStorageHost,
   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'sketch-me-local.appspot.com',
-  ADMIN_UID: 'admin-e2e-uid',
-  ADMIN_EMAIL: 'admin@example.com',
+  ADMIN_UID: ADMIN_E2E_SERVER_IDENTITY.uid,
+  ADMIN_EMAIL: ADMIN_E2E_SERVER_IDENTITY.email,
   ADMIN_ALLOWED_ORIGIN: new URL(baseURL).origin,
   NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: emulatorHosts.auth,
+  PLAYWRIGHT_BASE_URL: baseURL,
+  PLAYWRIGHT_E2E_SERVER: '1',
 };
 
 Object.assign(process.env, adminTestEnv);

@@ -2,19 +2,20 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { getAdminFirestore, getAdminStorage } from '../../src/lib/firebase/admin';
+import { ADMIN_E2E_SERVER_IDENTITY } from '../../src/lib/testing/e2e-readiness';
 import { normalizeFirebaseAdminStorageEmulatorEnvironment } from '../helpers/firebase-emulator-safety';
 
 export const ADMIN_E2E = {
   drawingId: 'admin-e2e-drawing',
   drawingPath: 'sketchbooks/admin-e2e-book/drawings/admin-e2e-drawing/original.webp',
-  email: 'admin@example.com',
+  email: ADMIN_E2E_SERVER_IDENTITY.email,
   googleSubject: 'admin-e2e-google-subject',
   ownerDrawingPath: 'sketchbooks/admin-e2e-book/owner/original.webp',
   password: 'admin-test-password',
   publicId: 'admin-e2e-public',
   purchaseId: 'admin-e2e-purchase',
   sketchbookId: 'admin-e2e-book',
-  uid: 'admin-e2e-uid',
+  uid: ADMIN_E2E_SERVER_IDENTITY.uid,
 } as const;
 
 const FIXTURE_CREATED_AT = new Date('2026-08-25T00:00:00.000Z');

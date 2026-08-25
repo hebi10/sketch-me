@@ -1,5 +1,7 @@
 export const LOCAL_FIREBASE_PROJECT_ID = 'sketch-me-local';
 
+export { resolvePlaywrightBaseUrl } from '../../src/lib/testing/e2e-readiness';
+
 type Environment = Record<string, string | undefined>;
 type EmulatorService = 'auth' | 'firestore' | 'storage';
 

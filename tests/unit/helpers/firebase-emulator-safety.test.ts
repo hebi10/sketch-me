@@ -2,9 +2,12 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { resolveE2ENextDistDir } from '../../../src/lib/testing/e2e-readiness';
+
 import {
   hasSafeFirebaseEmulatorEnvironment,
   normalizeFirebaseAdminStorageEmulatorEnvironment,
+  resolvePlaywrightBaseUrl,
   requireSafeFirebaseEmulatorEnvironment,
   resolvePlaywrightEmulatorHosts,
 } from '../../helpers/firebase-emulator-safety';
@@ -17,6 +20,33 @@ const safeEnvironment = {
 };
 
 describe('Firebase emulator safety', () => {
+  it('isolates the Next.js build directory only for an explicit Playwright E2E server', () => {
+    expect(resolveE2ENextDistDir({})).toBe('.next');
+    expect(resolveE2ENextDistDir({ PLAYWRIGHT_E2E_SERVER: '0' })).toBe('.next');
+    expect(resolveE2ENextDistDir({ PLAYWRIGHT_E2E_SERVER: '1' }))
+      .toBe('.superpowers/sdd/2026-08-25-operator-admin/.next-task10');
+  });
+
+  it('accepts only a bare HTTP loopback origin as the Playwright base URL', () => {
+    expect(resolvePlaywrightBaseUrl('http://127.0.0.1:13000')).toBe('http://127.0.0.1:13000');
+    expect(resolvePlaywrightBaseUrl('http://localhost:3000/')).toBe('http://localhost:3000');
+    expect(resolvePlaywrightBaseUrl('http://[::1]:3000')).toBe('http://[::1]:3000');
+
+    for (const unsafeUrl of [
+      'https://127.0.0.1:3000',
+      'http://example.com:3000',
+      'http://0.0.0.0:3000',
+      'http://127.0.0.1:0',
+      'http://127.0.0.1.evil.test:3000',
+      'http://user:password@127.0.0.1:3000',
+      'http://127.0.0.1:3000/admin',
+      'http://127.0.0.1:3000/?project=sketch-me-local',
+      'http://127.0.0.1:3000/#ready',
+    ]) {
+      expect(() => resolvePlaywrightBaseUrl(unsafeUrl)).toThrow(/PLAYWRIGHT_BASE_URL.*HTTP loopback origin/);
+    }
+  });
+
   it('requires the fixed local project and loopback hosts before emulator access', () => {
     expect(hasSafeFirebaseEmulatorEnvironment(['firestore', 'storage'], safeEnvironment)).toBe(true);
 

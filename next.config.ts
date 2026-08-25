@@ -1,7 +1,10 @@
 import type { NextConfig } from 'next';
 
+import { resolveE2ENextDistDir } from './src/lib/testing/e2e-readiness';
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['127.0.0.1'],
+  distDir: resolveE2ENextDistDir(process.env),
   reactStrictMode: true,
   async headers() {
     return [{

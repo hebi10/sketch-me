@@ -1,4 +1,6 @@
 import { getAdminAuth } from '../../src/lib/firebase/admin';
+import { resolvePlaywrightBaseUrl } from '../../src/lib/testing/e2e-readiness';
+import { verifyE2EServerReadiness } from '../helpers/e2e-server-readiness';
 import { waitForEmulatorReadiness } from '../helpers/emulator-readiness';
 import {
   getFirebaseEmulatorAddress,
@@ -8,6 +10,7 @@ import {
 import { ADMIN_E2E, seedAdminScenario } from './admin-fixture';
 
 export default async function globalSetup() {
+  await verifyE2EServerReadiness(resolvePlaywrightBaseUrl(process.env.PLAYWRIGHT_BASE_URL));
   requireSafeFirebaseEmulatorEnvironment(['auth', 'firestore', 'storage']);
   normalizeFirebaseAdminStorageEmulatorEnvironment();
   await waitForEmulatorReadiness([
