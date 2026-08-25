@@ -69,8 +69,6 @@ export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerPr
       context.drawImage(background, 0, 0, STORY_WIDTH, STORY_HEIGHT);
       context.fillStyle = storyStyle.ink;
       context.textAlign = 'center';
-      context.font = `600 54px ${storyStyle.fontFamily}`;
-      context.fillText('친구들이 그린 나', 540, 88);
       const title = `${name} BEST 4`;
       setFittedFont(context, title, storyStyle.fontFamily, { maxSize: 78, minSize: 28, maxWidth: 900, weight: 700 });
       context.fillText(title, 540, 180);

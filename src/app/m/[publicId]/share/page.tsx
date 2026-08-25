@@ -39,7 +39,6 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
           backgroundImage: `url(${storyStyle.backgroundImage})`,
         }}
       >
-        <p>친구들이 그린 나</p>
         <h1>{sketchbook.name} BEST 4</h1>
         <div className="story-best-grid">
           {[1, 2, 3, 4].map((rank) => {
