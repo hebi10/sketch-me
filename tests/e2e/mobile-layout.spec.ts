@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { createAdminEmulatorSession } from './admin-auth-helper';
+
 const viewports = [
   { width: 280, height: 700 },
   { width: 320, height: 700 },
@@ -38,6 +40,21 @@ test('핵심 진입 화면이 모바일 뷰포트에서 넘치지 않는다', as
       const primary = page.locator('.button--primary').first();
       if (await primary.count()) expect((await primary.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
     }
+  }
+});
+
+test('관리자 화면은 지원 모바일 너비에서 넘치지 않고 메뉴를 유지한다', async ({ page }) => {
+  await createAdminEmulatorSession(page);
+
+  for (const width of [320, 390, 650]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/admin');
+    const dimensions = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+    await expect(page.getByRole('navigation', { name: '관리자 메뉴' })).toBeVisible();
   }
 });
 

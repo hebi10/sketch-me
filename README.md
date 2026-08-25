@@ -26,6 +26,12 @@ npm run test:e2e -- --project=mobile-chrome
 
 Firebase 규칙 통합 테스트와 전체 E2E는 Firestore·Storage 에뮬레이터가 필요합니다. 실제 운영 데이터에 테스트를 실행하지 않습니다.
 
+관리자 E2E는 Playwright가 Auth·Firestore·Storage Emulator와 테스트 전용 Next.js 프로세스를 함께 시작합니다. 고정 테스트 계정과 데이터는 `sketch-me-local` 에뮬레이터에만 생성되며 실제 Firebase Authentication이나 운영 데이터에는 접근하지 않습니다.
+
+```bash
+npm run test:e2e -- --project=mobile-chrome
+```
+
 ## 이미지 저장 정책
 
 - 본인 그림과 친구 그림: 서버에서 최대 720×960 WebP로 변환, 목표 품질 76, 최대 350KB
@@ -43,6 +49,30 @@ Firebase 규칙 통합 테스트와 전체 E2E는 Firestore·Storage 에뮬레�
 - 오류율과 Storage·Firestore 사용량 알림은 Firebase Console에서 별도로 설정합니다.
 - 배포 전 `/privacy` 안내와 관리 화면의 전체 삭제 동작을 에뮬레이터에서 확인합니다.
 - 운영자 차단은 이후 공개 응답을 막지만, 이미 내려받았거나 외부에 저장된 Story PNG는 회수할 수 없습니다.
+
+## 운영자 계정 설정
+
+운영자 로그인은 Google 공급자로 로그인한 계정 한 개만 허용합니다. 실제 UID, 이메일, 서비스 계정 키는 저장소나 문서에 기록하지 않습니다.
+
+1. Firebase Console의 Authentication에서 Google 로그인 공급자를 활성화합니다.
+2. 허용할 Google 계정으로 최초 로그인한 뒤 Authentication 사용자 목록에서 UID와 인증 이메일을 확인합니다.
+3. App Hosting 런타임에 `ADMIN_UID`, `ADMIN_EMAIL`, `ADMIN_ALLOWED_ORIGIN`을 설정합니다. `ADMIN_ALLOWED_ORIGIN`은 스킴과 호스트를 포함한 배포 Origin 하나와 정확히 같아야 합니다.
+4. Authentication 승인 도메인에 실제 App Hosting 도메인을 추가합니다.
+5. 배포 전에 `firestore.indexes.json`과 개발 프로젝트의 인덱스를 읽기 전용 명령으로 대조합니다. 실제 인덱스 배포는 별도 승인 후 실행합니다.
+
+```bash
+npx firebase firestore:indexes --project <development-project-id> --pretty
+```
+
+로컬에서 Emulator를 따로 확인하려면 다음 명령을 사용합니다. 실제 프로젝트 ID나 운영 자격 증명을 넣지 않습니다.
+
+```bash
+npm run emulators -- --project sketch-me-local
+```
+
+운영 세션은 로그인 직후 발급한 Firebase ID 토큰을 서버의 HttpOnly 세션 쿠키로 교환합니다. 쿠키는 운영에서 `Secure`, `SameSite=Strict`, `Path=/`가 적용되고 최대 12시간 후 만료됩니다. 로그아웃은 쿠키를 즉시 만료하며, 서버는 매 요청에서 폐기된 Firebase 세션인지 다시 검증합니다. 검증할 때는 로그인 → `/admin` 접근 → 로그아웃 → `/admin` 재접근 시 로그인 화면 이동 순서를 확인합니다.
+
+결제 화면과 결제 통계는 모두 실제 과금이 없는 모의 데이터이며 취소·환불 기능을 제공하지 않습니다. 운영자 차단은 이후 공개 페이지, 제출, 이미지 응답을 막지만 이미 다운로드했거나 외부에 저장한 Story PNG까지 회수하지는 못합니다.
 
 ## 배포
 

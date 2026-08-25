@@ -53,8 +53,11 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await ownerPage.getByLabel('이름 또는 애칭').fill(uniqueName);
   await ownerPage.getByLabel('관리 비밀번호').fill('1234');
   await ownerPage.locator('#reference-image').setInputFiles(path.resolve('public/brand/sketchbook-favicon-source.png'));
+  await expect(ownerPage.getByRole('button', { name: '다른 사진 선택' })).toBeVisible();
+  await ownerPage.getByRole('button', { name: '그림 그리기' }).click();
   await expect(ownerPage.getByAltText('그림 참고 사진')).toBeVisible();
   await drawOnCanvas(ownerPage);
+  await ownerPage.getByRole('button', { name: '확인' }).click();
   await ownerPage.getByRole('button', { name: '내 스캐치북 만들기' }).click();
 
   await expect(ownerPage.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible({ timeout: 15_000 });
@@ -77,6 +80,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await expect(friendPage.getByRole('heading', { name: `${uniqueName}님을 그려주세요` })).toBeVisible();
   await friendPage.getByRole('link', { name: '✎ 그림 남기기' }).click();
   await friendPage.getByRole('button', { name: '그림 그리기' }).click();
+  await friendPage.getByRole('button', { name: '그리기 도구 열기' }).click();
   await expect(friendPage.getByRole('button', { name: '참고사진' })).toBeEnabled();
   await drawOnCanvas(friendPage);
   await friendPage.getByRole('button', { name: '확인' }).click();
@@ -113,7 +117,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   ]);
   await expect(managerPage.locator('.best-badge')).toHaveText('BEST 1');
 
-  await managerPage.getByLabel('메뉴').click();
+  await managerPage.getByLabel('메뉴', { exact: true }).click();
   await managerPage.getByLabel('메뉴 항목').getByRole('link', { name: '스토리 이미지 만들기' }).click();
   await expect(managerPage).toHaveURL(/\/share$/);
   await expect(managerPage.getByAltText('BEST 1 그림')).toBeVisible();
