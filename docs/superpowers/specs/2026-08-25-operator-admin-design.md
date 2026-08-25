@@ -35,11 +35,11 @@
 2. 클라이언트가 받은 Firebase ID 토큰을 `POST /api/admin/session`으로 전달한다.
 3. 서버가 Firebase Admin Auth로 토큰 서명, 만료, 이메일 인증 여부를 검증한다.
 4. 서버 환경 변수의 `ADMIN_UID`, `ADMIN_EMAIL`과 토큰의 UID·이메일이 모두 일치하는지 확인한다.
-5. 검증에 성공하면 최대 12시간의 Firebase 세션 쿠키를 `HttpOnly`, `SameSite=Strict`로 발급하고 운영 HTTPS 환경에서만 `Secure`를 적용한다.
-6. `/admin` 페이지와 모든 `/api/admin/*` API는 서버에서 세션 쿠키를 다시 검증한다.
+5. 검증에 성공하면 최대 12시간의 Firebase 세션 쿠키를 `HttpOnly`, `SameSite=Strict`, `Path=/`로 발급하고 운영 HTTPS 환경에서만 `Secure`를 적용한다.
+6. `/admin` 페이지와 모든 `/api/admin/*` API는 서버에서 세션 쿠키를 폐기 여부까지 포함해 다시 검증한다.
 7. 로그아웃은 세션 쿠키를 만료하고 `/admin/login`으로 이동한다.
 
-관리자 이메일과 UID는 클라이언트 번들에 포함하지 않는다. 주소 직접 입력, 변조된 쿠키, 허용되지 않은 Google 계정은 모두 접근할 수 없다. 변경 API는 세션 검증과 함께 요청의 `Origin`과 `Host`가 일치하는지 확인해 외부 사이트에서 발생한 요청을 거부한다.
+관리자 이메일과 UID는 클라이언트 번들에 포함하지 않는다. 주소 직접 입력, 변조된 쿠키, 허용되지 않은 Google 계정은 모두 접근할 수 없다. 운영 쿠키 이름은 `__Host-admin_session`을 사용하고 `Domain`은 지정하지 않는다. 로컬 HTTP 개발 환경에서는 `Secure`가 필요 없는 별도 쿠키 이름을 사용한다. 변경 API는 세션 검증과 함께 요청의 `Origin`이 서버 환경 변수 `ADMIN_ALLOWED_ORIGIN`과 정확히 일치하는지 확인해 외부 사이트에서 발생한 요청을 거부한다. 프록시의 `Host`, `X-Forwarded-Host`, `X-Forwarded-Proto`만으로 허용 Origin을 추론하지 않는다.
 
 ### Firebase 설정
 
@@ -48,6 +48,7 @@
 - 로컬·테스트 환경에서는 Firebase Auth Emulator를 사용한다.
 - 운영용 계정 이메일·UID는 `.env.local`과 App Hosting secret/environment 설정에만 저장한다.
 - 최초 설정 시 Google 로그인으로 Firebase Authentication 사용자를 만든 뒤 Firebase Console에서 UID를 확인해 `ADMIN_UID`를 설정한다. UID 설정 전에는 세션 발급을 거부한다.
+- 관리자 세션 검증은 Firebase Admin SDK의 폐기 여부 확인 옵션을 사용해 사용자가 비활성화되거나 토큰이 폐기된 경우 즉시 거부한다.
 
 ## URL과 화면
 
@@ -109,7 +110,8 @@
 
 - 기존 서비스처럼 최대 650px 콘텐츠 영역을 중앙에 배치한다.
 - 데스크톱 전용 표 대신 세로 카드 목록을 사용한다.
-- 상단에 페이지 제목과 로그아웃, 하단 또는 상단에 대시보드·스케치북·그림·결제 내비게이션을 둔다.
+- 상단에는 페이지 제목과 로그아웃을 두고, 대시보드·스케치북·그림·결제 네 항목은 하단 고정 내비게이션으로 제공한다.
+- 하단 내비게이션은 650px 콘텐츠 폭 안에 두고 safe area와 본문 하단 여백을 확보해 마지막 카드나 버튼을 가리지 않게 한다.
 - 상태는 색상만으로 구분하지 않고 `정상`, `비활성화`, `숨김`, `모의 결제` 문구를 함께 표시한다.
 - 모든 주요 버튼은 최소 44px 터치 영역을 유지한다.
 - 확인 팝업은 포커스 이동·순환·복귀와 Escape 닫기를 지원한다.
@@ -129,11 +131,23 @@ moderatedAt: Date | null
 ### Drawing 확장
 
 ```text
+sketchbookPublicId: string
+sketchbookName: string
 moderationStatus: ACTIVE | BLOCKED
 moderatedAt: Date | null
 ```
 
-기존 문서에 필드가 없으면 `ACTIVE`로 해석한다. 기존 `status`와 별도로 관리해 운영자가 소유자의 숨김 선택을 덮어쓰지 않게 한다.
+기존 `sketchbookId`에 더해 관리자 목록에 필요한 공개 ID와 스케치북 이름을 새 그림부터 비정규화한다. 기존 문서에 식별 필드가 없으면 부모 스케치북을 한 번의 배치 읽기로 보완하고, `moderationStatus`가 없으면 `ACTIVE`로 해석한다. 기존 `status`와 별도로 관리해 운영자가 소유자의 숨김 선택을 덮어쓰지 않게 한다.
+
+### Purchase 확장
+
+```text
+sketchbookId: string
+sketchbookPublicId: string
+sketchbookName: string
+```
+
+새 결제 기록부터 관리자 목록에 필요한 스케치북 식별 정보를 함께 저장한다. 기존 결제 문서는 부모 경로에서 스케치북 ID를 구하고, 공개 ID와 이름이 필요하면 누락된 부모 문서만 한 번의 배치 읽기로 보완한다. 기존 데이터 전체를 즉시 마이그레이션하지 않는다.
 
 ### AdminAuditLog
 
@@ -162,7 +176,7 @@ createdAt
 - `src/app/api/admin/drawings/*`: 그림 상태 변경
 - `src/app/admin/*`: 서버 렌더링 관리자 페이지와 필요한 클라이언트 조작 컴포넌트
 
-목록은 Firestore `limit(20)`과 문서 커서를 사용한다. 그림과 결제는 기존 스케치북 하위 컬렉션을 `collectionGroup`으로 조회한다. 삭제되어 이미지가 남지 않은 `DELETED` 그림은 관리자 목록에서 제외하고, 이에 필요한 컬렉션 그룹 인덱스를 명시적으로 추가한다. 기존 문서에 `moderationStatus`가 없으므로 해당 필드의 존재를 전제로 필터링하지 않고 서버에서 `ACTIVE`로 해석한다. 실시간 리스너와 전체 문서 일괄 읽기는 사용하지 않는다.
+목록은 Firestore `limit(20)`과 문서 커서를 사용한다. 그림과 결제는 기존 스케치북 하위 컬렉션을 `collectionGroup`으로 조회한다. 그림은 실제 상태 값에 맞춰 `where('status', 'in', ['VISIBLE', 'HIDDEN'])`, `orderBy('createdAt', 'desc')`, 문서 커서를 조합해 이미지가 삭제된 `DELETED` 문서를 제외한다. 이 조합은 `COLLECTION_GROUP` 범위의 복합 인덱스로 명시하고 Firebase Emulator와 개발 프로젝트에서 실제 쿼리·커서 동작을 검증한다. 기존 문서에 `moderationStatus`가 없으므로 해당 필드의 존재를 전제로 필터링하지 않고 서버에서 `ACTIVE`로 해석한다. 실시간 리스너와 전체 문서 일괄 읽기는 사용하지 않는다.
 
 ## 상태 변경 규칙
 
@@ -172,6 +186,17 @@ createdAt
 - 이미 원하는 상태인 요청은 성공으로 응답하되 중복 감사 로그는 만들지 않는다.
 - 소유자 관리 API는 운영자 차단 상태를 해제할 수 없다.
 - 공개 조회 및 이미지 API는 운영자 차단 상태를 항상 확인한다.
+- 소유자의 `status` 변경과 운영자의 `moderationStatus` 변경은 서로 다른 필드만 갱신하고, 동시에 실행되어도 상대 상태를 덮어쓰지 않는다.
+
+## 이미지와 Story 차단 정책
+
+- Firebase Storage의 클라이언트 직접 읽기·쓰기 거부 규칙을 유지하고 Storage 다운로드 URL을 Firestore나 화면에 노출하지 않는다.
+- 친구용 소유자 그림, 참고 사진, 친구 그림 API는 매 요청마다 스케치북과 그림의 `moderationStatus`를 확인한다.
+- 운영자 차단이 즉시 반영되어야 하는 친구용 이미지 응답은 공유 캐시에 남지 않도록 `Cache-Control: private, no-store`를 사용한다. 공개 화면의 차단 대상 이미지는 Next.js 이미지 최적화 캐시를 우회하도록 `unoptimized`로 제공하고, 조건부 응답을 추가하더라도 권한 확인 전에는 `304`를 반환하지 않는다.
+- 차단된 스케치북은 공개 페이지, 그리기 페이지, 제출 API, 소유자·참고·친구 그림 공개 API가 모두 동일하게 접근을 거부한다.
+- 차단된 그림은 공개 목록·이미지 API·BEST 선정·새 Story 미리보기와 다운로드에서 제외한다.
+- 현재 Story 이미지는 서버에 저장되지 않고 브라우저에서 생성해 사용자 기기로 내려받는다. 관리자 차단 이후 새로 만드는 결과물에는 차단 그림을 포함하지 않지만, 사용자가 이미 내려받은 PNG는 회수하거나 자동으로 재생성하지 않는다.
+- 기능 적용 전에 브라우저나 SNS 서비스가 이미 캐시하거나 저장한 이미지 바이트는 서버에서 회수할 수 없다. 새 요청의 서버 접근은 차단하고 향후 공개 응답을 캐시하지 않는 것을 1차 보장 범위로 둔다.
 
 ## 오류 처리
 
@@ -187,9 +212,15 @@ createdAt
 - 허용 UID·이메일 일치, 불일치, 이메일 미인증, 만료 토큰 단위 테스트
 - 관리자 세션 쿠키 생성·검증·만료 테스트
 - 관리자 API의 `401`, `403`, 정상 요청과 Origin 검증 테스트
+- 운영 App Hosting Origin과 로컬 Origin 설정에서 허용·거부가 정확히 동작하는지 확인
 - 스케치북 비활성화·복구와 감사 로그 트랜잭션 테스트
 - 그림 숨김·복구와 공개 목록·이미지 차단 테스트
+- 캐시가 없는 새 브라우저 요청에서 차단된 그림의 기존 공개 이미지 API 주소가 다시 제공되지 않고, 공개 화면이 Next.js 이미지 최적화 캐시를 만들지 않는지 확인
+- 차단된 스케치북의 모든 친구용 페이지·조회·제출·이미지 API가 동일하게 접근을 거부하는지 확인
+- 소유자 상태 변경과 운영자 상태 변경이 동시에 실행되어도 서로의 필드를 덮어쓰지 않는지 확인
 - 목록 20개 제한과 커서 페이지네이션 테스트
+- `Drawing` 컬렉션 그룹의 `VISIBLE`·`HIDDEN` 필터, 최신순 정렬, 커서 페이지네이션 및 복합 인덱스를 Emulator와 개발 프로젝트에서 확인
+- 신규 그림·결제 목록이 비정규화 필드를 사용해 부모 문서 N+1 읽기를 만들지 않는지 확인
 - 통계 집계와 5분 캐시 테스트
 - Firebase Rules에서 클라이언트 직접 Firestore·Storage 접근이 계속 거부되는지 확인
 - Auth·Firestore·Storage Emulator 기반 관리자 E2E 테스트
@@ -200,7 +231,7 @@ createdAt
 ## 배포와 운영
 
 - Google 로그인 공급자 활성화와 승인 도메인을 확인한다.
-- `ADMIN_UID`, `ADMIN_EMAIL`은 Git에 커밋하지 않는다.
+- `ADMIN_UID`, `ADMIN_EMAIL`, `ADMIN_ALLOWED_ORIGIN`은 Git에 커밋하지 않는다.
 - App Hosting의 기존 최대 인스턴스와 무료 할당량 보호 설정을 유지한다.
 - 관리자 통계는 관리자 접속 시에만 집계하고 5분 캐시한다.
 - 운영 배포 전에 실제 운영 계정으로 로그인·로그아웃·세션 만료를 확인한다.
