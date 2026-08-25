@@ -33,7 +33,13 @@ describe('관리자 세션 인증', () => {
   });
 
   it('UID와 이메일이 모두 일치하고 이메일이 인증된 계정만 세션을 발급한다', async () => {
-    verifyIdToken.mockResolvedValue({ uid: 'admin-uid', email: 'owner@example.com', email_verified: true, auth_time: 1_787_616_240 });
+    verifyIdToken.mockResolvedValue({
+      uid: 'admin-uid',
+      email: 'owner@example.com',
+      email_verified: true,
+      auth_time: 1_787_616_240,
+      firebase: { sign_in_provider: 'google.com' },
+    });
     createSessionCookie.mockResolvedValue('session-cookie');
 
     await expect(createAdminSessionCookie('id-token')).resolves.toBe('session-cookie');
@@ -41,17 +47,36 @@ describe('관리자 세션 인증', () => {
   });
 
   it.each([
-    { uid: 'other', email: 'owner@example.com', email_verified: true, auth_time: 1_787_616_240 },
-    { uid: 'admin-uid', email: 'other@example.com', email_verified: true, auth_time: 1_787_616_240 },
-    { uid: 'admin-uid', email: 'owner@example.com', email_verified: false, auth_time: 1_787_616_240 },
+    { uid: 'other', email: 'owner@example.com', email_verified: true, auth_time: 1_787_616_240, firebase: { sign_in_provider: 'google.com' } },
+    { uid: 'admin-uid', email: 'other@example.com', email_verified: true, auth_time: 1_787_616_240, firebase: { sign_in_provider: 'google.com' } },
+    { uid: 'admin-uid', email: 'owner@example.com', email_verified: false, auth_time: 1_787_616_240, firebase: { sign_in_provider: 'google.com' } },
   ])('허용되지 않은 클레임은 거부한다', async (claims) => {
     verifyIdToken.mockResolvedValue(claims);
 
     await expect(createAdminSessionCookie('id-token')).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
+  it('Google 이외의 공급자로 로그인한 계정은 세션 발급을 거부한다', async () => {
+    verifyIdToken.mockResolvedValue({
+      uid: 'admin-uid',
+      email: 'owner@example.com',
+      email_verified: true,
+      auth_time: 1_787_616_240,
+      firebase: { sign_in_provider: 'password' },
+    });
+
+    await expect(createAdminSessionCookie('id-token')).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(createSessionCookie).not.toHaveBeenCalled();
+  });
+
   it.each([undefined, 1_787_615_900])('auth_time이 없거나 5분을 넘으면 재로그인을 요구한다', async (authTime) => {
-    verifyIdToken.mockResolvedValue({ uid: 'admin-uid', email: 'owner@example.com', email_verified: true, auth_time: authTime });
+    verifyIdToken.mockResolvedValue({
+      uid: 'admin-uid',
+      email: 'owner@example.com',
+      email_verified: true,
+      auth_time: authTime,
+      firebase: { sign_in_provider: 'google.com' },
+    });
 
     await expect(createAdminSessionCookie('id-token')).rejects.toMatchObject({ code: 'RECENT_LOGIN_REQUIRED' });
     expect(createSessionCookie).not.toHaveBeenCalled();
@@ -71,17 +96,39 @@ describe('관리자 세션 인증', () => {
   });
 
   it('세션 생성 실패는 SESSION_CREATION_FAILED로 구분한다', async () => {
-    verifyIdToken.mockResolvedValue({ uid: 'admin-uid', email: 'owner@example.com', email_verified: true, auth_time: 1_787_616_240 });
+    verifyIdToken.mockResolvedValue({
+      uid: 'admin-uid',
+      email: 'owner@example.com',
+      email_verified: true,
+      auth_time: 1_787_616_240,
+      firebase: { sign_in_provider: 'google.com' },
+    });
     createSessionCookie.mockRejectedValue(new Error('session creation failed'));
 
     await expect(createAdminSessionCookie('id-token')).rejects.toMatchObject({ code: 'SESSION_CREATION_FAILED' });
   });
 
   it('세션 검증 시 폐기 여부를 확인한다', async () => {
-    verifySessionCookie.mockResolvedValue({ uid: 'admin-uid', email: 'owner@example.com', email_verified: true });
+    verifySessionCookie.mockResolvedValue({
+      uid: 'admin-uid',
+      email: 'owner@example.com',
+      email_verified: true,
+      firebase: { sign_in_provider: 'google.com' },
+    });
 
     await expect(verifyAdminSessionCookie('session-cookie')).resolves.toEqual({ uid: 'admin-uid', email: 'owner@example.com' });
     expect(verifySessionCookie).toHaveBeenCalledWith('session-cookie', true);
+  });
+
+  it('Google 이외의 공급자로 발급된 세션은 인증하지 않는다', async () => {
+    verifySessionCookie.mockResolvedValue({
+      uid: 'admin-uid',
+      email: 'owner@example.com',
+      email_verified: true,
+      firebase: { sign_in_provider: 'password' },
+    });
+
+    await expect(verifyAdminSessionCookie('password-session')).resolves.toBeNull();
   });
 
   it('누락되었거나 유효하지 않거나 허용되지 않은 세션은 인증되지 않은 것으로 처리한다', async () => {
@@ -89,7 +136,12 @@ describe('관리자 세션 인증', () => {
     await expect(verifyAdminSessionCookie()).resolves.toBeNull();
     await expect(verifyAdminSessionCookie('invalid-session')).resolves.toBeNull();
 
-    verifySessionCookie.mockResolvedValue({ uid: 'other', email: 'owner@example.com', email_verified: true });
+    verifySessionCookie.mockResolvedValue({
+      uid: 'other',
+      email: 'owner@example.com',
+      email_verified: true,
+      firebase: { sign_in_provider: 'google.com' },
+    });
     await expect(verifyAdminSessionCookie('other-session')).resolves.toBeNull();
   });
 
