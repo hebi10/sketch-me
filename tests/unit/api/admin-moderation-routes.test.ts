@@ -69,6 +69,10 @@ describe('admin moderation PATCH routes', () => {
     setDrawingModeration.mockResolvedValue({ changed: true, status: 'BLOCKED' });
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('Origin, session, body, transaction 순으로 스케치북 상태를 변경한다', async () => {
     const order: string[] = [];
     isAllowedAdminOrigin.mockImplementation(() => {
@@ -164,8 +168,32 @@ describe('admin moderation PATCH routes', () => {
   });
 
   it.each([
+    { route: 'sketchbook', patch: patchSketchbook, context: sketchbookContext },
+    { route: 'drawing', patch: patchDrawing, context: drawingContext },
+  ])('$route Route는 세션 쿠키가 누락되면 401을 반환한다', async ({ patch, context }) => {
+    cookies.mockResolvedValue({ get: vi.fn(() => undefined) });
+    verifyAdminSessionCookie.mockImplementation(async (cookieValue?: string) => (
+      cookieValue
+        ? { email: 'owner@example.com', uid: 'admin-uid' }
+        : null
+    ));
+
+    const response = await patch(
+      requestWithBody({ moderationStatus: 'BLOCKED' }),
+      context as never,
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ message: '관리자 로그인이 필요합니다.' });
+    expect(verifyAdminSessionCookie).toHaveBeenCalledWith(undefined);
+    expect(setSketchbookModeration).not.toHaveBeenCalled();
+    expect(setDrawingModeration).not.toHaveBeenCalled();
+  });
+
+  it.each([
     { body: {}, label: '필드 누락' },
     { body: { moderationStatus: 'HIDDEN' }, label: '허용되지 않은 상태' },
+    { body: { moderationStatus: 'BLOCKED', unexpected: true }, label: '추가 필드' },
     { body: '{not-json', label: '잘못된 JSON' },
   ])('잘못된 스케치북 body는 transaction 없이 400을 반환한다: $label', async ({ body }) => {
     const response = await patchSketchbook(requestWithBody(body), sketchbookContext);
@@ -178,12 +206,45 @@ describe('admin moderation PATCH routes', () => {
   it.each([
     { body: {}, label: '필드 누락' },
     { body: { moderationStatus: 'HIDDEN' }, label: '허용되지 않은 상태' },
+    { body: { moderationStatus: 'BLOCKED', unexpected: true }, label: '추가 필드' },
     { body: '{not-json', label: '잘못된 JSON' },
   ])('잘못된 그림 body는 transaction 없이 400을 반환한다: $label', async ({ body }) => {
     const response = await patchDrawing(requestWithBody(body), drawingContext);
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ message: '운영 상태를 확인해 주세요.' });
+    expect(setDrawingModeration).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { label: '빈 ID', sketchbookId: '' },
+    { label: '인코딩된 slash가 decode된 ID', sketchbookId: 'book/escape' },
+  ])('스케치북의 $label는 moderation 호출 전 400으로 거부한다', async ({ sketchbookId }) => {
+    const response = await patchSketchbook(
+      requestWithBody({ moderationStatus: 'BLOCKED' }),
+      { params: Promise.resolve({ sketchbookId }) },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ message: '요청을 확인해 주세요.' });
+    expect(setSketchbookModeration).not.toHaveBeenCalled();
+    expect(setDrawingModeration).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { drawingId: 'draw-1', label: '부모의 빈 ID', sketchbookId: '' },
+    { drawingId: 'draw-1', label: '부모의 decode된 slash ID', sketchbookId: 'book/escape' },
+    { drawingId: '', label: '그림의 빈 ID', sketchbookId: 'book-1' },
+    { drawingId: 'draw/escape', label: '그림의 decode된 slash ID', sketchbookId: 'book-1' },
+  ])('그림 $label는 moderation 호출 전 400으로 거부한다', async ({ drawingId, sketchbookId }) => {
+    const response = await patchDrawing(
+      requestWithBody({ moderationStatus: 'BLOCKED' }),
+      { params: Promise.resolve({ drawingId, sketchbookId }) },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ message: '요청을 확인해 주세요.' });
+    expect(setSketchbookModeration).not.toHaveBeenCalled();
     expect(setDrawingModeration).not.toHaveBeenCalled();
   });
 
@@ -200,5 +261,43 @@ describe('admin moderation PATCH routes', () => {
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({ message: '대상을 찾을 수 없습니다.' });
+  });
+
+  it.each([
+    {
+      context: sketchbookContext,
+      label: 'sketchbook',
+      logMessage: 'Admin sketchbook moderation failed',
+      operation: setSketchbookModeration,
+      patch: patchSketchbook,
+    },
+    {
+      context: drawingContext,
+      label: 'drawing',
+      logMessage: 'Admin drawing moderation failed',
+      operation: setDrawingModeration,
+      patch: patchDrawing,
+    },
+  ])('$label 내부 오류는 비밀값 없는 generic 500으로 변환한다', async ({
+    context,
+    logMessage,
+    operation,
+    patch,
+  }) => {
+    const secret = 'firebase unavailable: secret-token';
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    operation.mockRejectedValue(new Error(secret));
+
+    const response = await patch(
+      requestWithBody({ moderationStatus: 'BLOCKED' }),
+      context as never,
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(payload).toEqual({ message: '운영 상태를 변경하지 못했습니다.' });
+    expect(JSON.stringify(payload)).not.toContain(secret);
+    expect(consoleError).toHaveBeenCalledWith(logMessage, 'Error');
+    expect(consoleError.mock.calls.flat().join(' ')).not.toContain(secret);
   });
 });

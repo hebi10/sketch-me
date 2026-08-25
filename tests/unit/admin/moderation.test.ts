@@ -27,16 +27,30 @@ function document(data?: Record<string, unknown>): FakeDocument {
 function createFirestoreDouble(options: {
   sketchbook?: Record<string, unknown>;
   drawing?: Record<string, unknown>;
+  sketchbookId?: string;
+  drawingId?: string;
 }) {
+  const sketchbookId = options.sketchbookId ?? 'book-1';
+  const drawingId = options.drawingId ?? 'draw-1';
   const sketchbookReference = {
     collection: vi.fn(),
-    path: 'sketchbooks/book-1',
+    path: `sketchbooks/${sketchbookId}`,
   };
-  const drawingReference = { path: 'sketchbooks/book-1/drawings/draw-1' };
-  sketchbookReference.collection.mockReturnValue({
-    doc: vi.fn(() => drawingReference),
+  const drawingReference = { path: `sketchbooks/${sketchbookId}/drawings/${drawingId}` };
+  const drawingDocument = vi.fn((requestedId: string) => {
+    if (requestedId !== drawingId) throw new Error(`Unexpected drawing ID: ${requestedId}`);
+    return drawingReference;
+  });
+  sketchbookReference.collection.mockImplementation((name: string) => {
+    if (name !== 'drawings') throw new Error(`Unexpected subcollection: ${name}`);
+    return { doc: drawingDocument };
   });
   const auditReference = { path: 'adminAuditLogs/audit-1' };
+  const sketchbookDocument = vi.fn((requestedId: string) => {
+    if (requestedId !== sketchbookId) throw new Error(`Unexpected sketchbook ID: ${requestedId}`);
+    return sketchbookReference;
+  });
+  const auditDocument = vi.fn(() => auditReference);
   const transaction = {
     get: vi.fn().mockResolvedValue(document(options.sketchbook)),
     getAll: vi.fn().mockResolvedValue([
@@ -49,9 +63,10 @@ function createFirestoreDouble(options: {
   const firestore = {
     collection: vi.fn((name: string) => {
       if (name === 'sketchbooks') {
-        return { doc: vi.fn(() => sketchbookReference) };
+        return { doc: sketchbookDocument };
       }
-      return { doc: vi.fn(() => auditReference) };
+      if (name === 'adminAuditLogs') return { doc: auditDocument };
+      throw new Error(`Unexpected collection: ${name}`);
     }),
     runTransaction: vi.fn(async (callback: (value: typeof transaction) => unknown) => (
       callback(transaction)
@@ -61,8 +76,11 @@ function createFirestoreDouble(options: {
 
   return {
     auditReference,
+    auditDocument,
+    drawingDocument,
     drawingReference,
     firestore,
+    sketchbookDocument,
     sketchbookReference,
     transaction,
   };
@@ -81,7 +99,14 @@ describe('admin moderation transactions', () => {
   it('스케치북을 차단하며 운영 필드만 갱신하고 같은 트랜잭션에 감사 로그를 기록한다', async () => {
     const now = new Date('2026-08-25T00:05:00.000Z');
     vi.setSystemTime(now);
-    const { auditReference, sketchbookReference, transaction } = createFirestoreDouble({
+    const {
+      auditDocument,
+      auditReference,
+      firestore,
+      sketchbookDocument,
+      sketchbookReference,
+      transaction,
+    } = createFirestoreDouble({
       sketchbook: {
         moderationStatus: 'ACTIVE',
         publicId: 'public-1',
@@ -97,6 +122,8 @@ describe('admin moderation transactions', () => {
     })).resolves.toEqual({ changed: true, status: 'BLOCKED' });
 
     expect(transaction.get).toHaveBeenCalledWith(sketchbookReference);
+    expect(firestore.collection).toHaveBeenCalledWith('sketchbooks');
+    expect(sketchbookDocument).toHaveBeenCalledWith('book-1');
     expect(transaction.update).toHaveBeenCalledWith(sketchbookReference, {
       moderatedAt: now,
       moderationStatus: 'BLOCKED',
@@ -111,6 +138,8 @@ describe('admin moderation transactions', () => {
       targetId: 'book-1',
       targetType: 'SKETCHBOOK',
     });
+    expect(firestore.collection).toHaveBeenCalledWith('adminAuditLogs');
+    expect(auditDocument).toHaveBeenCalledWith();
   });
 
   it('legacy 스케치북의 누락 상태를 ACTIVE로 보고 같은 상태 요청에는 쓰거나 감사하지 않는다', async () => {
@@ -151,7 +180,7 @@ describe('admin moderation transactions', () => {
   });
 
   it('스케치북이 없으면 404로 변환 가능한 오류를 내고 쓰지 않는다', async () => {
-    const { transaction } = createFirestoreDouble({});
+    const { transaction } = createFirestoreDouble({ sketchbookId: 'missing-book' });
 
     await expect(setSketchbookModeration({
       adminUid: 'admin-uid',
@@ -168,7 +197,11 @@ describe('admin moderation transactions', () => {
     vi.setSystemTime(now);
     const {
       auditReference,
+      auditDocument,
+      drawingDocument,
       drawingReference,
+      firestore,
+      sketchbookDocument,
       sketchbookReference,
       transaction,
     } = createFirestoreDouble({
@@ -192,6 +225,10 @@ describe('admin moderation transactions', () => {
       drawingReference,
       sketchbookReference,
     );
+    expect(firestore.collection).toHaveBeenCalledWith('sketchbooks');
+    expect(sketchbookDocument).toHaveBeenCalledWith('book-1');
+    expect(sketchbookReference.collection).toHaveBeenCalledWith('drawings');
+    expect(drawingDocument).toHaveBeenCalledWith('draw-1');
     expect(transaction.update).toHaveBeenCalledWith(drawingReference, {
       moderatedAt: now,
       moderationStatus: 'BLOCKED',
@@ -206,6 +243,8 @@ describe('admin moderation transactions', () => {
       targetId: 'draw-1',
       targetType: 'DRAWING',
     });
+    expect(firestore.collection).toHaveBeenCalledWith('adminAuditLogs');
+    expect(auditDocument).toHaveBeenCalledWith();
   });
 
   it('이미 차단된 그림에는 쓰기와 감사 로그를 만들지 않는다', async () => {

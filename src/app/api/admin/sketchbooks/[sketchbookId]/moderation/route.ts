@@ -10,7 +10,10 @@ import {
   setSketchbookModeration,
 } from '@/lib/admin/moderation';
 import { isAllowedAdminOrigin } from '@/lib/admin/origin';
-import { moderationPayloadSchema } from '@/lib/admin/schemas';
+import {
+  moderationPayloadSchema,
+  sketchbookModerationParamsSchema,
+} from '@/lib/admin/schemas';
 
 export async function PATCH(
   request: Request,
@@ -33,12 +36,16 @@ export async function PATCH(
     return NextResponse.json({ message: '운영 상태를 확인해 주세요.' }, { status: 400 });
   }
 
-  const { sketchbookId } = await params;
+  const parsedParams = sketchbookModerationParamsSchema.safeParse(await params);
+  if (!parsedParams.success) {
+    return NextResponse.json({ message: '요청을 확인해 주세요.' }, { status: 400 });
+  }
+
   try {
     const result = await setSketchbookModeration({
       adminUid: identity.uid,
       moderationStatus: parsed.data.moderationStatus,
-      sketchbookId,
+      sketchbookId: parsedParams.data.sketchbookId,
     });
     return NextResponse.json({
       changed: result.changed,
