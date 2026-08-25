@@ -149,19 +149,35 @@ function hasParentMetadata(item: AdminDrawingListItem | AdminPurchaseListItem) {
     && item.sketchbookName.trim().length > 0;
 }
 
+function getSketchbookIdFromParentPath(path: string | undefined) {
+  const segments = path?.split('/');
+  return segments?.length === 2 && segments[0] === 'sketchbooks'
+    ? segments[1]
+    : '';
+}
+
 async function fillLegacyParentMetadata<T extends AdminDrawingListItem | AdminPurchaseListItem>(
   firestore: Firestore,
   documents: QueryDocumentSnapshot[],
   items: T[],
 ) {
+  const itemsWithParentIds = items.map((item, index) => {
+    if (item.sketchbookId.trim()) return item;
+    return {
+      ...item,
+      sketchbookId: getSketchbookIdFromParentPath(
+        documents[index]?.ref.parent.parent?.path,
+      ),
+    };
+  });
   const parentReferences = new Map<string, DocumentReference>();
-  items.forEach((item, index) => {
+  itemsWithParentIds.forEach((item, index) => {
     if (hasParentMetadata(item)) return;
     const parentReference = documents[index]?.ref.parent.parent;
     if (parentReference) parentReferences.set(parentReference.path, parentReference);
   });
 
-  if (parentReferences.size === 0) return items;
+  if (parentReferences.size === 0) return itemsWithParentIds;
 
   const parents = await firestore.getAll(...parentReferences.values());
   const parentMetadata = new Map(parents
@@ -171,7 +187,7 @@ async function fillLegacyParentMetadata<T extends AdminDrawingListItem | AdminPu
       publicId: String(document.data()?.publicId ?? ''),
     }]));
 
-  return items.map((item, index) => {
+  return itemsWithParentIds.map((item, index) => {
     if (hasParentMetadata(item)) return item;
     const parentPath = documents[index]?.ref.parent.parent?.path;
     const metadata = parentPath ? parentMetadata.get(parentPath) : undefined;

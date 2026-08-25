@@ -1,6 +1,8 @@
 import { FieldPath } from 'firebase-admin/firestore';
 import { vi } from 'vitest';
 
+import firestoreIndexes from '../../../firestore.indexes.json';
+
 const { getAdminFirestore } = vi.hoisted(() => ({ getAdminFirestore: vi.fn() }));
 
 vi.mock('@/lib/firebase/admin', () => ({ getAdminFirestore }));
@@ -13,6 +15,126 @@ import {
   listAdminPurchases,
   listAdminSketchbooks,
 } from '@/lib/admin/repository';
+
+type RequiredIndex = {
+  name: string;
+  collectionGroup: string;
+  queryScope: 'COLLECTION' | 'COLLECTION_GROUP';
+  fields: Array<{ fieldPath: string; order: 'ASCENDING' | 'DESCENDING' }>;
+};
+
+const requiredIndexes: RequiredIndex[] = [
+  {
+    name: '기존 스케치북 상세 그림',
+    collectionGroup: 'drawings',
+    queryScope: 'COLLECTION',
+    fields: [
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'createdAt', order: 'DESCENDING' },
+    ],
+  },
+  {
+    name: '스케치북 목록',
+    collectionGroup: 'sketchbooks',
+    queryScope: 'COLLECTION',
+    fields: [
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'createdAt', order: 'DESCENDING' },
+      { fieldPath: '__name__', order: 'DESCENDING' },
+    ],
+  },
+  {
+    name: '스케치북 공개 ID 검색',
+    collectionGroup: 'sketchbooks',
+    queryScope: 'COLLECTION',
+    fields: [
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'publicId', order: 'ASCENDING' },
+      { fieldPath: 'createdAt', order: 'DESCENDING' },
+      { fieldPath: '__name__', order: 'DESCENDING' },
+    ],
+  },
+  {
+    name: '스케치북 이름 검색',
+    collectionGroup: 'sketchbooks',
+    queryScope: 'COLLECTION',
+    fields: [
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'name', order: 'ASCENDING' },
+      { fieldPath: 'createdAt', order: 'DESCENDING' },
+      { fieldPath: '__name__', order: 'DESCENDING' },
+    ],
+  },
+  {
+    name: '오늘 생성 스케치북 count',
+    collectionGroup: 'sketchbooks',
+    queryScope: 'COLLECTION',
+    fields: [
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'createdAt', order: 'ASCENDING' },
+      { fieldPath: '__name__', order: 'ASCENDING' },
+    ],
+  },
+  {
+    name: '그림 목록',
+    collectionGroup: 'drawings',
+    queryScope: 'COLLECTION_GROUP',
+    fields: [
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'createdAt', order: 'DESCENDING' },
+      { fieldPath: '__name__', order: 'DESCENDING' },
+    ],
+  },
+  {
+    name: '오늘 제출 그림 count',
+    collectionGroup: 'drawings',
+    queryScope: 'COLLECTION_GROUP',
+    fields: [
+      { fieldPath: 'status', order: 'ASCENDING' },
+      { fieldPath: 'createdAt', order: 'ASCENDING' },
+      { fieldPath: '__name__', order: 'ASCENDING' },
+    ],
+  },
+  {
+    name: '결제 목록',
+    collectionGroup: 'purchases',
+    queryScope: 'COLLECTION_GROUP',
+    fields: [
+      { fieldPath: 'createdAt', order: 'DESCENDING' },
+      { fieldPath: '__name__', order: 'DESCENDING' },
+    ],
+  },
+  {
+    name: '성공 결제 대시보드 aggregate',
+    collectionGroup: 'purchases',
+    queryScope: 'COLLECTION_GROUP',
+    fields: [
+      { fieldPath: 'paymentStatus', order: 'ASCENDING' },
+      { fieldPath: 'amount', order: 'ASCENDING' },
+    ],
+  },
+  {
+    name: '스케치북 상세 성공 결제 aggregate',
+    collectionGroup: 'purchases',
+    queryScope: 'COLLECTION',
+    fields: [
+      { fieldPath: 'paymentStatus', order: 'ASCENDING' },
+      { fieldPath: 'amount', order: 'ASCENDING' },
+    ],
+  },
+];
+
+describe('admin repository Firestore indexes', () => {
+  it.each(requiredIndexes)('$name 쿼리에 대응하는 인덱스가 있다', ({
+    collectionGroup,
+    fields,
+    queryScope,
+  }) => {
+    expect(firestoreIndexes.indexes).toEqual(expect.arrayContaining([
+      { collectionGroup, fields, queryScope },
+    ]));
+  });
+});
 
 type FakeReference = {
   path: string;
@@ -72,6 +194,7 @@ function createPurchaseDocument(
     sketchbookName: '내 이름',
     sketchbookPublicId: 'public-1',
   },
+  includeSketchbookId = true,
 ) {
   const id = `purchase-${index}`;
   return {
@@ -84,7 +207,7 @@ function createPurchaseDocument(
       paymentStatus: 'SUCCEEDED',
       productType: 'FRIENDS_50',
       provider: 'MOCK',
-      sketchbookId: 'book-1',
+      ...(includeSketchbookId ? { sketchbookId: 'book-1' } : {}),
       ...metadata,
     }),
     id,
@@ -246,10 +369,10 @@ describe('admin repository legacy parent metadata', () => {
     expect(getAll).not.toHaveBeenCalled();
   });
 
-  it('빈 문자열을 포함해 메타데이터가 없는 legacy 결제의 고유 부모를 getAll 한 번으로 보완한다', async () => {
+  it('ID와 부모 메타데이터가 누락되거나 빈 문자열인 legacy 결제를 한 번의 getAll로 보완한다', async () => {
     const parent = { path: 'sketchbooks/book-1' };
     const purchasesQuery = createQuery([
-      createPurchaseDocument(1, parent, {}),
+      createPurchaseDocument(1, parent, {}, false),
       createPurchaseDocument(2, parent, { sketchbookName: '', sketchbookPublicId: '' }),
     ]);
     const getAll = vi.fn().mockResolvedValue([{
@@ -272,7 +395,11 @@ describe('admin repository legacy parent metadata', () => {
     expect(getAll).toHaveBeenCalledTimes(1);
     expect(getAll).toHaveBeenCalledWith(parent);
     expect(result.items).toEqual([
-      expect.objectContaining({ sketchbookName: '부모 이름', sketchbookPublicId: 'parent-public' }),
+      expect.objectContaining({
+        sketchbookId: 'book-1',
+        sketchbookName: '부모 이름',
+        sketchbookPublicId: 'parent-public',
+      }),
       expect.objectContaining({ sketchbookName: '부모 이름', sketchbookPublicId: 'parent-public' }),
     ]);
   });
