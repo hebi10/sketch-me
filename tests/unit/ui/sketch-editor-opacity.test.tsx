@@ -80,4 +80,15 @@ describe('SketchEditor 투명도 조절', () => {
     expect(screen.getByText('35%')).toBeVisible();
     expect(screen.getByAltText('그림 참고 사진').parentElement).toHaveStyle({ opacity: '0.35' });
   });
+
+  it('참고사진 확대를 투명도와 같은 범위 컨트롤로 표시한다', () => {
+    render(<SketchEditor ariaLabel="그리기 캔버스" referenceImageUrl="/reference.webp" />);
+
+    fireEvent.click(screen.getByRole('button', { name: '참고사진' }));
+    const scale = screen.getByRole('slider', { name: '확대' });
+    fireEvent.change(scale, { target: { value: '1.5' } });
+
+    expect(scale).toHaveValue('1.5');
+    expect(screen.getByText('150%')).toBeVisible();
+  });
 });
