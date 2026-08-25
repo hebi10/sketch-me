@@ -10,8 +10,8 @@ export interface StorySlot {
 }
 
 export const storySlots: readonly StorySlot[] = [
-  { rank: 1, x: 210, y: 250, width: 660, height: 660 },
-  { rank: 2, x: 75, y: 970, width: 250, height: 250 },
-  { rank: 3, x: 415, y: 970, width: 250, height: 250 },
-  { rank: 4, x: 755, y: 970, width: 250, height: 250 },
+  { rank: 1, x: 210, y: 308, width: 660, height: 660 },
+  { rank: 2, x: 129, y: 999, width: 250, height: 250 },
+  { rank: 3, x: 415, y: 999, width: 250, height: 250 },
+  { rank: 4, x: 701, y: 999, width: 250, height: 250 },
 ];
