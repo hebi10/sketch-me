@@ -76,8 +76,11 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await friendPage.goto(publicPath!);
   await expect(friendPage.getByRole('heading', { name: `${uniqueName}님을 그려주세요` })).toBeVisible();
   await friendPage.getByRole('link', { name: '✎ 그림 남기기' }).click();
+  await friendPage.getByRole('button', { name: '그림 그리기' }).click();
   await expect(friendPage.getByRole('button', { name: '참고사진' })).toBeEnabled();
   await drawOnCanvas(friendPage);
+  await friendPage.getByRole('button', { name: '확인' }).click();
+  await expect(friendPage.getByRole('img', { name: '그린 그림 미리보기' })).toBeVisible();
   await friendPage.getByLabel('내 이름').fill('모바일 친구');
   await friendPage.getByLabel('한마디 (선택)').fill('멋진 스케치북이야');
   await friendPage.getByRole('button', { name: '그림 남기기' }).click();

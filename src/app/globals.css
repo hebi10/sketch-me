@@ -281,20 +281,17 @@ a { color: inherit; text-decoration: none; }
   width: 1px;
 }
 
-.fullscreen-entry {
-  background: color-mix(in srgb, var(--canvas) 92%, transparent);
+.drawing-entry-button { width: 100%; }
+
+.drawing-preview {
+  aspect-ratio: 1;
+  background: var(--canvas);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--ink);
-  cursor: pointer;
-  font-size: .78rem;
-  min-height: 44px;
-  padding: 8px 12px;
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  z-index: 3;
+  margin: 0;
+  overflow: hidden;
 }
+
+.drawing-preview img { display: block; height: 100%; object-fit: contain; width: 100%; }
 
 .sketch-editor--fullscreen {
   align-items: center;
@@ -357,6 +354,22 @@ a { color: inherit; text-decoration: none; }
 
 .fullscreen-controls button[aria-expanded="true"] {
   border-color: var(--accent);
+}
+
+.fullscreen-controls .fullscreen-confirm { padding-inline: 14px; width: auto; }
+
+.fullscreen-drawing-error {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  bottom: max(132px, calc(env(safe-area-inset-bottom) + 122px));
+  color: var(--ink);
+  font-size: .82rem;
+  margin: 0;
+  max-width: min(280px, calc(100vw - 20px));
+  padding: 10px 12px;
+  position: fixed;
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 104;
 }
 
 .fullscreen-controls img {

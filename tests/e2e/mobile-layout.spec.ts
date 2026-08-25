@@ -132,6 +132,7 @@ test('브랜드 로고 묶음은 단순 헤더의 가운데에 정렬된다', as
 test('그리기 캔버스는 모바일에서도 정사각형이다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/create');
+  await page.getByRole('button', { name: '그림 그리기' }).click();
 
   const canvas = page.getByLabel('내 모습을 그리는 캔버스');
   await expect(canvas).toHaveAttribute('width', '720');
@@ -142,11 +143,11 @@ test('그리기 캔버스는 모바일에서도 정사각형이다', async ({ pa
   expect((bounds?.width ?? 0) / (bounds?.height ?? 1)).toBeCloseTo(1, 2);
 });
 
-test('전체 화면 그리기에서 우측 하단 아이콘으로 도구를 열고 돌아온다', async ({ page }) => {
+test('그림 그리기에서 우측 하단 아이콘으로 도구를 열고 확인한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/create');
 
-  await page.getByRole('button', { name: '전체 화면으로 그리기' }).click();
+  await page.getByRole('button', { name: '그림 그리기' }).click();
   const fullscreen = page.getByRole('dialog', { name: '전체 화면 그리기' });
   await expect(fullscreen).toBeVisible();
   await expect(page.getByRole('navigation', { name: '그림 편집 단계' })).toBeHidden();
@@ -156,17 +157,20 @@ test('전체 화면 그리기에서 우측 하단 아이콘으로 도구를 열�
   expect(canvasBounds).not.toBeNull();
   expect((canvasBounds?.width ?? 0) / (canvasBounds?.height ?? 1)).toBeCloseTo(1, 2);
 
-  const exitButton = page.getByRole('button', { name: '전체 화면 그리기 종료' });
+  const confirmButton = page.getByRole('button', { name: '확인' });
   const toolsButton = page.getByRole('button', { name: '그리기 도구 열기' });
-  await expect(exitButton.locator('img')).toHaveAttribute('src', /fullscreen-back\.webp/);
   await expect(toolsButton.locator('img')).toHaveAttribute('src', /drawing-controls\.webp/);
-  const exitBounds = await exitButton.boundingBox();
+  const confirmBounds = await confirmButton.boundingBox();
   const toolsBounds = await toolsButton.boundingBox();
-  expect(exitBounds?.x ?? 0).toBeGreaterThan(300);
+  expect(confirmBounds?.x ?? 0).toBeGreaterThan(300);
   expect(toolsBounds?.x ?? 0).toBeGreaterThan(300);
 
   await toolsButton.click();
   await expect(page.getByRole('navigation', { name: '그림 편집 단계' })).toBeVisible();
-  await page.getByRole('button', { name: '전체 화면 그리기 종료' }).click();
+  await page.mouse.move((canvasBounds?.x ?? 0) + 80, (canvasBounds?.y ?? 0) + 80);
+  await page.mouse.down();
+  await page.mouse.move((canvasBounds?.x ?? 0) + 140, (canvasBounds?.y ?? 0) + 140);
+  await page.mouse.up();
+  await confirmButton.click();
   await expect(fullscreen).toHaveCount(0);
 });

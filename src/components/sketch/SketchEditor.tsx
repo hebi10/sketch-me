@@ -33,7 +33,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const editorRef = useRef<HTMLElement>(null);
     const fullscreenEntryRef = useRef<HTMLButtonElement>(null);
     const fullscreenRestoreFocusRef = useRef(false);
-    const fullscreenExitRef = useRef<HTMLButtonElement>(null);
+    const fullscreenConfirmRef = useRef<HTMLButtonElement>(null);
     const drawingRef = useRef(false);
     const lastPointRef = useRef<{ x: number; y: number } | null>(null);
     const referencePointers = useRef(new Map<number, { x: number; y: number }>());
@@ -48,6 +48,8 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [referenceOffset, setReferenceOffset] = useState({ x: 0, y: 0 });
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [controlsOpen, setControlsOpen] = useState(false);
+    const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
+    const [drawingError, setDrawingError] = useState<string | null>(null);
 
     function context() {
       return canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -80,21 +82,23 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       return false;
     }
 
+    function createDrawingOutput() {
+      const canvas = canvasRef.current;
+      if (!canvas || !canvasHasDrawing()) return null;
+      const output = document.createElement('canvas');
+      output.width = width;
+      output.height = height;
+      const outputContext = output.getContext('2d');
+      if (!outputContext) return null;
+      outputContext.fillStyle = '#ffffff';
+      outputContext.fillRect(0, 0, width, height);
+      outputContext.drawImage(canvas, 0, 0);
+      return output.toDataURL('image/webp', 0.76);
+    }
+
     useImperativeHandle(ref, () => ({
-      hasDrawing: canvasHasDrawing,
-      exportDrawing: () => {
-        const canvas = canvasRef.current;
-        if (!canvas || !canvasHasDrawing()) return null;
-        const output = document.createElement('canvas');
-        output.width = width;
-        output.height = height;
-        const outputContext = output.getContext('2d');
-        if (!outputContext) return null;
-        outputContext.fillStyle = '#ffffff';
-        outputContext.fillRect(0, 0, width, height);
-        outputContext.drawImage(canvas, 0, 0);
-        return output.toDataURL('image/webp', 0.76);
-      },
+      hasDrawing: () => Boolean(confirmedDrawing),
+      exportDrawing: () => confirmedDrawing,
     }));
 
     useEffect(() => {
@@ -145,7 +149,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       };
       document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
-      fullscreenExitRef.current?.focus();
+      fullscreenConfirmRef.current?.focus();
       return () => {
         document.body.style.overflow = previousOverflow;
         window.removeEventListener('keydown', handleKeyDown);
@@ -241,18 +245,37 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       referencePointers.current.delete(event.pointerId);
     }
 
+    function openDrawing() {
+      setControlsOpen(false);
+      setDrawingError(null);
+      setIsFullscreen(true);
+    }
+
+    function confirmDrawing() {
+      const output = createDrawingOutput();
+      if (!output) {
+        setDrawingError('그림을 한 번 이상 그린 뒤 확인해 주세요.');
+        return;
+      }
+      setConfirmedDrawing(output);
+      setControlsOpen(false);
+      setDrawingError(null);
+      setIsFullscreen(false);
+    }
+
     return (
       <section aria-label={isFullscreen ? '전체 화면 그리기' : undefined} aria-modal={isFullscreen || undefined} className={`sketch-editor ${isFullscreen ? 'sketch-editor--fullscreen' : ''}`} ref={editorRef} role={isFullscreen ? 'dialog' : undefined}>
-        <div className={`sketch-stage sketch-stage--${tab}`} onPointerCancel={referencePointerEnd} onPointerDown={referencePointerDown} onPointerMove={referencePointerMove} onPointerUp={referencePointerEnd}>
+        {!isFullscreen && !confirmedDrawing ? <button className="button button--primary drawing-entry-button" onClick={openDrawing} ref={fullscreenEntryRef} type="button">그림 그리기</button> : null}
+        {!isFullscreen && confirmedDrawing ? <figure className="drawing-preview"><Image alt="그린 그림 미리보기" height={height} src={confirmedDrawing} unoptimized width={width} /></figure> : null}
+        <div className={`sketch-stage sketch-stage--${tab}`} hidden={!isFullscreen} onPointerCancel={referencePointerEnd} onPointerDown={referencePointerDown} onPointerMove={referencePointerMove} onPointerUp={referencePointerEnd}>
           {referenceImageUrl ? (
             <div className="reference-layer" style={{ opacity: referenceOpacity / 100, transform: `translate(${referenceOffset.x}px, ${referenceOffset.y}px) scale(${referenceScale})` }}>
               <Image alt="그림 참고 사진" fill sizes="(max-width: 640px) 100vw, 600px" src={referenceImageUrl} unoptimized />
             </div>
           ) : null}
           <canvas aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
-          {!isFullscreen ? <button className="fullscreen-entry" onClick={() => { setControlsOpen(false); setIsFullscreen(true); }} ref={fullscreenEntryRef} type="button">전체 화면으로 그리기</button> : null}
         </div>
-        <div className="editor-control-panel" hidden={isFullscreen && !controlsOpen}>
+        <div className="editor-control-panel" hidden={!isFullscreen || !controlsOpen}>
           <nav aria-label="그림 편집 단계" className="editor-tabs">
             <button aria-pressed={tab === 'draw'} onClick={() => setTab('draw')} type="button">그리기</button>
             <button aria-pressed={tab === 'reference'} disabled={!referenceImageUrl} onClick={() => setTab('reference')} type="button">참고사진</button>
@@ -269,10 +292,10 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
           </div>
         </div>
         {isFullscreen ? (
-          <div className="fullscreen-controls">
-            <button aria-label="전체 화면 그리기 종료" onClick={() => { setControlsOpen(false); setIsFullscreen(false); }} ref={fullscreenExitRef} type="button"><Image alt="" height={30} src="/icons/fullscreen-back.webp" width={30} /></button>
-            <button aria-expanded={controlsOpen} aria-label={controlsOpen ? '그리기 도구 닫기' : '그리기 도구 열기'} onClick={() => setControlsOpen((current) => !current)} type="button"><Image alt="" height={30} src="/icons/drawing-controls.webp" width={30} /></button>
-          </div>
+          <><div className="fullscreen-controls">
+              <button className="fullscreen-confirm" onClick={confirmDrawing} ref={fullscreenConfirmRef} type="button">확인</button>
+              <button aria-expanded={controlsOpen} aria-label={controlsOpen ? '그리기 도구 닫기' : '그리기 도구 열기'} onClick={() => setControlsOpen((current) => !current)} type="button"><Image alt="" height={30} src="/icons/drawing-controls.webp" width={30} /></button>
+            </div>{drawingError ? <p className="fullscreen-drawing-error" role="alert">{drawingError}</p> : null}</>
         ) : null}
       </section>
     );

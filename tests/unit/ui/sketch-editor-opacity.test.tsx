@@ -22,6 +22,11 @@ function createCanvasContext() {
   };
 }
 
+function openDrawingTools() {
+  fireEvent.click(screen.getByRole('button', { name: '그림 그리기' }));
+  fireEvent.click(screen.getByRole('button', { name: '그리기 도구 열기' }));
+}
+
 describe('SketchEditor 투명도 조절', () => {
   beforeEach(() => {
     vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
@@ -29,6 +34,7 @@ describe('SketchEditor 투명도 조절', () => {
 
   it('펜 투명도 드래그 조절을 굵기 조절 위에 표시한다', () => {
     render(<SketchEditor ariaLabel="그리기 캔버스" />);
+    openDrawingTools();
 
     const opacity = screen.getByRole('slider', { name: /펜 투명도/ });
     const thickness = screen.getByRole('slider', { name: /굵기/ });
@@ -45,6 +51,7 @@ describe('SketchEditor 투명도 조절', () => {
     const context = createCanvasContext();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D);
     render(<SketchEditor ariaLabel="그리기 캔버스" />);
+    openDrawingTools();
     const canvas = screen.getByLabelText('그리기 캔버스');
     Object.defineProperty(canvas, 'setPointerCapture', { value: vi.fn() });
     vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
@@ -71,6 +78,7 @@ describe('SketchEditor 투명도 조절', () => {
 
   it('참고사진 투명도를 드래그 값에 맞춰 적용한다', () => {
     render(<SketchEditor ariaLabel="그리기 캔버스" referenceImageUrl="/reference.webp" />);
+    openDrawingTools();
 
     fireEvent.click(screen.getByRole('button', { name: '참고사진' }));
     const opacity = screen.getByRole('slider', { name: /사진 투명도/ });
@@ -83,6 +91,7 @@ describe('SketchEditor 투명도 조절', () => {
 
   it('참고사진 확대를 투명도와 같은 범위 컨트롤로 표시한다', () => {
     render(<SketchEditor ariaLabel="그리기 캔버스" referenceImageUrl="/reference.webp" />);
+    openDrawingTools();
 
     fireEvent.click(screen.getByRole('button', { name: '참고사진' }));
     const scale = screen.getByRole('slider', { name: '확대' });
