@@ -257,7 +257,8 @@ export async function getAdminSketchbookDetail(
     .limit(5);
   const purchasesQuery = reference
     .collection('purchases')
-    .where('paymentStatus', '==', 'SUCCEEDED');
+    .where('paymentStatus', '==', 'SUCCEEDED')
+    .where('provider', '==', 'MOCK');
   const [drawings, purchases] = await Promise.all([
     drawingsQuery.get(),
     purchasesQuery.aggregate({
@@ -309,7 +310,9 @@ export async function listAdminPurchases(
   const cursor = readCursor(input.cursor, 'purchases');
   const firestore = getAdminFirestore();
   const snapshot = await withPagination(
-    firestore.collectionGroup('purchases'),
+    firestore
+      .collectionGroup('purchases')
+      .where('provider', '==', 'MOCK'),
     firestore,
     cursor,
   ).get();
@@ -350,7 +353,8 @@ async function loadAdminStats(): Promise<AdminDashboardStats> {
     .where('status', 'in', ['VISIBLE', 'HIDDEN']);
   const purchases = firestore
     .collectionGroup('purchases')
-    .where('paymentStatus', '==', 'SUCCEEDED');
+    .where('paymentStatus', '==', 'SUCCEEDED')
+    .where('provider', '==', 'MOCK');
   const todaySketchbooks = sketchbooks
     .where('createdAt', '>=', start)
     .where('createdAt', '<', end);

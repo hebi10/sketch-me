@@ -105,6 +105,16 @@ const requiredIndexes: RequiredIndex[] = [
     ],
   },
   {
+    name: '모의 결제 목록',
+    collectionGroup: 'purchases',
+    queryScope: 'COLLECTION_GROUP',
+    fields: [
+      { fieldPath: 'provider', order: 'ASCENDING' },
+      { fieldPath: 'createdAt', order: 'DESCENDING' },
+      { fieldPath: '__name__', order: 'DESCENDING' },
+    ],
+  },
+  {
     name: '성공 결제 대시보드 aggregate',
     collectionGroup: 'purchases',
     queryScope: 'COLLECTION_GROUP',
@@ -119,6 +129,26 @@ const requiredIndexes: RequiredIndex[] = [
     queryScope: 'COLLECTION',
     fields: [
       { fieldPath: 'paymentStatus', order: 'ASCENDING' },
+      { fieldPath: 'amount', order: 'ASCENDING' },
+    ],
+  },
+  {
+    name: '모의 성공 결제 대시보드 aggregate',
+    collectionGroup: 'purchases',
+    queryScope: 'COLLECTION_GROUP',
+    fields: [
+      { fieldPath: 'paymentStatus', order: 'ASCENDING' },
+      { fieldPath: 'provider', order: 'ASCENDING' },
+      { fieldPath: 'amount', order: 'ASCENDING' },
+    ],
+  },
+  {
+    name: '스케치북 상세 모의 성공 결제 aggregate',
+    collectionGroup: 'purchases',
+    queryScope: 'COLLECTION',
+    fields: [
+      { fieldPath: 'paymentStatus', order: 'ASCENDING' },
+      { fieldPath: 'provider', order: 'ASCENDING' },
       { fieldPath: 'amount', order: 'ASCENDING' },
     ],
   },
@@ -208,20 +238,28 @@ function createPurchaseDocument(
     sketchbookPublicId: 'public-1',
   },
   includeSketchbookId = true,
+  overrides: {
+    amount?: number;
+    paymentStatus?: 'READY' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+    provider?: 'MOCK' | 'TOSS' | null;
+  } = {},
 ) {
   const id = `purchase-${index}`;
+  const { provider = 'MOCK', ...purchaseOverrides } = overrides;
+  const minute = String(index % 60).padStart(2, '0');
   return {
     data: () => ({
       additionalLimit: 50,
       amount: 3_900,
-      createdAt: new Date(`2026-08-25T00:0${index}:00.000Z`),
+      createdAt: new Date(`2026-08-25T00:${minute}:00.000Z`),
       orderId: `ORDER-${index}`,
-      paidAt: new Date(`2026-08-25T00:0${index}:00.000Z`),
+      paidAt: new Date(`2026-08-25T00:${minute}:00.000Z`),
       paymentStatus: 'SUCCEEDED',
       productType: 'FRIENDS_50',
-      provider: 'MOCK',
+      ...(provider ? { provider } : {}),
       ...(includeSketchbookId ? { sketchbookId: 'book-1' } : {}),
       ...metadata,
+      ...purchaseOverrides,
     }),
     id,
     ref: {
@@ -229,6 +267,47 @@ function createPurchaseDocument(
       path: `${parent.path}/purchases/${id}`,
     },
   };
+}
+
+function createFilteredPurchaseQuery(
+  documents: Array<ReturnType<typeof createPurchaseDocument>>,
+) {
+  const filters: Array<{ field: string; value: unknown }> = [];
+  const filteredDocuments = () => documents.filter((document) => {
+    const data = document.data() as Record<string, unknown>;
+    return filters.every(({ field, value }) => data[field] === value);
+  });
+  const query = {
+    aggregate: vi.fn(() => ({
+      get: vi.fn().mockImplementation(async () => {
+        const matching = filteredDocuments();
+        return {
+          data: () => ({
+            amount: matching.reduce((sum, document) => (
+              sum + Number(document.data().amount)
+            ), 0),
+            count: matching.length,
+          }),
+        };
+      }),
+    })),
+    get: vi.fn().mockImplementation(async () => {
+      const docs = filteredDocuments();
+      return { docs, empty: docs.length === 0 };
+    }),
+    limit: vi.fn(),
+    orderBy: vi.fn(),
+    startAfter: vi.fn(),
+    where: vi.fn((field: string, operator: string, value: unknown) => {
+      if (operator !== '==') throw new Error(`지원하지 않는 테스트 연산자: ${operator}`);
+      filters.push({ field, value });
+      return query;
+    }),
+  };
+  query.limit.mockReturnValue(query);
+  query.orderBy.mockReturnValue(query);
+  query.startAfter.mockReturnValue(query);
+  return query;
 }
 
 function createSketchbookDocument(id = 'book-1') {
@@ -335,6 +414,37 @@ describe('admin repository pagination and search', () => {
 
     await expect(listAdminDrawings({ cursor: 'invalid' })).rejects.toThrow('유효하지 않은 관리자 커서입니다.');
   });
+
+  it('모의 결제만 21개 조회해 20개와 다음 커서를 반환하고 TOSS와 provider 없는 legacy 결제를 제외한다', async () => {
+    const parent = { path: 'sketchbooks/book-1' };
+    const mockDocuments = Array.from(
+      { length: 21 },
+      (_, index) => createPurchaseDocument(20 - index, parent),
+    );
+    const purchasesQuery = createFilteredPurchaseQuery([
+      createPurchaseDocument(59, parent, undefined, true, { provider: 'TOSS' }),
+      createPurchaseDocument(58, parent, undefined, true, { provider: null }),
+      ...mockDocuments,
+    ]);
+    const getAll = vi.fn();
+    getAdminFirestore.mockReturnValue({
+      collectionGroup: vi.fn(() => purchasesQuery),
+      getAll,
+    });
+
+    const result = await listAdminPurchases({});
+
+    expect(result.items).toHaveLength(20);
+    expect(result.items.every((item) => item.provider === 'MOCK')).toBe(true);
+    expect(decodeAdminCursor(result.nextCursor ?? undefined)).toEqual({
+      createdAt: '2026-08-25T00:01:00.000Z',
+      path: 'sketchbooks/book-1/purchases/purchase-1',
+    });
+    expect(purchasesQuery.where).toHaveBeenCalledWith('provider', '==', 'MOCK');
+    expect(purchasesQuery.limit).toHaveBeenCalledWith(21);
+    expect(purchasesQuery.get).toHaveBeenCalledTimes(1);
+    expect(getAll).not.toHaveBeenCalled();
+  });
 });
 
 describe('admin repository legacy parent metadata', () => {
@@ -438,16 +548,15 @@ describe('admin repository detail and stats', () => {
     vi.useRealTimers();
   });
 
-  it('스케치북 상세에 최근 그림과 성공 결제 요약을 포함한다', async () => {
+  it('스케치북 상세에 최근 그림과 모의 성공 결제만 합산한 요약을 포함한다', async () => {
     const parent = { path: 'sketchbooks/book-1' };
     const drawingQuery = createQuery([createDrawingDocument(1, parent)]);
-    const purchaseQuery = {
-      aggregate: vi.fn(() => ({
-        get: vi.fn().mockResolvedValue({ data: () => ({ amount: 3_900, count: 1 }) }),
-      })),
-      where: vi.fn(),
-    };
-    purchaseQuery.where.mockReturnValue(purchaseQuery);
+    const purchaseQuery = createFilteredPurchaseQuery([
+      createPurchaseDocument(1, parent),
+      createPurchaseDocument(2, parent, undefined, true, { amount: 6_900, provider: 'TOSS' }),
+      createPurchaseDocument(3, parent, undefined, true, { paymentStatus: 'FAILED' }),
+      createPurchaseDocument(4, parent, undefined, true, { provider: null }),
+    ]);
     const sketchbookReference = {
       collection: vi.fn((name: string) => name === 'drawings' ? drawingQuery : purchaseQuery),
       get: vi.fn().mockResolvedValue({ ...createSketchbookDocument(), exists: true }),
@@ -462,6 +571,8 @@ describe('admin repository detail and stats', () => {
     expect(drawingQuery.where).toHaveBeenCalledWith('status', 'in', ['VISIBLE', 'HIDDEN']);
     expect(drawingQuery.limit).toHaveBeenCalledWith(5);
     expect(purchaseQuery.where).toHaveBeenCalledWith('paymentStatus', '==', 'SUCCEEDED');
+    expect(purchaseQuery.where).toHaveBeenCalledWith('provider', '==', 'MOCK');
+    expect(purchaseQuery.aggregate).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({
       id: 'book-1',
       purchaseSummary: { amount: 3_900, count: 1 },
@@ -491,22 +602,25 @@ describe('admin repository detail and stats', () => {
 
     const sketchbookCounts = createCountQueries(10, 2);
     const drawingCounts = createCountQueries(20, 4);
-    const purchasesQuery = {
-      aggregate: vi.fn(() => ({
-        get: vi.fn().mockResolvedValue({ data: () => ({ amount: 12_870, count: 3 }) }),
-      })),
-    };
+    const purchaseParent = { path: 'sketchbooks/book-1' };
+    const purchasesQuery = createFilteredPurchaseQuery([
+      createPurchaseDocument(1, purchaseParent),
+      createPurchaseDocument(2, purchaseParent, undefined, true, { amount: 990 }),
+      createPurchaseDocument(3, purchaseParent, undefined, true, { amount: 6_900, provider: 'TOSS' }),
+      createPurchaseDocument(4, purchaseParent, undefined, true, { paymentStatus: 'CANCELLED' }),
+      createPurchaseDocument(5, purchaseParent, undefined, true, { provider: null }),
+    ]);
     const sketchbooksCollection = { where: vi.fn(() => sketchbookCounts.baseQuery) };
     const drawingsCollection = { where: vi.fn(() => drawingCounts.baseQuery) };
-    const purchasesCollection = { where: vi.fn(() => purchasesQuery) };
+    const purchasesCollection = purchasesQuery;
     getAdminFirestore.mockReturnValue({
       collection: vi.fn(() => sketchbooksCollection),
       collectionGroup: vi.fn((name: string) => name === 'drawings' ? drawingsCollection : purchasesCollection),
     });
 
     await expect(getCachedAdminStats()).resolves.toEqual({
-      succeededPurchaseAmount: 12_870,
-      succeededPurchaseCount: 3,
+      succeededPurchaseAmount: 4_890,
+      succeededPurchaseCount: 2,
       todayDrawings: 4,
       todaySketchbooks: 2,
       totalDrawings: 20,
@@ -516,6 +630,7 @@ describe('admin repository detail and stats', () => {
     expect(sketchbooksCollection.where).toHaveBeenCalledWith('status', 'in', ['PUBLIC', 'PRIVATE']);
     expect(drawingsCollection.where).toHaveBeenCalledWith('status', 'in', ['VISIBLE', 'HIDDEN']);
     expect(purchasesCollection.where).toHaveBeenCalledWith('paymentStatus', '==', 'SUCCEEDED');
+    expect(purchasesCollection.where).toHaveBeenCalledWith('provider', '==', 'MOCK');
     expect(sketchbookCounts.baseQuery.where).toHaveBeenCalledWith(
       'createdAt',
       '>=',
