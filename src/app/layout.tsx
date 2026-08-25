@@ -23,6 +23,18 @@ export const metadata: Metadata = {
     description: '친구들이 그린 나를 모으는 참여형 초상화 서비스',
     type: 'website',
     locale: 'ko_KR',
+    images: [{
+      url: '/brand/sketchbook-kakao-share.webp',
+      width: 1200,
+      height: 630,
+      alt: '친구들이 그린 나를 모으는 스캐치북',
+    }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '스캐치북',
+    description: '친구들이 그린 나를 모으는 참여형 초상화 서비스',
+    images: ['/brand/sketchbook-kakao-share.webp'],
   },
 };
 

@@ -28,12 +28,18 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      images: sketchbook.ownerDrawingPath ? [{
-        url: `/api/sketchbooks/${publicId}/owner/image`,
-        width: 720,
-        height: 720,
-        alt: `${sketchbook.name}님의 스케치`,
-      }] : undefined,
+      images: [{
+        url: '/brand/sketchbook-kakao-share.webp',
+        width: 1200,
+        height: 630,
+        alt: `${sketchbook.name}님의 스캐치북`,
+      }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/brand/sketchbook-kakao-share.webp'],
     },
   };
 }
