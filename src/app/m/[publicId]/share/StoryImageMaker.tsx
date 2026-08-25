@@ -11,6 +11,7 @@ export interface StoryDrawing {
 }
 
 interface StoryImageMakerProps {
+  backgroundImage: string;
   drawings: StoryDrawing[];
   name: string;
   publicUrl: string;
@@ -49,7 +50,7 @@ function setFittedFont(
   }
 }
 
-export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerProps) {
+export function StoryImageMaker({ backgroundImage, drawings, name, publicUrl }: StoryImageMakerProps) {
   const [status, setStatus] = useState<string | null>(null);
 
   async function download() {
@@ -65,11 +66,11 @@ export function StoryImageMaker({ drawings, name, publicUrl }: StoryImageMakerPr
 
       context.fillStyle = storyStyle.background;
       context.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
-      const background = await loadImage(storyStyle.backgroundImage);
+      const background = await loadImage(backgroundImage);
       context.drawImage(background, 0, 0, STORY_WIDTH, STORY_HEIGHT);
       context.fillStyle = storyStyle.ink;
       context.textAlign = 'center';
-      const title = `${name} BEST 4`;
+      const title = `BEST 4`;
       setFittedFont(context, title, storyStyle.fontFamily, { maxSize: 78, minSize: 28, maxWidth: 900, weight: 700 });
       context.fillText(title, 540, 180);
 
