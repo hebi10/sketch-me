@@ -223,6 +223,7 @@ describe('admin moderation PATCH routes', () => {
     { label: '인코딩된 slash가 decode된 ID', sketchbookId: 'book/escape' },
     { label: '한 개 점 ID', sketchbookId: '.' },
     { label: '두 개 점 ID', sketchbookId: '..' },
+    { label: 'Firestore 예약 패턴 ID', sketchbookId: '__reserved__' },
     { label: 'UTF-8 1,500 bytes 초과 ID', sketchbookId: oversizedUtf8Id },
   ])('스케치북의 $label는 moderation 호출 전 400으로 거부한다', async ({ sketchbookId }) => {
     const response = await patchSketchbook(
@@ -243,6 +244,7 @@ describe('admin moderation PATCH routes', () => {
     { drawingId: 'draw/escape', label: '그림의 decode된 slash ID', sketchbookId: 'book-1' },
     { drawingId: '.', label: '그림의 한 개 점 ID', sketchbookId: 'book-1' },
     { drawingId: '..', label: '그림의 두 개 점 ID', sketchbookId: 'book-1' },
+    { drawingId: '__reserved__', label: '그림의 Firestore 예약 패턴 ID', sketchbookId: 'book-1' },
     { drawingId: oversizedUtf8Id, label: '그림의 UTF-8 1,500 bytes 초과 ID', sketchbookId: 'book-1' },
   ])('그림 $label는 moderation 호출 전 400으로 거부한다', async ({ drawingId, sketchbookId }) => {
     const response = await patchDrawing(
@@ -258,6 +260,7 @@ describe('admin moderation PATCH routes', () => {
 
   it.each([
     { label: 'backslash와 % ID', sketchbookId: 'book\\valid%25' },
+    { label: '일반 underscore ID', sketchbookId: 'book_valid' },
     { label: 'UTF-8 정확히 1,500 bytes ID', sketchbookId: exactUtf8LimitId },
   ])('스케치북의 유효한 $label를 원문 그대로 moderation에 전달한다', async ({ sketchbookId }) => {
     const response = await patchSketchbook(
@@ -278,6 +281,11 @@ describe('admin moderation PATCH routes', () => {
       drawingId: 'draw\\valid%2F',
       label: 'backslash와 % ID',
       sketchbookId: 'book\\valid%25',
+    },
+    {
+      drawingId: 'draw_valid',
+      label: '일반 underscore ID',
+      sketchbookId: 'book_valid',
     },
     {
       drawingId: exactUtf8LimitId,

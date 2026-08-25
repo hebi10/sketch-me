@@ -6,6 +6,7 @@ const firestoreDocumentIdSchema = z.string()
   .min(1)
   .refine((value) => !value.includes('/'))
   .refine((value) => value !== '.' && value !== '..')
+  .refine((value) => !(value.startsWith('__') && value.endsWith('__')))
   .refine((value) => textEncoder.encode(value).byteLength <= 1_500);
 
 export const moderationPayloadSchema = z.object({
