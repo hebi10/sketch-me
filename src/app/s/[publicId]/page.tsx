@@ -28,12 +28,12 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      images: [{
+      images: sketchbook.ownerDrawingPath ? [{
         url: `/api/sketchbooks/${publicId}/owner/image`,
         width: 720,
         height: 720,
         alt: `${sketchbook.name}님의 스케치`,
-      }],
+      }] : undefined,
     },
   };
 }

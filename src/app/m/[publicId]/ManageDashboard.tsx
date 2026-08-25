@@ -13,12 +13,13 @@ import { ShareSketchbookButton } from './ShareSketchbookButton';
 interface ManageDashboardProps {
   publicId: string;
   name: string;
+  ownerDrawingPath?: string | null;
   participantCount: number;
   participantLimit: number;
   drawings: Drawing[];
 }
 
-export function ManageDashboard({ publicId, name, participantCount, participantLimit, drawings }: ManageDashboardProps) {
+export function ManageDashboard({ publicId, name, ownerDrawingPath = null, participantCount, participantLimit, drawings }: ManageDashboardProps) {
   const router = useRouter();
   const [limit, setLimit] = useState(participantLimit);
   const [message, setMessage] = useState<string | null>(null);
@@ -167,6 +168,12 @@ export function ManageDashboard({ publicId, name, participantCount, participantL
       <section className="manage-summary">
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
         <progress max={limit} value={participantCount} />
+        {ownerDrawingPath ? (
+          <figure className="owner-original-card">
+            <figcaption><span>내가 그린 원본</span><b>원본</b></figcaption>
+            <Image alt="내가 그린 원본" height={600} src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={600} />
+          </figure>
+        ) : null}
         <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">친구 그림 더 추가하기</button>
       </section>
       {message ? <p className="submission-success" role="status">{message}</p> : null}

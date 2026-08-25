@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
   const manageToken = createManageToken();
   const sketchbookId = randomUUID();
-  const ownerDrawingPath = getOwnerDrawingPath(sketchbookId);
+  const ownerDrawingPath = parsed.data.ownerImageDataUrl ? getOwnerDrawingPath(sketchbookId) : null;
   const referenceImagePath = parsed.data.referenceImageDataUrl ? getReferenceImagePath(sketchbookId) : null;
   const sketchbook = createSketchbookDraft({
     id: sketchbookId,
@@ -60,9 +60,11 @@ export async function POST(request: Request) {
   const bucket = getAdminStorage().bucket();
   const uploadedPaths: string[] = [];
   try {
-    const ownerImage = await optimizeImageForStorage(decodeImageDataUrl(parsed.data.ownerImageDataUrl).buffer, 'sketch');
-    await bucket.file(ownerDrawingPath).save(ownerImage.buffer, { metadata: { contentType: ownerImage.contentType, cacheControl: 'private, max-age=0' } });
-    uploadedPaths.push(ownerDrawingPath);
+    if (ownerDrawingPath && parsed.data.ownerImageDataUrl) {
+      const ownerImage = await optimizeImageForStorage(decodeImageDataUrl(parsed.data.ownerImageDataUrl).buffer, 'sketch');
+      await bucket.file(ownerDrawingPath).save(ownerImage.buffer, { metadata: { contentType: ownerImage.contentType, cacheControl: 'private, max-age=0' } });
+      uploadedPaths.push(ownerDrawingPath);
+    }
     if (referenceImagePath && parsed.data.referenceImageDataUrl) {
       const referenceImage = await optimizeImageForStorage(decodeImageDataUrl(parsed.data.referenceImageDataUrl).buffer, 'reference');
       await bucket.file(referenceImagePath).save(referenceImage.buffer, { metadata: { contentType: referenceImage.contentType, cacheControl: 'private, max-age=0' } });

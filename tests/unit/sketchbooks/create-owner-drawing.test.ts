@@ -7,8 +7,8 @@ import { createSketchbookDraft } from '@/lib/sketchbooks/create';
 const ownerImageDataUrl = `data:image/png;base64,${Buffer.from('owner-image').toString('base64')}`;
 
 describe('owner sketchbook creation', () => {
-  it('requires the creator drawing and accepts an optional reference image', () => {
-    expect(createSketchbookInputSchema.safeParse({ name: '테스트사용자' }).success).toBe(false);
+  it('allows the creator drawing to be skipped and accepts an optional reference image', () => {
+    expect(createSketchbookInputSchema.safeParse({ name: '테스트사용자' }).success).toBe(true);
     expect(createSketchbookInputSchema.safeParse({ name: '테스트사용자', ownerImageDataUrl }).success).toBe(true);
     expect(createSketchbookInputSchema.safeParse({
       name: '테스트사용자',

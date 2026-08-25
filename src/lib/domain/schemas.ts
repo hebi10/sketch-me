@@ -8,7 +8,8 @@ export const createSketchbookInputSchema = z.object({
   ownerImageDataUrl: z
     .string()
     .regex(/^data:image\/(png|webp);base64,/, '본인 그림 데이터를 다시 확인해 주세요.')
-    .max(2_800_000, '본인 그림은 2MB 이하로 저장해 주세요.'),
+    .max(2_800_000, '본인 그림은 2MB 이하로 저장해 주세요.')
+    .optional(),
   referenceImageDataUrl: z
     .string()
     .regex(/^data:image\/(png|jpeg|webp);base64,/, '참고 사진 데이터를 다시 확인해 주세요.')

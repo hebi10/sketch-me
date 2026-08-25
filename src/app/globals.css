@@ -1019,6 +1019,36 @@ main {
   padding: 18px;
 }
 
+.owner-original-card {
+  background: color-mix(in srgb, var(--accent) 7%, var(--canvas));
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--line));
+  margin: 2px 0;
+  padding: 10px;
+}
+
+.owner-original-card figcaption {
+  align-items: center;
+  display: flex;
+  font-size: .92rem;
+  justify-content: space-between;
+  margin: 0 0 8px;
+}
+
+.owner-original-card figcaption b {
+  background: var(--accent);
+  color: var(--canvas);
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 4px 7px;
+}
+
+.owner-original-card img {
+  background: var(--canvas);
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
 .manage-actions {
   grid-template-columns: minmax(0, 1fr);
 }

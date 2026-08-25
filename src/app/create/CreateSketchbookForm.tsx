@@ -43,10 +43,6 @@ export function CreateSketchbookForm() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const ownerImageDataUrl = editorRef.current?.exportDrawing();
-    if (!ownerImageDataUrl) {
-      setError('나를 표현한 그림을 한 번 이상 그려주세요.');
-      return;
-    }
     setError(null);
     setIsSubmitting(true);
 
@@ -54,7 +50,7 @@ export function CreateSketchbookForm() {
       const response = await fetch('/api/sketchbooks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, ownerImageDataUrl, referenceImageDataUrl: referenceImageDataUrl ?? undefined }),
+        body: JSON.stringify({ name, ownerImageDataUrl: ownerImageDataUrl ?? undefined, referenceImageDataUrl: referenceImageDataUrl ?? undefined }),
       });
       const data = (await response.json()) as Partial<CreateResult> & { message?: string };
       if (!response.ok || !data.manageUrl || !data.publicUrl || !data.recoveryUrl) throw new Error(data.message ?? '스캐치북을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.');
@@ -99,7 +95,7 @@ export function CreateSketchbookForm() {
       </section>
 
       <section aria-labelledby="owner-sketch-title">
-        <div className="section-heading"><h2 id="owner-sketch-title">내가 그린 나</h2><p>참고 사진은 저장되는 그림에 포함되지 않아요.</p></div>
+        <div className="section-heading"><h2 id="owner-sketch-title">내가 그린 나 <span className="optional-label">선택</span></h2><p>그리지 않아도 스캐치북을 만들 수 있어요. 참고 사진은 저장되는 그림에 포함되지 않아요.</p></div>
         <SketchEditor ariaLabel="내 모습을 그리는 캔버스" ref={editorRef} referenceImageUrl={referenceImageDataUrl} />
       </section>
 

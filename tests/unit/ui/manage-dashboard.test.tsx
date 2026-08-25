@@ -8,6 +8,39 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('ManageDashboard 친구 그림 추가 결제', () => {
+  it('내가 그린 원본이 있으면 친구 그림 목록보다 먼저 보여준다', () => {
+    render(
+      <ManageDashboard
+        drawings={[]}
+        name="내 이름"
+        ownerDrawingPath="sketchbooks/book-1/owner/original.webp"
+        participantCount={0}
+        participantLimit={20}
+        publicId="public-1"
+      />,
+    );
+
+    expect(screen.getByRole('img', { name: '내가 그린 원본' })).toHaveAttribute(
+      'src',
+      expect.stringContaining('/api/sketchbooks/public-1/owner/image'),
+    );
+  });
+
+  it('내가 그린 원본이 없으면 원본 영역을 표시하지 않는다', () => {
+    render(
+      <ManageDashboard
+        drawings={[]}
+        name="내 이름"
+        ownerDrawingPath={null}
+        participantCount={0}
+        participantLimit={20}
+        publicId="public-1"
+      />,
+    );
+
+    expect(screen.queryByRole('img', { name: '내가 그린 원본' })).not.toBeInTheDocument();
+  });
+
   it('상품을 선택해 모의 결제하고 참여 한도를 갱신한다', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({ participantLimit: 70 }),

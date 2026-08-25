@@ -5,7 +5,7 @@ interface CreateSketchbookDraftParams {
   publicId: string;
   name: string;
   manageTokenHash: string;
-  ownerDrawingPath: string;
+  ownerDrawingPath?: string | null;
   referenceImagePath?: string | null;
   createdAt: Date;
 }
@@ -15,7 +15,7 @@ export function createSketchbookDraft({
   publicId,
   name,
   manageTokenHash,
-  ownerDrawingPath,
+  ownerDrawingPath = null,
   referenceImagePath = null,
   createdAt,
 }: CreateSketchbookDraftParams): Sketchbook {

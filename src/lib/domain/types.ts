@@ -9,7 +9,7 @@ export interface Sketchbook {
   publicId: string;
   name: string;
   manageTokenHash: string;
-  ownerDrawingPath: string;
+  ownerDrawingPath: string | null;
   referenceImagePath: string | null;
   referenceImageEnabled: boolean;
   participantLimit: number;
