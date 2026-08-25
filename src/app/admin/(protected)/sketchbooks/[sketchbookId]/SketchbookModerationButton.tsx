@@ -1,12 +1,16 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { ModerationStatus } from '@/lib/domain/types';
 import { AdminModerationDialog } from '../../AdminModerationDialog';
 
 const genericErrorMessage = '상태를 변경하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
 
 export function SketchbookModerationButton({
   moderationStatus,
@@ -18,6 +22,7 @@ export function SketchbookModerationButton({
   const router = useRouter();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const processingRef = useRef(false);
+  const requestControllerRef = useRef<AbortController | null>(null);
   const [open, setOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +37,12 @@ export function SketchbookModerationButton({
     ? '해제하면 친구 공개 페이지와 그리기 기능을 다시 사용할 수 있습니다.'
     : '비활성화하면 친구 공개 페이지와 그리기 기능이 즉시 차단됩니다.';
 
+  useEffect(() => () => {
+    const controller = requestControllerRef.current;
+    requestControllerRef.current = null;
+    controller?.abort();
+  }, []);
+
   const close = useCallback(() => {
     if (processingRef.current) return;
     setOpen(false);
@@ -45,6 +56,8 @@ export function SketchbookModerationButton({
 
   async function updateModeration() {
     if (processingRef.current) return;
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
     processingRef.current = true;
     setProcessing(true);
     setError(null);
@@ -55,19 +68,27 @@ export function SketchbookModerationButton({
           body: JSON.stringify({ moderationStatus: nextStatus }),
           headers: { 'Content-Type': 'application/json' },
           method: 'PATCH',
+          signal: controller.signal,
         },
       );
+      if (controller.signal.aborted) return;
       if (!response.ok) {
         setError(genericErrorMessage);
         return;
       }
       setOpen(false);
       router.refresh();
-    } catch {
+    } catch (requestError) {
+      if (controller.signal.aborted || isAbortError(requestError)) return;
       setError(genericErrorMessage);
     } finally {
-      processingRef.current = false;
-      setProcessing(false);
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+      }
+      if (!controller.signal.aborted) {
+        processingRef.current = false;
+        setProcessing(false);
+      }
     }
   }
 

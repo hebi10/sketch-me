@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 
 const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
@@ -9,12 +9,23 @@ vi.mock('next/navigation', () => ({
 
 import { SketchbookModerationButton } from '@/app/admin/(protected)/sketchbooks/[sketchbookId]/SketchbookModerationButton';
 
+function createDeferred<T>() {
+  let reject!: (reason?: unknown) => void;
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('SketchbookModerationButton', () => {
@@ -36,6 +47,7 @@ describe('SketchbookModerationButton', () => {
         body: JSON.stringify({ moderationStatus: 'BLOCKED' }),
         headers: { 'Content-Type': 'application/json' },
         method: 'PATCH',
+        signal: expect.any(AbortSignal),
       },
     ));
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
@@ -198,6 +210,62 @@ describe('SketchbookModerationButton', () => {
     expect(screen.getByRole('alert')).not.toHaveTextContent('PRIVATE_FIREBASE_PROJECT');
     expect(confirm).toBeEnabled();
     await waitFor(() => expect(confirm).toHaveFocus());
+  });
+
+  it('요청 중 unmount 후 늦은 성공 응답을 무시하고 화면을 새로고침하지 않는다', async () => {
+    const deferred = createDeferred<{ ok: boolean }>();
+    let requestSignal: AbortSignal | undefined;
+    vi.stubGlobal('fetch', vi.fn((_input, init?: RequestInit) => {
+      requestSignal = init?.signal ?? undefined;
+      return deferred.promise;
+    }));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const view = render(
+      <SketchbookModerationButton moderationStatus="ACTIVE" sketchbookId="book-1" />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '서비스에서 비활성화' }));
+    fireEvent.click(screen.getByRole('button', { name: '비활성화하기' }));
+
+    await waitFor(() => expect(requestSignal).toBeDefined());
+    view.unmount();
+    expect(requestSignal?.aborted).toBe(true);
+
+    await act(async () => {
+      deferred.resolve({ ok: true });
+      await deferred.promise;
+      await Promise.resolve();
+    });
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('요청 중 unmount 후 AbortError를 사용자 오류나 상태 부작용으로 처리하지 않는다', async () => {
+    const deferred = createDeferred<{ ok: boolean }>();
+    let requestSignal: AbortSignal | undefined;
+    vi.stubGlobal('fetch', vi.fn((_input, init?: RequestInit) => {
+      requestSignal = init?.signal ?? undefined;
+      return deferred.promise;
+    }));
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const view = render(
+      <SketchbookModerationButton moderationStatus="ACTIVE" sketchbookId="book-1" />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '서비스에서 비활성화' }));
+    fireEvent.click(screen.getByRole('button', { name: '비활성화하기' }));
+
+    await waitFor(() => expect(requestSignal).toBeDefined());
+    view.unmount();
+    expect(requestSignal?.aborted).toBe(true);
+
+    await act(async () => {
+      deferred.reject(new DOMException('Aborted', 'AbortError'));
+      await deferred.promise.catch(() => undefined);
+      await Promise.resolve();
+    });
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
   });
 
   it('스케치북 ID를 안전한 API 경로 세그먼트로 보낸다', async () => {
