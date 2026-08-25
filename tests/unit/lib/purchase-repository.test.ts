@@ -77,6 +77,40 @@ describe('repository moderation compatibility', () => {
       }),
     ]);
   });
+
+  it('legacy 그림 문서의 누락된 관리자 목록과 운영 필드를 기본값으로 읽는다', async () => {
+    const document = {
+      data: () => ({
+        authorName: '수연',
+        bestRank: null,
+        createdAt: new Date('2026-08-24T00:00:00.000Z'),
+        imagePath: 'drawing.webp',
+        message: null,
+        sketchbookId: 'book-1',
+        status: 'VISIBLE',
+        updatedAt: new Date('2026-08-24T00:00:00.000Z'),
+        usedReferenceImage: false,
+      }),
+      id: 'drawing-legacy',
+    };
+    const get = vi.fn().mockResolvedValue({ docs: [document] });
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          collection: vi.fn(() => ({ orderBy: vi.fn(() => ({ get })) })),
+        })),
+      })),
+    });
+
+    await expect(listDrawings('book-1')).resolves.toEqual([
+      expect.objectContaining({
+        moderatedAt: null,
+        moderationStatus: 'ACTIVE',
+        sketchbookName: '',
+        sketchbookPublicId: '',
+      }),
+    ]);
+  });
 });
 
 describe('addMockPurchase', () => {
