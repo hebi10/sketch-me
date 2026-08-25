@@ -32,7 +32,7 @@ Firebase 규칙 통합 테스트와 전체 E2E는 Firestore·Storage 에뮬레�
 npm run test:e2e -- --project=mobile-chrome
 ```
 
-Playwright가 Emulator를 직접 시작할 때는 `firebase.json`의 기본 포트(9099/8080/9199)를 사용합니다. 다른 격리 포트가 필요하면 `PLAYWRIGHT_SKIP_WEBSERVER=1`을 설정하고, 동일한 포트로 구성한 Auth·Firestore·Storage Emulator와 Next.js를 먼저 직접 실행한 뒤 `PLAYWRIGHT_*_EMULATOR_HOST`를 지정합니다. webServer를 사용하는 상태에서 포트만 바꾸면 설정 오류로 즉시 중단됩니다. `PLAYWRIGHT_BASE_URL`은 경로 없는 HTTP loopback Origin만 허용하며 외부 주소, `0.0.0.0`, 자격 증명, query와 hash는 거부합니다.
+Playwright가 Emulator를 직접 시작할 때는 `firebase.json`의 기본 포트(9099/8080/9199)를 사용합니다. 다른 격리 포트가 필요하면 `PLAYWRIGHT_SKIP_WEBSERVER=1`을 설정하고, 동일한 포트로 구성한 Auth·Firestore·Storage Emulator와 Next.js를 먼저 직접 실행한 뒤 `PLAYWRIGHT_*_EMULATOR_HOST`를 지정합니다. webServer를 사용하는 상태에서 포트만 바꾸면 설정 오류로 즉시 중단됩니다. `PLAYWRIGHT_BASE_URL`은 canonical HTTP loopback Origin과 원문이 정확히 같아야 합니다. 외부 주소, `0.0.0.0`, 자격 증명, 공백, trailing slash, 경로, query와 hash는 거부합니다.
 
 기존 로컬 서버를 재사용할 때도 주소만 보고 신뢰하지 않습니다. 다음은 기본 Emulator 포트와 별도 앱 포트 13000을 사용하는 PowerShell 예시입니다. 각 블록을 별도 터미널에서 실행합니다. 계정 값은 고정 테스트 픽스처이며 운영 UID·이메일이나 서비스 계정 키를 넣지 않습니다.
 
@@ -57,7 +57,18 @@ $env:PLAYWRIGHT_E2E_SERVER='1'
 npm run dev -- --hostname 127.0.0.1 --port 13000
 ```
 
-서버 준비 확인은 `Invoke-WebRequest http://127.0.0.1:13000/api/e2e-readiness -UseBasicParsing`으로 수행합니다. 안전한 테스트 환경이면 상태 204와 `X-Sketch-Me-E2E-Ready: 1`을 반환하며, 설정이 빠졌거나 일치하지 않으면 환경값을 노출하지 않고 404 또는 503을 반환합니다.
+서버 준비 확인은 다음처럼 Origin과 Playwright가 사용할 세 Emulator endpoint를 모두 전달합니다. 안전한 테스트 환경이며 서버의 설정과 endpoint가 정확히 같으면 상태 204와 `X-Sketch-Me-E2E-Ready: 1`을 반환합니다. 필수 `ADMIN_ALLOWED_ORIGIN`이나 header가 빠졌거나 일치하지 않으면 환경값을 노출하지 않고 404 또는 503을 반환합니다.
+
+```powershell
+$readinessHeaders = @{
+  'X-Sketch-Me-E2E-Origin' = 'http://127.0.0.1:13000'
+  'X-Sketch-Me-E2E-Auth-Emulator' = '127.0.0.1:9099'
+  'X-Sketch-Me-E2E-Firestore-Emulator' = '127.0.0.1:8080'
+  'X-Sketch-Me-E2E-Storage-Emulator' = '127.0.0.1:9199'
+}
+Invoke-WebRequest 'http://127.0.0.1:13000/api/e2e-readiness' `
+  -Headers $readinessHeaders -UseBasicParsing
+```
 
 ```powershell
 # 터미널 3: 이미 시작한 프로세스를 검증한 뒤 E2E 실행

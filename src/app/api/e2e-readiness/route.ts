@@ -1,4 +1,5 @@
 import {
+  E2E_READINESS_EMULATOR_HEADERS,
   E2E_READINESS_ORIGIN_HEADER,
   getE2EServerReadinessState,
 } from '@/lib/testing/e2e-readiness';
@@ -10,9 +11,12 @@ const privateHeaders = {
 };
 
 export async function GET(request: Request) {
-  const requestOrigin = request.headers.get(E2E_READINESS_ORIGIN_HEADER)
-    ?? new URL(request.url).origin;
-  const state = getE2EServerReadinessState(process.env, requestOrigin);
+  const state = getE2EServerReadinessState(process.env, {
+    auth: request.headers.get(E2E_READINESS_EMULATOR_HEADERS.auth),
+    firestore: request.headers.get(E2E_READINESS_EMULATOR_HEADERS.firestore),
+    origin: request.headers.get(E2E_READINESS_ORIGIN_HEADER),
+    storage: request.headers.get(E2E_READINESS_EMULATOR_HEADERS.storage),
+  });
 
   if (state === 'hidden') {
     return new Response(null, { headers: privateHeaders, status: 404 });

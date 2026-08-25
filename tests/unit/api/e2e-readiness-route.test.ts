@@ -18,6 +18,13 @@ const safeServerEnvironment = {
   STORAGE_EMULATOR_HOST: 'http://127.0.0.1:19199',
 } as const;
 
+const safeReadinessHeaders = {
+  'X-Sketch-Me-E2E-Auth-Emulator': '127.0.0.1:19099',
+  'X-Sketch-Me-E2E-Firestore-Emulator': '127.0.0.1:18080',
+  'X-Sketch-Me-E2E-Origin': 'http://127.0.0.1:13000',
+  'X-Sketch-Me-E2E-Storage-Emulator': '127.0.0.1:19199',
+} as const;
+
 function stubServerEnvironment(overrides: Record<string, string> = {}) {
   for (const [name, value] of Object.entries({ ...safeServerEnvironment, ...overrides })) {
     vi.stubEnv(name, value);
@@ -32,7 +39,9 @@ describe('GET /api/e2e-readiness', () => {
   it('hides the test route when the server was not explicitly started for Playwright', async () => {
     stubServerEnvironment({ PLAYWRIGHT_E2E_SERVER: '' });
 
-    const response = await GET(new Request('http://127.0.0.1:13000/api/e2e-readiness'));
+    const response = await GET(new Request('http://127.0.0.1:13000/api/e2e-readiness', {
+      headers: safeReadinessHeaders,
+    }));
 
     expect(response.status).toBe(404);
     expect(await response.text()).toBe('');
@@ -54,7 +63,9 @@ describe('GET /api/e2e-readiness', () => {
   ])('returns a generic unavailable response for %s', async (_label, overrides) => {
     stubServerEnvironment(overrides);
 
-    const response = await GET(new Request('http://127.0.0.1:13000/api/e2e-readiness'));
+    const response = await GET(new Request('http://127.0.0.1:13000/api/e2e-readiness', {
+      headers: safeReadinessHeaders,
+    }));
 
     expect(response.status).toBe(503);
     expect(await response.text()).toBe('');
@@ -64,7 +75,9 @@ describe('GET /api/e2e-readiness', () => {
   it('confirms an isolated server only when all test identities and emulator hosts are safe', async () => {
     stubServerEnvironment();
 
-    const response = await GET(new Request('http://127.0.0.1:13000/api/e2e-readiness'));
+    const response = await GET(new Request('http://127.0.0.1:13000/api/e2e-readiness', {
+      headers: safeReadinessHeaders,
+    }));
 
     expect(response.status).toBe(204);
     expect(response.headers.get('x-sketch-me-e2e-ready')).toBe('1');
@@ -75,10 +88,51 @@ describe('GET /api/e2e-readiness', () => {
     stubServerEnvironment();
 
     const response = await GET(new Request('http://localhost:13000/api/e2e-readiness', {
-      headers: { 'X-Sketch-Me-E2E-Origin': 'http://127.0.0.1:13000' },
+      headers: safeReadinessHeaders,
     }));
 
     expect(response.status).toBe(204);
     expect(response.headers.get('x-sketch-me-e2e-ready')).toBe('1');
+  });
+
+  it('requires ADMIN_ALLOWED_ORIGIN instead of substituting the client default', async () => {
+    stubServerEnvironment();
+    vi.stubEnv('ADMIN_ALLOWED_ORIGIN', undefined);
+
+    const response = await GET(new Request('http://127.0.0.1:3000/api/e2e-readiness', {
+      headers: {
+        ...safeReadinessHeaders,
+        'X-Sketch-Me-E2E-Origin': 'http://127.0.0.1:3000',
+      },
+    }));
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe('');
+  });
+
+  it('rejects a readiness request without the expected emulator endpoints', async () => {
+    stubServerEnvironment();
+
+    const response = await GET(new Request('http://127.0.0.1:13000/api/e2e-readiness', {
+      headers: { 'X-Sketch-Me-E2E-Origin': 'http://127.0.0.1:13000' },
+    }));
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe('');
+  });
+
+  it.each([
+    ['Auth', { 'X-Sketch-Me-E2E-Auth-Emulator': '127.0.0.1:9099' }],
+    ['Firestore', { 'X-Sketch-Me-E2E-Firestore-Emulator': '127.0.0.1:8080' }],
+    ['Storage', { 'X-Sketch-Me-E2E-Storage-Emulator': '127.0.0.1:9199' }],
+  ])('rejects a different local %s endpoint before fixture setup', async (_service, override) => {
+    stubServerEnvironment();
+
+    const response = await GET(new Request('http://127.0.0.1:13000/api/e2e-readiness', {
+      headers: { ...safeReadinessHeaders, ...override },
+    }));
+
+    expect(response.status).toBe(503);
+    expect(await response.text()).toBe('');
   });
 });

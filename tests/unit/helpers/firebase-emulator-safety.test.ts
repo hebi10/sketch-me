@@ -29,19 +29,34 @@ describe('Firebase emulator safety', () => {
 
   it('accepts only a bare HTTP loopback origin as the Playwright base URL', () => {
     expect(resolvePlaywrightBaseUrl('http://127.0.0.1:13000')).toBe('http://127.0.0.1:13000');
-    expect(resolvePlaywrightBaseUrl('http://localhost:3000/')).toBe('http://localhost:3000');
+    expect(resolvePlaywrightBaseUrl('http://localhost:3000')).toBe('http://localhost:3000');
     expect(resolvePlaywrightBaseUrl('http://[::1]:3000')).toBe('http://[::1]:3000');
+    expect(resolvePlaywrightBaseUrl(undefined)).toBe('http://127.0.0.1:3000');
 
     for (const unsafeUrl of [
+      '',
+      ' http://127.0.0.1:3000',
+      'http://127.0.0.1:3000 ',
+      'HTTP://127.0.0.1:3000',
       'https://127.0.0.1:3000',
       'http://example.com:3000',
       'http://0.0.0.0:3000',
       'http://127.0.0.1:0',
       'http://127.0.0.1.evil.test:3000',
+      'http://@127.0.0.1:3000',
+      'http://:@127.0.0.1:3000',
       'http://user:password@127.0.0.1:3000',
+      'http://127.0.0.1:3000/',
       'http://127.0.0.1:3000/admin',
+      'http://127.0.0.1:3000/.',
+      'http://127.0.0.1:3000/admin/..',
+      'http://127.0.0.1:3000?',
+      'http://127.0.0.1:3000#',
       'http://127.0.0.1:3000/?project=sketch-me-local',
       'http://127.0.0.1:3000/#ready',
+      'http://127.0.0.1:080',
+      'http:////127.0.0.1:3000',
+      'http://[0:0:0:0:0:0:0:1]:3000',
     ]) {
       expect(() => resolvePlaywrightBaseUrl(unsafeUrl)).toThrow(/PLAYWRIGHT_BASE_URL.*HTTP loopback origin/);
     }

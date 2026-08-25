@@ -10,9 +10,16 @@ import {
 import { ADMIN_E2E, seedAdminScenario } from './admin-fixture';
 
 export default async function globalSetup() {
-  await verifyE2EServerReadiness(resolvePlaywrightBaseUrl(process.env.PLAYWRIGHT_BASE_URL));
   requireSafeFirebaseEmulatorEnvironment(['auth', 'firestore', 'storage']);
   normalizeFirebaseAdminStorageEmulatorEnvironment();
+  await verifyE2EServerReadiness(
+    resolvePlaywrightBaseUrl(process.env.PLAYWRIGHT_BASE_URL),
+    {
+      auth: process.env.FIREBASE_AUTH_EMULATOR_HOST!,
+      firestore: process.env.FIRESTORE_EMULATOR_HOST!,
+      storage: process.env.FIREBASE_STORAGE_EMULATOR_HOST!,
+    },
+  );
   await waitForEmulatorReadiness([
     { name: 'Auth', ...getFirebaseEmulatorAddress('auth') },
     { name: 'Firestore', ...getFirebaseEmulatorAddress('firestore') },
