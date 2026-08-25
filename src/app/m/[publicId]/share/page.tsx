@@ -16,7 +16,11 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
   const drawings = await listDrawings(sketchbook.id);
   const publicPath = `/s/${publicId}`;
   const bestDrawings = drawings
-    .filter((drawing) => drawing.status === 'VISIBLE' && drawing.bestRank)
+    .filter((drawing) => (
+      drawing.status === 'VISIBLE'
+      && drawing.moderationStatus === 'ACTIVE'
+      && drawing.bestRank
+    ))
     .map((drawing) => ({
       rank: drawing.bestRank as 1 | 2 | 3 | 4,
       imageUrl: `/api/manage/${publicId}/drawings/${drawing.id}/image`,

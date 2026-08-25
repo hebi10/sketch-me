@@ -1,0 +1,137 @@
+import { vi } from 'vitest';
+
+const { getAdminFirestore } = vi.hoisted(() => ({ getAdminFirestore: vi.fn() }));
+
+vi.mock('@/lib/firebase/admin', () => ({ getAdminFirestore }));
+
+import {
+  listVisibleDrawings,
+  saveDrawingWithinLimit,
+  setBestDrawing,
+} from '@/lib/sketchbooks/repository';
+
+const createdAt = new Date('2026-08-25T00:00:00.000Z');
+const sketchbook = {
+  createdAt,
+  id: 'book-1',
+  manageTokenHash: 'hash',
+  moderatedAt: null,
+  moderationStatus: 'ACTIVE' as const,
+  name: '해비',
+  ownerDrawingPath: null,
+  participantCount: 0,
+  participantLimit: 20,
+  publicId: 'public-1',
+  referenceImageEnabled: false,
+  referenceImagePath: null,
+  status: 'PUBLIC' as const,
+  updatedAt: createdAt,
+};
+const drawing = {
+  authorName: '친구',
+  bestRank: null,
+  createdAt,
+  id: 'active-drawing',
+  imagePath: 'sketchbooks/book-1/drawings/active.webp',
+  message: null,
+  moderatedAt: null,
+  moderationStatus: 'ACTIVE' as const,
+  sketchbookId: 'book-1',
+  sketchbookName: '해비',
+  sketchbookPublicId: 'public-1',
+  status: 'VISIBLE' as const,
+  updatedAt: createdAt,
+  usedReferenceImage: false,
+};
+
+describe('공개 그림 저장소 운영자 차단', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('VISIBLE 전체 결과에서 BLOCKED 20개 뒤의 ACTIVE 그림도 누락 없이 반환한다', async () => {
+    const documents = [
+      ...Array.from({ length: 20 }, (_, index) => ({
+        data: () => ({ ...drawing, id: `blocked-${index}`, moderationStatus: 'BLOCKED' }),
+        id: `blocked-${index}`,
+      })),
+      { data: () => drawing, id: drawing.id },
+    ];
+    const get = vi.fn().mockResolvedValue({ docs: documents });
+    const query = {
+      get,
+      limit: vi.fn(() => ({ get })),
+    };
+    const orderBy = vi.fn(() => query);
+    const where = vi.fn(() => ({ orderBy }));
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({ collection: vi.fn(() => ({ where })) })),
+      })),
+    });
+
+    await expect(listVisibleDrawings('book-1')).resolves.toEqual([
+      expect.objectContaining({ id: 'active-drawing', moderationStatus: 'ACTIVE' }),
+    ]);
+    expect(where).toHaveBeenCalledWith('status', '==', 'VISIBLE');
+    expect(query.limit).not.toHaveBeenCalled();
+  });
+
+  it('제출 트랜잭션은 차단된 스케치북에 그림을 쓰지 않는다', async () => {
+    const sketchbookReference = { id: 'book-1' };
+    const drawingReference = { id: 'drawing-1' };
+    const transaction = {
+      get: vi.fn().mockResolvedValue({
+        data: () => ({
+          moderationStatus: 'BLOCKED',
+          participantCount: 0,
+          participantLimit: 20,
+          status: 'PUBLIC',
+        }),
+        exists: true,
+      }),
+      set: vi.fn(),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn(() => ({ doc: vi.fn(() => drawingReference) })),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await expect(saveDrawingWithinLimit(sketchbook, drawing)).rejects.toThrow();
+    expect(transaction.set).not.toHaveBeenCalled();
+    expect(transaction.update).not.toHaveBeenCalled();
+  });
+
+  it('차단된 그림은 공개 중이어도 BEST로 지정하지 않는다', async () => {
+    const target = { id: 'drawing-1', kind: 'target' };
+    const rankedQuery = { kind: 'ranked' };
+    const drawingsCollection = {
+      doc: vi.fn(() => target),
+      where: vi.fn(() => rankedQuery),
+    };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => reference.kind === 'target'
+        ? {
+            data: () => ({ moderationStatus: 'BLOCKED', status: 'VISIBLE' }),
+            exists: true,
+          }
+        : { docs: [] }),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({ collection: vi.fn(() => drawingsCollection) })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await expect(setBestDrawing('book-1', 'drawing-1', 1)).rejects.toThrow();
+    expect(transaction.update).not.toHaveBeenCalled();
+  });
+});

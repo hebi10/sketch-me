@@ -17,7 +17,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { publicId } = await params;
   const sketchbook = await findSketchbookByPublicId(publicId);
-  if (!sketchbook || sketchbook.status !== 'PUBLIC') return { title: '페이지를 찾을 수 없어요' };
+  if (
+    !sketchbook
+    || sketchbook.status !== 'PUBLIC'
+    || sketchbook.moderationStatus === 'BLOCKED'
+  ) return { title: '페이지를 찾을 수 없어요' };
 
   const title = `${sketchbook.name}의 스케치북`;
   const description = `${sketchbook.name}님을 기억나는 모습대로 그려주세요.`;
@@ -54,9 +58,14 @@ export default async function PublicSketchbookPage({
   const [{ publicId }, { submitted }] = await Promise.all([params, searchParams]);
   const sketchbook = await findSketchbookByPublicId(publicId);
 
-  if (!sketchbook || sketchbook.status !== 'PUBLIC') notFound();
+  if (
+    !sketchbook
+    || sketchbook.status !== 'PUBLIC'
+    || sketchbook.moderationStatus === 'BLOCKED'
+  ) notFound();
 
-  const drawings = await listVisibleDrawings(sketchbook.id);
+  const drawings = (await listVisibleDrawings(sketchbook.id))
+    .filter((drawing) => drawing.moderationStatus === 'ACTIVE');
   const bestDrawings = drawings
     .filter((drawing) => drawing.bestRank)
     .sort((left, right) => (left.bestRank ?? 5) - (right.bestRank ?? 5));
@@ -93,7 +102,7 @@ export default async function PublicSketchbookPage({
         <div className="friend-drawing-grid">
         {drawings.length ? drawings.map((drawing, index) => (
           <article className="friend-drawing-card" key={drawing.id}>
-            <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} />
+            <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} />
             <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{formatTimeAgo(drawing.createdAt)}</span></div>
           </article>
         )) : <p className="empty-drawings">아직 첫 번째 그림을 기다리고 있어요.</p>}
@@ -111,7 +120,7 @@ export default async function PublicSketchbookPage({
               <article className="best-drawing-card" key={rank}>
                 <div className="best-drawing-image">
                   <b>BEST {rank}</b>
-                  {drawing ? <Image alt={`BEST ${rank}, ${drawing.authorName}님의 그림`} height={255} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} width={255} /> : <span>선정 전</span>}
+                  {drawing ? <Image alt={`BEST ${rank}, ${drawing.authorName}님의 그림`} height={255} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} /> : <span>선정 전</span>}
                 </div>
                 <p>{drawing?.authorName ?? '기다리는 중'}</p>
               </article>
@@ -124,7 +133,7 @@ export default async function PublicSketchbookPage({
         <div className="section-title-row"><h2 id="recent-drawing-heading">◷ 최근 올라온 그림</h2></div>
         {recentDrawing ? (
           <article className="recent-drawing-card">
-            <Image alt={`${recentDrawing.authorName}님의 최근 그림`} height={90} src={`/api/sketchbooks/${publicId}/drawings/${recentDrawing.id}/image`} width={90} />
+            <Image alt={`${recentDrawing.authorName}님의 최근 그림`} height={90} src={`/api/sketchbooks/${publicId}/drawings/${recentDrawing.id}/image`} unoptimized width={90} />
             <div><strong>{recentDrawing.authorName}</strong><span>{formatTimeAgo(recentDrawing.createdAt)}</span>{recentDrawing.message ? <p>{recentDrawing.message}</p> : null}</div>
           </article>
         ) : <p className="empty-drawings">첫 그림을 남겨주세요.</p>}

@@ -77,7 +77,9 @@ export async function listVisibleDrawings(sketchbookId: string) {
     .orderBy('createdAt', 'desc')
     .get();
 
-  return snapshot.docs.map((document) => toDrawing(document.id, document.data()));
+  return snapshot.docs
+    .map((document) => toDrawing(document.id, document.data()))
+    .filter((drawing) => drawing.moderationStatus === 'ACTIVE');
 }
 
 export async function listDrawings(sketchbookId: string) {
@@ -115,7 +117,11 @@ export async function saveDrawingWithinLimit(sketchbook: Sketchbook, drawing: Dr
     const current = await transaction.get(sketchbookReference);
     const currentData = current.data();
 
-    if (!current.exists || currentData?.status !== 'PUBLIC') {
+    if (
+      !current.exists
+      || currentData?.status !== 'PUBLIC'
+      || currentData?.moderationStatus === 'BLOCKED'
+    ) {
       throw new Error('스캐치북을 찾을 수 없거나 공개되어 있지 않습니다.');
     }
 
@@ -185,7 +191,11 @@ export async function setBestDrawing(sketchbookId: string, drawingId: string, be
       transaction.get(target),
       transaction.get(collection.where('bestRank', '==', bestRank)),
     ]);
-    if (!targetDocument.exists || targetDocument.data()?.status !== 'VISIBLE') {
+    if (
+      !targetDocument.exists
+      || targetDocument.data()?.status !== 'VISIBLE'
+      || targetDocument.data()?.moderationStatus === 'BLOCKED'
+    ) {
       throw new Error('공개 중인 그림만 BEST로 선정할 수 있습니다.');
     }
     ranked.docs.forEach((document) => transaction.update(document.ref, { bestRank: null, updatedAt: new Date() }));

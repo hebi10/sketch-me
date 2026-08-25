@@ -11,7 +11,11 @@ export default async function DrawFriendPage({ params }: { params: Promise<{ pub
   const { publicId } = await params;
   const sketchbook = await findSketchbookByPublicId(publicId);
 
-  if (!sketchbook || sketchbook.status !== 'PUBLIC') notFound();
+  if (
+    !sketchbook
+    || sketchbook.status !== 'PUBLIC'
+    || sketchbook.moderationStatus === 'BLOCKED'
+  ) notFound();
 
   if (isSketchbookFull(sketchbook)) {
     return (

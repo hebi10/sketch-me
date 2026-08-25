@@ -37,7 +37,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   }
 
   const sketchbook = await findSketchbookByPublicId(publicId);
-  if (!sketchbook || sketchbook.status !== 'PUBLIC') {
+  if (
+    !sketchbook
+    || sketchbook.status !== 'PUBLIC'
+    || sketchbook.moderationStatus === 'BLOCKED'
+  ) {
     return NextResponse.json({ message: '스캐치북을 찾을 수 없어요.' }, { status: 404 });
   }
 

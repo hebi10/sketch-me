@@ -42,6 +42,7 @@ Firebase 규칙 통합 테스트와 전체 E2E는 Firestore·Storage 에뮬레�
 - 초대형 베타를 넘어 공개 홍보할 때 Firebase App Check 또는 Turnstile을 추가합니다. 외부 키가 필요한 기능이라 현재 저장소에는 가짜 설정을 넣지 않았습니다.
 - 오류율과 Storage·Firestore 사용량 알림은 Firebase Console에서 별도로 설정합니다.
 - 배포 전 `/privacy` 안내와 관리 화면의 전체 삭제 동작을 에뮬레이터에서 확인합니다.
+- 운영자 차단은 이후 공개 응답을 막지만, 이미 내려받았거나 외부에 저장된 Story PNG는 회수할 수 없습니다.
 
 ## 배포
 
