@@ -122,6 +122,23 @@ describe('SketchbookModerationButton', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('처리 시작 시 dialog로 포커스를 옮기고 Tab을 내부에 유지하며 진행 상태를 알린다', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)));
+    render(<SketchbookModerationButton moderationStatus="ACTIVE" sketchbookId="book-1" />);
+    fireEvent.click(screen.getByRole('button', { name: '서비스에서 비활성화' }));
+    fireEvent.click(screen.getByRole('button', { name: '비활성화하기' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveAttribute('tabindex', '-1');
+    expect(dialog).toHaveAttribute('aria-busy', 'true');
+    expect(dialog).toHaveFocus();
+    expect(screen.getByRole('status')).toHaveTextContent('처리 중…');
+    expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite');
+
+    expect(fireEvent.keyDown(dialog, { key: 'Tab' })).toBe(false);
+    expect(dialog).toHaveFocus();
+  });
+
   it('처리 중에는 닫기와 중복 확인을 잠그고 Escape도 무시한다', async () => {
     let resolveRequest: ((value: { ok: boolean }) => void) | undefined;
     vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => {
@@ -173,12 +190,14 @@ describe('SketchbookModerationButton', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('상태를 변경하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     expect(screen.getByRole('alert')).not.toHaveTextContent('SECRET_TOKEN');
     expect(confirm).toBeEnabled();
+    await waitFor(() => expect(confirm).toHaveFocus());
 
     fireEvent.click(confirm);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(screen.getByRole('alert')).not.toHaveTextContent('PRIVATE_FIREBASE_PROJECT');
     expect(confirm).toBeEnabled();
+    await waitFor(() => expect(confirm).toHaveFocus());
   });
 
   it('스케치북 ID를 안전한 API 경로 세그먼트로 보낸다', async () => {

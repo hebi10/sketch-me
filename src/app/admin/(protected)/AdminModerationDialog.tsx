@@ -48,6 +48,7 @@ export function AdminModerationDialog({
 }: AdminModerationDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const processingRef = useRef(processing);
+  const wasProcessingRef = useRef(false);
   const titleId = useId();
   const descriptionId = useId();
 
@@ -72,8 +73,18 @@ export function AdminModerationDialog({
       }
       if (event.key !== 'Tab') return;
 
+      if (processingRef.current) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
       const focusable = [...dialog.querySelectorAll<HTMLElement>(focusableSelector)];
-      if (focusable.length === 0) return;
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
       const first = focusable[0];
       const last = focusable.at(-1);
       if (event.shiftKey && document.activeElement === first) {
@@ -95,6 +106,25 @@ export function AdminModerationDialog({
       trigger?.focus();
     };
   }, [onClose, open, returnFocusRef]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!open || !dialog) {
+      wasProcessingRef.current = false;
+      return;
+    }
+
+    if (processing) {
+      wasProcessingRef.current = true;
+      dialog.focus();
+      return;
+    }
+
+    if (wasProcessingRef.current) {
+      wasProcessingRef.current = false;
+      dialog.querySelector<HTMLElement>('[data-admin-dialog-confirm]')?.focus();
+    }
+  }, [open, processing]);
 
   if (!open) return null;
 
@@ -122,6 +152,7 @@ export function AdminModerationDialog({
       }}
       onClick={closeFromBackdrop}
       ref={dialogRef}
+      tabIndex={-1}
     >
       <div className="admin-moderation-dialog-heading">
         <div>
@@ -139,12 +170,22 @@ export function AdminModerationDialog({
         </button>
       </div>
       <p className="admin-moderation-dialog-copy" id={descriptionId}>{description}</p>
+      {processing ? (
+        <span aria-live="polite" className="sr-only" role="status">
+          {pendingLabel}
+        </span>
+      ) : null}
       {error ? <p className="admin-moderation-error" role="alert">{error}</p> : null}
       <div className="admin-moderation-actions">
         <Button disabled={processing} onClick={onClose} variant="secondary">
           취소
         </Button>
-        <Button disabled={processing} onClick={onConfirm} variant={confirmVariant}>
+        <Button
+          data-admin-dialog-confirm
+          disabled={processing}
+          onClick={onConfirm}
+          variant={confirmVariant}
+        >
           {processing ? pendingLabel : confirmLabel}
         </Button>
       </div>
