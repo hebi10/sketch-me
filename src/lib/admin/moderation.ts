@@ -1,5 +1,6 @@
 import type { ModerationStatus } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
+import type { Firestore } from 'firebase-admin/firestore';
 
 type ModerationResult = {
   changed: boolean;
@@ -29,8 +30,8 @@ function readModerationStatus(value: unknown): ModerationStatus {
 
 export async function setSketchbookModeration(
   input: SketchbookModerationInput,
+  firestore: Firestore = getAdminFirestore(),
 ): Promise<ModerationResult> {
-  const firestore = getAdminFirestore();
   const sketchbookReference = firestore.collection('sketchbooks').doc(input.sketchbookId);
 
   return firestore.runTransaction(async (transaction) => {

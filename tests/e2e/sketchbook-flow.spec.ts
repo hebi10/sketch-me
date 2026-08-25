@@ -106,7 +106,9 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   const managerPage = await managerContext.newPage();
   await managerPage.goto(`/m/${managementPublicId}`);
   await expect(managerPage.getByRole('heading', { name: '관리 비밀번호를 입력해 주세요' })).toBeVisible();
-  await managerPage.getByLabel('관리 비밀번호', { exact: true }).fill('1234');
+  const managePinInput = managerPage.getByLabel('관리 비밀번호', { exact: true });
+  await managePinInput.pressSequentially('1234');
+  await expect(managePinInput).toHaveValue('1234');
   await managerPage.getByRole('button', { name: '관리 페이지 열기' }).click();
   await expect(managerPage).toHaveURL(`/m/${managementPublicId}`);
   await expect(managerPage.getByText('모바일 친구')).toBeVisible();

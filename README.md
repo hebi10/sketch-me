@@ -4,7 +4,7 @@
 
 ## 로컬 실행
 
-Node.js 20을 사용합니다.
+Node.js 22.x를 사용합니다.
 
 ```bash
 npm install
@@ -31,6 +31,10 @@ Firebase 규칙 통합 테스트와 전체 E2E는 Firestore·Storage 에뮬레�
 ```bash
 npm run test:e2e -- --project=mobile-chrome
 ```
+
+Playwright가 Emulator를 직접 시작할 때는 `firebase.json`의 기본 포트(9099/8080/9199)를 사용합니다. 다른 격리 포트가 필요하면 `PLAYWRIGHT_SKIP_WEBSERVER=1`을 설정하고 Auth·Firestore·Storage Emulator와 Next.js를 먼저 직접 실행한 뒤 `PLAYWRIGHT_*_EMULATOR_HOST`를 지정합니다. webServer를 사용하는 상태에서 포트만 바꾸면 설정 오류로 즉시 중단됩니다.
+
+Firebase 규칙·동시성 통합 테스트는 `FIREBASE_PROJECT_ID=sketch-me-local`과 loopback Emulator host가 모두 명시된 경우에만 실행됩니다. 일반 `npm test`에서는 해당 환경이 없으면 안전하게 건너뜁니다.
 
 ## 이미지 저장 정책
 

@@ -1,18 +1,33 @@
 // @vitest-environment node
 
-import { afterAll, describe, expect, it } from 'vitest';
-import { deleteApp } from 'firebase-admin/app';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
 import { setSketchbookModeration } from '@/lib/admin/moderation';
-import { getAdminFirestore, getFirebaseAdminApp } from '@/lib/firebase/admin';
+import {
+  hasSafeFirebaseEmulatorEnvironment,
+  LOCAL_FIREBASE_PROJECT_ID,
+  requireSafeFirebaseEmulatorEnvironment,
+} from '../helpers/firebase-emulator-safety';
 
-describe('admin moderation concurrency', () => {
+const hasSafeFirestoreEmulator = hasSafeFirebaseEmulatorEnvironment(['firestore']);
+
+describe.skipIf(!hasSafeFirestoreEmulator)('admin moderation concurrency', () => {
+  let app: App;
+  let database: Firestore;
+
+  beforeAll(() => {
+    requireSafeFirebaseEmulatorEnvironment(['firestore']);
+    app = initializeApp({ projectId: LOCAL_FIREBASE_PROJECT_ID }, 'admin-moderation-concurrency-test');
+    database = getFirestore(app);
+  });
+
   afterAll(async () => {
-    await deleteApp(getFirebaseAdminApp());
+    await deleteApp(app);
   });
 
   it('소유자 공개 상태와 운영자 상태의 동시 변경을 모두 보존한다', async () => {
-    const database = getAdminFirestore();
     const sketchbook = database.doc('sketchbooks/admin-concurrency-book');
     const originalUpdatedAt = new Date('2026-08-25T01:00:00.000Z');
     const ownerUpdatedAt = new Date('2026-08-25T01:01:00.000Z');
@@ -38,7 +53,7 @@ describe('admin moderation concurrency', () => {
         adminUid: 'admin-e2e-uid',
         moderationStatus: 'BLOCKED',
         sketchbookId: 'admin-concurrency-book',
-      }),
+      }, database),
     ]);
 
     const result = await sketchbook.get();

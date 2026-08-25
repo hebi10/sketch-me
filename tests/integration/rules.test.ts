@@ -7,21 +7,33 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { afterAll, beforeAll, describe, it } from 'vitest';
+import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
+import { getStorage } from 'firebase-admin/storage';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+import {
+  getFirebaseEmulatorAddress,
+  hasSafeFirebaseEmulatorEnvironment,
+  LOCAL_FIREBASE_PROJECT_ID,
+  requireSafeFirebaseEmulatorEnvironment,
+} from '../helpers/firebase-emulator-safety';
 
 let testEnvironment: RulesTestEnvironment;
+let adminApp: App;
+type AdminStorage = ReturnType<typeof getStorage>;
+type AdminBucket = ReturnType<AdminStorage['bucket']>;
+let knownPrivateFile: ReturnType<AdminBucket['file']>;
 
-function emulatorAddress(value: string | undefined, defaultPort: number) {
-  const [host = '127.0.0.1', port = String(defaultPort)] = value?.split(':') ?? [];
-  return { host, port: Number(port) };
-}
+const knownPrivatePath = 'rules/admin-e2e-known-private.webp';
+const hasSafeRulesEmulators = hasSafeFirebaseEmulatorEnvironment(['firestore', 'storage']);
 
-describe('Firebase security rules', () => {
+describe.skipIf(!hasSafeRulesEmulators)('Firebase security rules', () => {
   beforeAll(async () => {
-    const firestore = emulatorAddress(process.env.FIRESTORE_EMULATOR_HOST, 8080);
-    const storage = emulatorAddress(process.env.FIREBASE_STORAGE_EMULATOR_HOST, 9199);
+    requireSafeFirebaseEmulatorEnvironment(['firestore', 'storage']);
+    const firestore = getFirebaseEmulatorAddress('firestore');
+    const storage = getFirebaseEmulatorAddress('storage');
     testEnvironment = await initializeTestEnvironment({
-      projectId: 'sketch-me-local',
+      projectId: LOCAL_FIREBASE_PROJECT_ID,
       firestore: {
         host: firestore.host,
         port: firestore.port,
@@ -33,10 +45,20 @@ describe('Firebase security rules', () => {
         rules: readFileSync('storage.rules', 'utf8'),
       },
     });
+    adminApp = initializeApp({
+      projectId: LOCAL_FIREBASE_PROJECT_ID,
+      storageBucket: `${LOCAL_FIREBASE_PROJECT_ID}.appspot.com`,
+    }, 'rules-test-admin');
+    knownPrivateFile = getStorage(adminApp).bucket().file(knownPrivatePath);
+    await knownPrivateFile.save(Buffer.from('known-private-object'), {
+      contentType: 'image/webp',
+    });
   });
 
   afterAll(async () => {
+    await knownPrivateFile?.delete({ ignoreNotFound: true });
     await testEnvironment?.cleanup();
+    if (adminApp) await deleteApp(adminApp);
   });
 
   it('direct client writes are denied for Firestore', async () => {
@@ -63,9 +85,11 @@ describe('Firebase security rules', () => {
 
   it('direct client downloads are denied for Storage', async () => {
     const bucket = testEnvironment.unauthenticatedContext().storage();
+    const [exists] = await knownPrivateFile.exists();
 
-    await assertFails(
-      bucket.ref('sketchbooks/public-book/drawings/a.webp').getDownloadURL(),
-    );
+    expect(exists).toBe(true);
+    await expect(
+      bucket.ref(knownPrivatePath).getDownloadURL(),
+    ).rejects.toMatchObject({ code: 'storage/unauthorized' });
   });
 });

@@ -1,16 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { resolvePlaywrightEmulatorHosts } from './tests/helpers/firebase-emulator-safety';
+
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000';
+const managesFirebaseEmulators = !process.env.PLAYWRIGHT_SKIP_WEBSERVER;
+const emulatorHosts = resolvePlaywrightEmulatorHosts(process.env, managesFirebaseEmulators);
 const adminTestEnv = {
   FIREBASE_PROJECT_ID: 'sketch-me-local',
-  FIREBASE_AUTH_EMULATOR_HOST: process.env.PLAYWRIGHT_AUTH_EMULATOR_HOST ?? '127.0.0.1:9099',
-  FIRESTORE_EMULATOR_HOST: process.env.PLAYWRIGHT_FIRESTORE_EMULATOR_HOST ?? '127.0.0.1:8080',
-  FIREBASE_STORAGE_EMULATOR_HOST: process.env.PLAYWRIGHT_STORAGE_EMULATOR_HOST ?? '127.0.0.1:9199',
+  FIREBASE_AUTH_EMULATOR_HOST: emulatorHosts.auth,
+  FIRESTORE_EMULATOR_HOST: emulatorHosts.firestore,
+  FIREBASE_STORAGE_EMULATOR_HOST: emulatorHosts.storage,
   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'sketch-me-local.appspot.com',
   ADMIN_UID: 'admin-e2e-uid',
   ADMIN_EMAIL: 'admin@example.com',
   ADMIN_ALLOWED_ORIGIN: new URL(baseURL).origin,
-  NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: process.env.PLAYWRIGHT_AUTH_EMULATOR_HOST ?? '127.0.0.1:9099',
+  NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: emulatorHosts.auth,
 };
 
 Object.assign(process.env, adminTestEnv);
@@ -39,7 +43,11 @@ export default defineConfig({
     },
   ],
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'chromium',
+      testIgnore: /admin-flow\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } },
   ],
 });
