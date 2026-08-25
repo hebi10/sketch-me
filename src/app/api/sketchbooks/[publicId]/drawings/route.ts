@@ -61,6 +61,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   const drawing = createDrawingDraft({
     id: drawingId,
     sketchbookId: sketchbook.id,
+    sketchbookPublicId: sketchbook.publicId,
+    sketchbookName: sketchbook.name,
     imagePath,
     authorName: parsed.data.authorName,
     message: parsed.data.message,

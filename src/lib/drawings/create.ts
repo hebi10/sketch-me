@@ -3,6 +3,8 @@ import type { Drawing } from '@/lib/domain/types';
 interface CreateDrawingDraftParams {
   id: string;
   sketchbookId: string;
+  sketchbookPublicId: string;
+  sketchbookName: string;
   imagePath: string;
   authorName: string;
   message?: string;
@@ -13,6 +15,8 @@ interface CreateDrawingDraftParams {
 export function createDrawingDraft({
   id,
   sketchbookId,
+  sketchbookPublicId,
+  sketchbookName,
   imagePath,
   authorName,
   message,
@@ -24,12 +28,16 @@ export function createDrawingDraft({
   return {
     id,
     sketchbookId,
+    sketchbookPublicId,
+    sketchbookName,
     imagePath,
     authorName: authorName.trim(),
     message: trimmedMessage || null,
     usedReferenceImage,
     bestRank: null,
     status: 'VISIBLE',
+    moderationStatus: 'ACTIVE',
+    moderatedAt: null,
     createdAt,
     updatedAt: createdAt,
   };

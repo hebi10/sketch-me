@@ -22,6 +22,8 @@ describe('createSketchbookDraft', () => {
       participantCount: 0,
       referenceImagePath: null,
       referenceImageEnabled: false,
+      moderationStatus: 'ACTIVE',
+      moderatedAt: null,
       status: 'PUBLIC',
     });
   });

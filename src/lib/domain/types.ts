@@ -1,5 +1,6 @@
 export type SketchbookStatus = 'PUBLIC' | 'PRIVATE' | 'DELETED';
 export type DrawingStatus = 'VISIBLE' | 'HIDDEN' | 'DELETED';
+export type ModerationStatus = 'ACTIVE' | 'BLOCKED';
 export type PurchaseStatus = 'READY' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 export type PurchaseProductId = 'FRIENDS_10' | 'FRIENDS_50' | 'FRIENDS_100';
 export type ShareType = 'SELF_VS_FRIENDS' | 'FRIENDS_BEST';
@@ -15,6 +16,8 @@ export interface Sketchbook {
   participantLimit: number;
   participantCount: number;
   status: SketchbookStatus;
+  moderationStatus: ModerationStatus;
+  moderatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,18 +25,25 @@ export interface Sketchbook {
 export interface Drawing {
   id: string;
   sketchbookId: string;
+  sketchbookPublicId: string;
+  sketchbookName: string;
   imagePath: string;
   authorName: string;
   message: string | null;
   usedReferenceImage: boolean;
   bestRank: 1 | 2 | 3 | 4 | null;
   status: DrawingStatus;
+  moderationStatus: ModerationStatus;
+  moderatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface Purchase {
   id: string;
+  sketchbookId: string;
+  sketchbookPublicId: string;
+  sketchbookName: string;
   orderId: string;
   provider: 'MOCK' | 'TOSS';
   productType: PurchaseProductId;

@@ -22,6 +22,8 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     participantLimit: Number(data.participantLimit),
     participantCount: Number(data.participantCount),
     status: data.status as Sketchbook['status'],
+    moderationStatus: data.moderationStatus === 'BLOCKED' ? 'BLOCKED' : 'ACTIVE',
+    moderatedAt: data.moderatedAt ? toDate(data.moderatedAt) : null,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
@@ -51,12 +53,16 @@ function toDrawing(id: string, data: Record<string, unknown>): Drawing {
   return {
     id,
     sketchbookId: String(data.sketchbookId),
+    sketchbookPublicId: String(data.sketchbookPublicId ?? ''),
+    sketchbookName: String(data.sketchbookName ?? ''),
     imagePath: String(data.imagePath),
     authorName: String(data.authorName),
     message: data.message ? String(data.message) : null,
     usedReferenceImage: Boolean(data.usedReferenceImage),
     bestRank: (data.bestRank as Drawing['bestRank']) ?? null,
     status: data.status as Drawing['status'],
+    moderationStatus: data.moderationStatus === 'BLOCKED' ? 'BLOCKED' : 'ACTIVE',
+    moderatedAt: data.moderatedAt ? toDate(data.moderatedAt) : null,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
@@ -201,7 +207,19 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
     if (existingPurchase.exists) return currentLimit;
     const participantLimit = currentLimit + plan.additionalLimit;
     transaction.update(reference, { participantLimit, updatedAt: new Date() });
-    transaction.set(purchaseReference, { orderId: `mock_${requestId}`, provider: 'MOCK', productType: plan.productId, amount: plan.amount, additionalLimit: plan.additionalLimit, paymentStatus: 'SUCCEEDED', paidAt: new Date(), createdAt: new Date() });
+    transaction.set(purchaseReference, {
+      sketchbookId: sketchbook.id,
+      sketchbookPublicId: sketchbook.publicId,
+      sketchbookName: sketchbook.name,
+      orderId: `mock_${requestId}`,
+      provider: 'MOCK',
+      productType: plan.productId,
+      amount: plan.amount,
+      additionalLimit: plan.additionalLimit,
+      paymentStatus: 'SUCCEEDED',
+      paidAt: new Date(),
+      createdAt: new Date(),
+    });
     return participantLimit;
   });
 }

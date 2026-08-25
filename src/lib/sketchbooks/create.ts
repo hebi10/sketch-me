@@ -30,6 +30,8 @@ export function createSketchbookDraft({
     participantLimit: 20,
     participantCount: 0,
     status: 'PUBLIC',
+    moderationStatus: 'ACTIVE',
+    moderatedAt: null,
     createdAt,
     updatedAt: createdAt,
   };
