@@ -7,6 +7,7 @@ import {
 } from '@/lib/admin/auth';
 import { drawingModerationParamsSchema } from '@/lib/admin/schemas';
 import { getAdminStorage } from '@/lib/firebase/admin';
+import { isDrawingImagePathFor } from '@/lib/firebase/storage';
 import { findDrawing } from '@/lib/sketchbooks/repository';
 
 const safeImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -42,6 +43,7 @@ export async function GET(
       !drawing
       || drawing.sketchbookId !== sketchbookId
       || drawing.status === 'DELETED'
+      || !isDrawingImagePathFor(drawing.imagePath, sketchbookId, drawingId)
     ) {
       return emptyResponse(404);
     }

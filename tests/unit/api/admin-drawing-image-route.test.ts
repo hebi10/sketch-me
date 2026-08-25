@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 
 const {
+  bucketFile,
   cookieGet,
   fileDownload,
   fileGetMetadata,
@@ -9,6 +10,7 @@ const {
   getAdminStorage,
   verifyAdminSessionCookie,
 } = vi.hoisted(() => ({
+  bucketFile: vi.fn(),
   cookieGet: vi.fn(),
   fileDownload: vi.fn(),
   fileGetMetadata: vi.fn(),
@@ -65,10 +67,10 @@ beforeEach(() => {
   fileGetMetadata.mockResolvedValue([{ contentType: 'image/webp' }]);
   getAdminStorage.mockReturnValue({
     bucket: vi.fn(() => ({
-      file: vi.fn(() => ({
+      file: bucketFile.mockReturnValue({
         download: fileDownload,
         getMetadata: fileGetMetadata,
-      })),
+      }),
     })),
   });
 });
@@ -121,6 +123,9 @@ describe('관리자 그림 이미지 API', () => {
 
     expect(response.status).toBe(200);
     expect(findDrawing).toHaveBeenCalledWith('book-1', 'draw-1');
+    expect(bucketFile).toHaveBeenCalledWith(
+      'sketchbooks/book-1/drawings/draw-1/original.webp',
+    );
     expect(response.headers.get('Cache-Control')).toBe('private, no-store');
     expect(response.headers.get('Content-Type')).toBe('image/webp');
     expect(response.headers.get('Content-Disposition')).toBe('inline');
@@ -129,6 +134,54 @@ describe('관리자 그림 이미지 API', () => {
     await expect(response.arrayBuffer()).resolves.toEqual(
       Uint8Array.from(Buffer.from('private-image')).buffer,
     );
+  });
+
+  it('인증된 관리자는 소유자가 숨긴 ACTIVE 그림도 검토한다', async () => {
+    findDrawing.mockResolvedValue({
+      ...drawing,
+      moderationStatus: 'ACTIVE',
+      status: 'HIDDEN',
+    });
+
+    const response = await GET(request, context);
+
+    expect(response.status).toBe(200);
+    expect(bucketFile).toHaveBeenCalledWith(
+      'sketchbooks/book-1/drawings/draw-1/original.webp',
+    );
+  });
+
+  it('이전 앱이 기록한 확장자 없는 동일 그림 경로를 허용한다', async () => {
+    findDrawing.mockResolvedValue({
+      ...drawing,
+      imagePath: 'sketchbooks/book-1/drawings/draw-1/original',
+    });
+
+    const response = await GET(request, context);
+
+    expect(response.status).toBe(200);
+    expect(bucketFile).toHaveBeenCalledWith(
+      'sketchbooks/book-1/drawings/draw-1/original',
+    );
+  });
+
+  it.each([
+    'sketchbooks/other-book/drawings/draw-1/original.webp',
+    'sketchbooks/book-1/drawings/other-drawing/original.webp',
+    'sketchbooks/book-1/owner/original.webp',
+    'sketchbooks/book-1/reference/source.webp',
+    'sketchbooks/book-1/drawings/draw-1.webp',
+    'sketchbooks/book-1/drawings/draw-1/../original.webp',
+    'sketchbooks/book-1/drawings/draw-1/%2e%2e/owner/original.webp',
+    'sketchbooks/book-1/drawings/draw-1%2foriginal.webp',
+  ])('허용된 동일 그림 경로가 아니면 Storage 접근 전에 404를 반환한다: %s', async (imagePath) => {
+    findDrawing.mockResolvedValue({ ...drawing, imagePath });
+
+    const response = await GET(request, context);
+
+    expect(response.status).toBe(404);
+    expect(getAdminStorage).not.toHaveBeenCalled();
+    expect(bucketFile).not.toHaveBeenCalled();
   });
 
   it('DELETED 그림은 관리자에게도 제공하지 않는다', async () => {

@@ -277,4 +277,69 @@ describe('DrawingModerationButton', () => {
 
     expect(refresh).not.toHaveBeenCalled();
   });
+
+  it('non-2xx 오류는 일반 alert로 표시하고 dialog와 확인 포커스를 유지한 뒤 재시도한다', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        json: async () => ({ message: 'SECRET_TOKEN=top-secret' }),
+        ok: false,
+      })
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <DrawingModerationButton
+        drawingId="draw-1"
+        moderationStatus="ACTIVE"
+        sketchbookId="book-1"
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '서비스에서 숨기기' }));
+    const confirm = screen.getByRole('button', { name: '숨기기' });
+
+    fireEvent.click(confirm);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('상태를 변경하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    expect(alert).not.toHaveTextContent('SECRET_TOKEN');
+    expect(screen.getByRole('dialog')).toBeVisible();
+    expect(refresh).not.toHaveBeenCalled();
+    await waitFor(() => expect(confirm).toHaveFocus());
+
+    fireEvent.click(confirm);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('네트워크 오류도 일반 alert와 확인 포커스를 유지하고 재시도 성공을 허용한다', async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error('PRIVATE_FIREBASE_PROJECT'))
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <DrawingModerationButton
+        drawingId="draw-1"
+        moderationStatus="ACTIVE"
+        sketchbookId="book-1"
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '서비스에서 숨기기' }));
+    const confirm = screen.getByRole('button', { name: '숨기기' });
+
+    fireEvent.click(confirm);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('상태를 변경하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    expect(alert).not.toHaveTextContent('PRIVATE_FIREBASE_PROJECT');
+    expect(screen.getByRole('dialog')).toBeVisible();
+    expect(refresh).not.toHaveBeenCalled();
+    await waitFor(() => expect(confirm).toHaveFocus());
+
+    fireEvent.click(confirm);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });

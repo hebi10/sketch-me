@@ -47,3 +47,16 @@
 - 실제 관리자 로그인 세션이 필요한 보호 페이지 탐색 대신 동일 CSS와 대표 긴 데이터를 사용한 Chromium 렌더로 반응형을 검증했습니다.
 - 푸시와 배포는 실행하지 않았습니다.
 - 기존 `next-env.d.ts`, `firebase-debug.log`, pnpm 관련 파일과 우발 생성 파일은 수정·삭제·스테이징하지 않았습니다.
+
+## 리뷰 수정 1차
+
+- 관리자 이미지 API가 Firestore의 `drawing.imagePath`를 그대로 신뢰하던 경계를 수정했습니다. 변조된 그림 문서가 같은 `sketchbookId`를 유지하면서 owner·reference·다른 그림 Storage 객체를 가리키는 경우를 차단합니다.
+- 실제 Git 이력과 공개 그림 쓰기 라우트를 확인해 현재 canonical `sketchbooks/{book}/drawings/{drawing}/original.webp`와 2026-08-24 이전 확장자 없는 legacy `sketchbooks/{book}/drawings/{drawing}/original`만 허용했습니다. 테스트 fixture에만 있던 평면형 `{drawing}.webp`는 허용하지 않았습니다.
+- `src/lib/firebase/storage.ts`에 순수 `isDrawingImagePathFor()`를 추가했습니다. 경로를 정확히 5개 segment로 비교하고 다른 스케치북·그림·컬렉션·파일명과 `.`·`..`·역슬래시·인코딩된 slash/backslash/dot traversal을 거부합니다.
+- 관리자 이미지 API는 위 검증을 통과하지 못하면 `getAdminStorage()`와 `.file()` 전에 비밀값 없는 `404`를 반환합니다. canonical·legacy 성공 테스트는 `.file()`에 전달되는 정확한 전체 경로를 고정합니다.
+- `HIDDEN`이면서 운영 상태가 `ACTIVE`인 그림도 관리자 이미지 API에서 검토할 수 있음을 추가로 고정했습니다.
+- `DrawingModerationButton`의 non-2xx와 네트워크 오류에 대해 dialog 유지, 일반 `role="alert"`, 확인 버튼 포커스 복구, 새로고침 없음, 재시도 성공을 검증했습니다. 기존 구현이 이 계약을 충족해 UI 코드는 변경하지 않았습니다.
+- RED: 집중 테스트에서 위험 경로 8개가 모두 기존 API의 `200`으로 제공되고 순수 검증기가 없어 19개 테스트가 실패했습니다.
+- GREEN 집중 테스트: `npm test -- tests/unit/api/admin-drawing-image-route.test.ts tests/unit/firebase/storage.test.ts tests/unit/ui/admin-drawings.test.tsx` — 3 files, 44 tests 통과.
+- 전체 테스트: `npm test` — 52 files, 317 tests 통과. 전체 `npm run lint`, `npx tsc --noEmit`, `npm run build`도 통과했습니다.
+- UI 시각 변경이 없어 Impeccable detector는 재실행하지 않았습니다.

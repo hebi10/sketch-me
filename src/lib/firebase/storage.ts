@@ -18,6 +18,63 @@ export function getDrawingImagePath(sketchbookId: string, drawingId: string) {
   return `sketchbooks/${sketchbookId}/drawings/${drawingId}/original.webp`;
 }
 
+function isSafeStoragePathSegment(value: string) {
+  if (!value || value === '.' || value === '..' || value.includes('\\')) {
+    return false;
+  }
+
+  let decoded = value;
+  for (let index = 0; index < 4; index += 1) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (
+        next === '.'
+        || next === '..'
+        || next.includes('/')
+        || next.includes('\\')
+      ) {
+        return false;
+      }
+      if (next === decoded) return true;
+      decoded = next;
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+export function isDrawingImagePathFor(
+  imagePath: string,
+  sketchbookId: string,
+  drawingId: string,
+) {
+  const segments = imagePath.split('/');
+  if (
+    segments.length !== 5
+    || !segments.every(isSafeStoragePathSegment)
+    || !isSafeStoragePathSegment(sketchbookId)
+    || !isSafeStoragePathSegment(drawingId)
+  ) {
+    return false;
+  }
+
+  const [root, pathSketchbookId, collection, pathDrawingId, filename] = segments;
+  if (
+    root !== 'sketchbooks'
+    || pathSketchbookId !== sketchbookId
+    || collection !== 'drawings'
+    || pathDrawingId !== drawingId
+  ) {
+    return false;
+  }
+
+  // Before the WebP storage normalization, drawing objects used the same
+  // scoped path with an extensionless `original` filename.
+  return filename === 'original.webp' || filename === 'original';
+}
+
 export function getShareImagePath(sketchbookId: string, shareImageId: string) {
   return `sketchbooks/${sketchbookId}/share-images/${shareImageId}/story.png`;
 }
