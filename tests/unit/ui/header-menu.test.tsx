@@ -11,7 +11,9 @@ describe('HeaderMenu', () => {
       </HeaderMenu>,
     );
 
-    const menu = screen.getByText('☰ 메뉴');
+    const menu = screen.getByLabelText('메뉴');
+    expect(menu).toHaveTextContent('☰');
+    expect(menu).not.toHaveTextContent('메뉴');
     fireEvent.click(menu);
     expect(screen.getByRole('link', { name: '내 스케치북 관리' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '로그아웃' }));

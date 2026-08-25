@@ -7,8 +7,8 @@ export function HeaderMenu({ children, label = '메뉴' }: { children: React.Rea
 
   return (
     <details className="header-menu" ref={detailsRef}>
-      <summary>☰ {label}</summary>
-      <nav aria-label={label} onClick={() => { if (detailsRef.current) detailsRef.current.open = false; }}>
+      <summary aria-label={label}>☰</summary>
+      <nav aria-label={`${label} 항목`} onClick={() => { if (detailsRef.current) detailsRef.current.open = false; }}>
         {children}
       </nav>
     </details>
