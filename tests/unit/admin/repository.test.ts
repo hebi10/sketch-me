@@ -23,6 +23,8 @@ type RequiredIndex = {
   fields: Array<{ fieldPath: string; order: 'ASCENDING' | 'DESCENDING' }>;
 };
 
+type FirestoreIndex = Omit<RequiredIndex, 'name'>;
+
 const requiredIndexes: RequiredIndex[] = [
   {
     name: '기존 스케치북 상세 그림',
@@ -95,17 +97,10 @@ const requiredIndexes: RequiredIndex[] = [
       { fieldPath: '__name__', order: 'ASCENDING' },
     ],
   },
+];
+
+const activePurchaseIndexes: FirestoreIndex[] = [
   {
-    name: '결제 목록',
-    collectionGroup: 'purchases',
-    queryScope: 'COLLECTION_GROUP',
-    fields: [
-      { fieldPath: 'createdAt', order: 'DESCENDING' },
-      { fieldPath: '__name__', order: 'DESCENDING' },
-    ],
-  },
-  {
-    name: '모의 결제 목록',
     collectionGroup: 'purchases',
     queryScope: 'COLLECTION_GROUP',
     fields: [
@@ -115,25 +110,6 @@ const requiredIndexes: RequiredIndex[] = [
     ],
   },
   {
-    name: '성공 결제 대시보드 aggregate',
-    collectionGroup: 'purchases',
-    queryScope: 'COLLECTION_GROUP',
-    fields: [
-      { fieldPath: 'paymentStatus', order: 'ASCENDING' },
-      { fieldPath: 'amount', order: 'ASCENDING' },
-    ],
-  },
-  {
-    name: '스케치북 상세 성공 결제 aggregate',
-    collectionGroup: 'purchases',
-    queryScope: 'COLLECTION',
-    fields: [
-      { fieldPath: 'paymentStatus', order: 'ASCENDING' },
-      { fieldPath: 'amount', order: 'ASCENDING' },
-    ],
-  },
-  {
-    name: '모의 성공 결제 대시보드 aggregate',
     collectionGroup: 'purchases',
     queryScope: 'COLLECTION_GROUP',
     fields: [
@@ -143,7 +119,6 @@ const requiredIndexes: RequiredIndex[] = [
     ],
   },
   {
-    name: '스케치북 상세 모의 성공 결제 aggregate',
     collectionGroup: 'purchases',
     queryScope: 'COLLECTION',
     fields: [
@@ -151,6 +126,42 @@ const requiredIndexes: RequiredIndex[] = [
       { fieldPath: 'provider', order: 'ASCENDING' },
       { fieldPath: 'amount', order: 'ASCENDING' },
     ],
+  },
+];
+
+const obsoletePurchaseIndexes: Array<{ name: string; index: FirestoreIndex }> = [
+  {
+    name: 'provider 없는 collection-group 목록',
+    index: {
+      collectionGroup: 'purchases',
+      queryScope: 'COLLECTION_GROUP',
+      fields: [
+        { fieldPath: 'createdAt', order: 'DESCENDING' },
+        { fieldPath: '__name__', order: 'DESCENDING' },
+      ],
+    },
+  },
+  {
+    name: 'provider 없는 collection-group aggregate',
+    index: {
+      collectionGroup: 'purchases',
+      queryScope: 'COLLECTION_GROUP',
+      fields: [
+        { fieldPath: 'paymentStatus', order: 'ASCENDING' },
+        { fieldPath: 'amount', order: 'ASCENDING' },
+      ],
+    },
+  },
+  {
+    name: 'provider 없는 collection aggregate',
+    index: {
+      collectionGroup: 'purchases',
+      queryScope: 'COLLECTION',
+      fields: [
+        { fieldPath: 'paymentStatus', order: 'ASCENDING' },
+        { fieldPath: 'amount', order: 'ASCENDING' },
+      ],
+    },
   },
 ];
 
@@ -163,6 +174,31 @@ describe('admin repository Firestore indexes', () => {
     expect(firestoreIndexes.indexes).toEqual(expect.arrayContaining([
       { collectionGroup, fields, queryScope },
     ]));
+  });
+
+  it('purchase 인덱스는 현재 provider-aware 쿼리 3개와 정확히 일치한다', () => {
+    const purchaseIndexes = firestoreIndexes.indexes.filter((index) => (
+      index.collectionGroup === 'purchases'
+    ));
+
+    expect(purchaseIndexes).toEqual(activePurchaseIndexes);
+  });
+
+  it.each(obsoletePurchaseIndexes)('$name 인덱스를 유지하지 않는다', ({ index }) => {
+    const purchaseIndexes = firestoreIndexes.indexes.filter((candidate) => (
+      candidate.collectionGroup === 'purchases'
+    ));
+
+    expect(purchaseIndexes).not.toContainEqual(index);
+  });
+
+  it('purchase 인덱스에 중복이 없다', () => {
+    const purchaseIndexes = firestoreIndexes.indexes.filter((index) => (
+      index.collectionGroup === 'purchases'
+    ));
+    const uniqueIndexes = new Set(purchaseIndexes.map((index) => JSON.stringify(index)));
+
+    expect(uniqueIndexes.size).toBe(purchaseIndexes.length);
   });
 
   it('전체 그림 count의 status-only collection-group 단일 필드 인덱스가 있다', () => {

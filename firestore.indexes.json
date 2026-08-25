@@ -135,48 +135,6 @@
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "purchases",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "paymentStatus",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "amount",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "purchases",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "paymentStatus",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "amount",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "purchases",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
           "fieldPath": "provider",
           "order": "ASCENDING"
         },
