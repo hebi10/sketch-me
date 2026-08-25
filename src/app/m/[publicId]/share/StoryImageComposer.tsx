@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 
 import { StoryImageMaker, type StoryDrawing } from './StoryImageMaker';
+import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
 import { getStoryTheme, storyThemes } from '@/lib/share/story-themes';
 import { storyStyle } from '@/lib/share/story-style';
 
@@ -45,6 +46,7 @@ export function StoryImageComposer({ drawings, name, publicUrl }: StoryImageComp
           backgroundImage: `url(${theme.backgroundImage})`,
         }}
       >
+        <p className="story-preview__heading">{STORY_SHARED_HEADING}</p>
         <h1>BEST 4</h1>
         <div className="story-best-grid">
           {[1, 2, 3, 4].map((rank) => {

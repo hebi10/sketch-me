@@ -1,5 +1,8 @@
 export const STORY_WIDTH = 1080;
 export const STORY_HEIGHT = 1440;
+export const STORY_SHARED_HEADING = '친구들이 그린 내 모습';
+export const STORY_SHARED_HEADING_Y = 94;
+export const STORY_BEST_TITLE_Y = 180;
 
 export interface StorySlot {
   rank: 1 | 2 | 3 | 4;

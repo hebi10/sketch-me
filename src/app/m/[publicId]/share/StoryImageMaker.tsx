@@ -2,7 +2,15 @@
 
 import { useState } from 'react';
 
-import { STORY_HEIGHT, STORY_WIDTH, storySlots, type StorySlot } from '@/lib/share/story-layout';
+import {
+  STORY_BEST_TITLE_Y,
+  STORY_HEIGHT,
+  STORY_SHARED_HEADING,
+  STORY_SHARED_HEADING_Y,
+  STORY_WIDTH,
+  storySlots,
+  type StorySlot,
+} from '@/lib/share/story-layout';
 import { storyStyle } from '@/lib/share/story-style';
 
 export interface StoryDrawing {
@@ -70,9 +78,11 @@ export function StoryImageMaker({ backgroundImage, drawings, name, publicUrl }: 
       context.drawImage(background, 0, 0, STORY_WIDTH, STORY_HEIGHT);
       context.fillStyle = storyStyle.ink;
       context.textAlign = 'center';
+      setFittedFont(context, STORY_SHARED_HEADING, storyStyle.fontFamily, { maxSize: 54, minSize: 24, maxWidth: 840, weight: 600 });
+      context.fillText(STORY_SHARED_HEADING, 540, STORY_SHARED_HEADING_Y);
       const title = `BEST 4`;
       setFittedFont(context, title, storyStyle.fontFamily, { maxSize: 78, minSize: 28, maxWidth: 900, weight: 700 });
-      context.fillText(title, 540, 180);
+      context.fillText(title, 540, STORY_BEST_TITLE_Y);
 
       for (const slot of storySlots) {
         context.fillStyle = '#ffffff';
