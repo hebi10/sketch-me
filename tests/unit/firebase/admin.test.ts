@@ -1,15 +1,17 @@
 import { vi } from 'vitest';
 
-const { getApps, initializeApp } = vi.hoisted(() => ({
+const { getApps, initializeApp, getAuth } = vi.hoisted(() => ({
   getApps: vi.fn(() => []),
   initializeApp: vi.fn((options: Record<string, unknown>) => ({ options })),
+  getAuth: vi.fn(),
 }));
 
 vi.mock('firebase-admin/app', () => ({ getApps, initializeApp }));
 vi.mock('firebase-admin/firestore', () => ({ getFirestore: vi.fn() }));
 vi.mock('firebase-admin/storage', () => ({ getStorage: vi.fn() }));
+vi.mock('firebase-admin/auth', () => ({ getAuth }));
 
-import { getFirebaseAdminApp } from '@/lib/firebase/admin';
+import { getAdminAuth, getFirebaseAdminApp } from '@/lib/firebase/admin';
 
 describe('Firebase Admin 초기화', () => {
   afterEach(() => {
@@ -30,5 +32,13 @@ describe('Firebase Admin 초기화', () => {
       projectId: 'sketch-me-31e13',
       storageBucket: 'sketch-me-31e13.firebasestorage.app',
     });
+  });
+
+  it('초기화한 Admin 앱에서 Auth 클라이언트를 가져온다', () => {
+    const auth = { verifyIdToken: vi.fn() };
+    getAuth.mockReturnValue(auth);
+
+    expect(getAdminAuth()).toBe(auth);
+    expect(getAuth).toHaveBeenCalledWith(expect.objectContaining({ options: expect.any(Object) }));
   });
 });
