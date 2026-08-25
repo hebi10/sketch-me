@@ -8,10 +8,11 @@ const ownerImageDataUrl = `data:image/png;base64,${Buffer.from('owner-image').to
 
 describe('owner sketchbook creation', () => {
   it('allows the creator drawing to be skipped and accepts an optional reference image', () => {
-    expect(createSketchbookInputSchema.safeParse({ name: '테스트사용자' }).success).toBe(true);
-    expect(createSketchbookInputSchema.safeParse({ name: '테스트사용자', ownerImageDataUrl }).success).toBe(true);
+    expect(createSketchbookInputSchema.safeParse({ name: '테스트사용자', managePin: '1234' }).success).toBe(true);
+    expect(createSketchbookInputSchema.safeParse({ name: '테스트사용자', managePin: '1234', ownerImageDataUrl }).success).toBe(true);
     expect(createSketchbookInputSchema.safeParse({
       name: '테스트사용자',
+      managePin: '1234',
       ownerImageDataUrl,
       referenceImageDataUrl: `data:image/jpeg;base64,${Buffer.from('reference').toString('base64')}`,
     }).success).toBe(true);

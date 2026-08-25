@@ -1,8 +1,19 @@
 import type { Drawing, Sketchbook } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
 import type { PurchasePlan } from '@/lib/purchases/plans';
+import type { ManagePinAttemptState } from '@/lib/security/manage-pin-attempt';
+import { randomUUID } from 'node:crypto';
+import { createManageSessionToken, hashManageSessionToken } from './manage-pin';
+import type { PinManageSession } from './manage-session';
 
 const collectionName = 'sketchbooks';
+
+export class DrawingPublicPromotionBlockedError extends Error {
+  constructor() {
+    super('운영자가 차단한 그림은 공개할 수 없습니다.');
+    this.name = 'DrawingPublicPromotionBlockedError';
+  }
+}
 
 function toDate(value: unknown) {
   return value && typeof value === 'object' && 'toDate' in value
@@ -16,6 +27,9 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     publicId: String(data.publicId),
     name: String(data.name),
     manageTokenHash: String(data.manageTokenHash),
+    managePinHash: data.managePinHash ? String(data.managePinHash) : null,
+    managePinHint: data.managePinHint ? String(data.managePinHint) : null,
+    managePinEnabledAt: data.managePinEnabledAt ? toDate(data.managePinEnabledAt) : null,
     ownerDrawingPath: data.ownerDrawingPath ? String(data.ownerDrawingPath) : null,
     referenceImagePath: data.referenceImagePath ? String(data.referenceImagePath) : null,
     referenceImageEnabled: Boolean(data.referenceImageEnabled),
@@ -144,11 +158,28 @@ export async function updateDrawingForManagement(
   drawingId: string,
   update: { status?: Drawing['status']; bestRank?: Drawing['bestRank'] },
 ) {
-  const reference = getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('drawings').doc(drawingId);
-  await reference.update({
+  const firestore = getAdminFirestore();
+  const reference = firestore.collection(collectionName).doc(sketchbookId).collection('drawings').doc(drawingId);
+  const changes = {
     ...update,
     ...(update.status === 'HIDDEN' ? { bestRank: null } : {}),
     updatedAt: new Date(),
+  };
+
+  if (update.status === 'VISIBLE') {
+    await firestore.runTransaction(async (transaction) => {
+      const drawingDocument = await transaction.get(reference);
+      if (!drawingDocument.exists) throw new Error('변경할 그림을 찾을 수 없습니다.');
+      if (drawingDocument.data()?.moderationStatus === 'BLOCKED') {
+        throw new DrawingPublicPromotionBlockedError();
+      }
+      transaction.update(reference, changes);
+    });
+    return;
+  }
+
+  await reference.update({
+    ...changes,
   });
 }
 
@@ -191,11 +222,13 @@ export async function setBestDrawing(sketchbookId: string, drawingId: string, be
       transaction.get(target),
       transaction.get(collection.where('bestRank', '==', bestRank)),
     ]);
-    if (
-      !targetDocument.exists
-      || targetDocument.data()?.status !== 'VISIBLE'
-      || targetDocument.data()?.moderationStatus === 'BLOCKED'
-    ) {
+    if (!targetDocument.exists) {
+      throw new Error('공개 중인 그림만 BEST로 선정할 수 있습니다.');
+    }
+    if (targetDocument.data()?.moderationStatus === 'BLOCKED') {
+      throw new DrawingPublicPromotionBlockedError();
+    }
+    if (targetDocument.data()?.status !== 'VISIBLE') {
       throw new Error('공개 중인 그림만 BEST로 선정할 수 있습니다.');
     }
     ranked.docs.forEach((document) => transaction.update(document.ref, { bestRank: null, updatedAt: new Date() }));
@@ -237,4 +270,65 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
 export async function deleteSketchbookPermanently(sketchbookId: string) {
   const firestore = getAdminFirestore();
   await firestore.recursiveDelete(firestore.collection(collectionName).doc(sketchbookId));
+}
+
+export async function createManagePinSession(sketchbookId: string, expiresAt: Date) {
+  const sessionId = randomUUID();
+  const token = createManageSessionToken();
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('manageSessions').doc(sessionId).set({
+    createdAt: new Date(),
+    expiresAt,
+    tokenHash: hashManageSessionToken(token),
+  });
+  return { sessionId, token };
+}
+
+export async function isManagePinSessionValid(sketchbookId: string, session: PinManageSession) {
+  const document = await getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('manageSessions').doc(session.sessionId).get();
+  const data = document.data();
+  if (!document.exists || !data?.expiresAt || toDate(data.expiresAt) <= new Date()) return false;
+  return hashManageSessionToken(session.token) === String(data.tokenHash);
+}
+
+export async function deleteManagePinSession(sketchbookId: string, sessionId: string) {
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('manageSessions').doc(sessionId).delete();
+}
+
+export async function deleteManagePinSessions(sketchbookId: string) {
+  const firestore = getAdminFirestore();
+  const sessions = await firestore.collection(collectionName).doc(sketchbookId).collection('manageSessions').get();
+  if (sessions.empty) return;
+  const batch = firestore.batch();
+  sessions.docs.forEach((document) => batch.delete(document.ref));
+  await batch.commit();
+}
+
+export async function getManagePinAttempt(sketchbookId: string, sourceHash: string): Promise<ManagePinAttemptState | null> {
+  const document = await getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('managePinAttempts').doc(sourceHash).get();
+  const data = document.data();
+  if (!document.exists || !data) return null;
+  return {
+    failureCount: Number(data.failureCount) || 0,
+    lockedUntil: data.lockedUntil ? toDate(data.lockedUntil) : null,
+  };
+}
+
+export async function saveManagePinAttempt(
+  sketchbookId: string,
+  sourceHash: string,
+  attempt: ManagePinAttemptState,
+) {
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('managePinAttempts').doc(sourceHash).set({
+    ...attempt,
+    updatedAt: new Date(),
+  });
+}
+
+export async function updateManagePin(sketchbookId: string, managePinHash: string, managePinHint: string | null) {
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
+    managePinHash,
+    managePinHint,
+    managePinEnabledAt: new Date(),
+    updatedAt: new Date(),
+  });
 }

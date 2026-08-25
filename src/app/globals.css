@@ -143,7 +143,8 @@ a { color: inherit; text-decoration: none; }
 .draw-tools { background: var(--canvas); border: 1px solid var(--line); border-top: 0; padding: 12px; }
 .tool-row { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
 .tool-row + .tool-row { margin-top: 12px; }
-.tool-button { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); cursor: pointer; font-size: 0.82rem; min-height: 44px; padding: 8px 10px; }
+.drawing-range-controls { margin-top: 12px; }
+.tool-button { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); cursor: pointer; font-size: 0.82rem; padding: 8px 10px; }
 .tool-button.is-active { border-color: var(--accent); color: var(--accent); }
 .color-swatch { border: 8px solid var(--canvas); border-radius: 50%; cursor: pointer; height: 44px; outline: 1px solid var(--line); width: 44px; }
 .color-swatch.is-active { outline: 2px solid var(--ink); }
@@ -193,7 +194,7 @@ a { color: inherit; text-decoration: none; }
 .story-theme-option { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); cursor: pointer; display: grid; font-family: inherit; font-size: .82rem; gap: 5px; min-height: 132px; padding: 4px; text-align: center; }
 .story-theme-option[aria-pressed="true"] { border-color: var(--accent); outline: 1px solid var(--accent); }
 .story-theme-thumbnail { aspect-ratio: 3 / 4; background-position: center; background-repeat: no-repeat; background-size: cover; display: block; width: 100%; }
-.story-preview { aspect-ratio: 3 / 4; background-position: center; background-repeat: no-repeat; background-size: cover; border: 1px solid var(--line); margin: 16px 0; min-height: 0; overflow: hidden; position: relative; text-align: center; }
+.story-preview { aspect-ratio: 3 / 4; background-position: center; background-repeat: no-repeat; background-size: cover; border: 1px solid var(--line); margin: 16px 0; min-height: 0; overflow: hidden; pointer-events: none; position: relative; text-align: center; }
 .story-preview__heading { font-size: clamp(1.1rem, 4.8vw, 2.1rem); left: 4%; letter-spacing: -.04em; line-height: 1.2; margin: 0; position: absolute; right: 4%; top: 5.8%; }
 .story-preview > h1 { font-size: clamp(1.35rem, 7vw, 2.8rem); left: 4%; letter-spacing: -.06em; line-height: 1.14; margin: 0; position: absolute; right: 4%; top: 11.5%; }
 .landing-copy h1, .create-intro h1, .create-complete h1, .public-intro h1, .manage-heading h1, .story-preview > h1 {
@@ -202,13 +203,13 @@ a { color: inherit; text-decoration: none; }
   text-wrap: balance;
   word-break: keep-all;
 }
-.story-best-grid { inset: 0; position: absolute; }
+.story-best-grid { inset: 0; pointer-events: none; position: absolute; }
 .story-best-slot { align-items: center; background: var(--canvas); border: 1px solid var(--line); display: flex; justify-content: center; margin: 0; min-width: 0; overflow: hidden; position: absolute; }
-.story-best-slot--1 { height: 45.833%; left: 19.444%; top: 17.361%; width: 61.111%; }
-.story-best-slot--2, .story-best-slot--3, .story-best-slot--4 { height: 17.361%; top: 67.361%; width: 23.148%; }
-.story-best-slot--2 { left: 6.944%; }
+.story-best-slot--1 { height: 45.833%; left: 19.444%; top: 21.361%; width: 61.111%; }
+.story-best-slot--2, .story-best-slot--3, .story-best-slot--4 { height: 17.361%; top: 69.361%; width: 23.148%; }
+.story-best-slot--2 { left: 11.944%; }
 .story-best-slot--3 { left: 38.426%; }
-.story-best-slot--4 { left: 69.907%; }
+.story-best-slot--4 { left: 64.907%; }
 .story-best-slot b { background: var(--accent); color: var(--canvas); font-size: .75rem; left: 0; padding: 5px 7px; position: absolute; top: 0; z-index: 2; }
 .story-best-slot img { object-fit: contain; }
 .story-best-slot span { color: var(--muted); font-size: .75rem; }
@@ -216,7 +217,7 @@ a { color: inherit; text-decoration: none; }
 .story-preview-cta strong { align-items: center; background: var(--accent); color: var(--canvas); display: flex; font-size: clamp(.65rem, 2.8vw, .9rem); justify-content: center; min-height: clamp(34px, 6vw, 48px); padding: 5px; }
 .story-preview-cta span { color: var(--muted); font-size: clamp(.55rem, 2.2vw, .72rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .story-output-meta { color: var(--muted); font-size: .8rem; margin: -4px 0 14px; text-align: center; }
-.story-download { display: grid; gap: 8px; }
+.story-download { display: grid; gap: 8px; position: relative; z-index: 1; }
 .story-download .button { width: 100%; }
 .story-download p { color: var(--muted); font-size: .85rem; margin: 0; text-align: center; }
 
@@ -1151,6 +1152,112 @@ main {
 .state-actions {
   display: grid;
   gap: 8px;
+}
+
+.header-menu summary {
+  font-size: .78rem;
+  font-weight: 700;
+  gap: 4px;
+  min-width: 64px;
+  white-space: nowrap;
+}
+
+.header-menu nav button {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .82rem;
+  min-height: 44px;
+  padding: 8px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.header-menu nav a + a,
+.header-menu nav a + button,
+.header-menu nav button + a,
+.header-menu nav button + button {
+  border-top: 1px solid var(--line);
+}
+
+.header-menu-status {
+  color: var(--muted);
+  font-size: .76rem;
+  margin: 6px 0 0;
+  text-align: right;
+}
+
+.manage-pin-shell {
+  margin: 0 auto;
+  max-width: 650px;
+  min-height: 100vh;
+  padding: 20px clamp(16px, 4.6vw, 28px) 48px;
+}
+
+.back-text-link {
+  color: var(--muted);
+  display: inline-flex;
+  font-size: .82rem;
+  min-height: 44px;
+  align-items: center;
+}
+
+.manage-pin-shell section {
+  padding-top: clamp(42px, 12vw, 82px);
+}
+
+.manage-pin-shell h1 {
+  font-size: clamp(1.55rem, 6.6vw, 2.2rem);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.manage-pin-shell section > p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 12px 0 0;
+}
+
+.manage-pin-form,
+.manage-security-dialog {
+  display: grid;
+  gap: 10px;
+}
+
+.manage-pin-form {
+  margin-top: 28px;
+  max-width: 380px;
+}
+
+.manage-pin-form input,
+.manage-security-dialog input {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  min-height: 52px;
+  padding: 12px 14px;
+}
+
+.manage-pin-no-recovery {
+  color: var(--muted);
+  font-size: .78rem;
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+
+.manage-security-dialog > p {
+  color: var(--muted);
+  font-size: .84rem;
+  line-height: 1.55;
+  margin: 8px 0 4px;
+}
+
+.manage-security-dialog .button {
+  margin-top: 8px;
+  width: 100%;
 }
 
 @media (max-width: 319px) {

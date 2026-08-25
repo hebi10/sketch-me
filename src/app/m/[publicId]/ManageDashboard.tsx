@@ -9,6 +9,7 @@ import type { Drawing } from '@/lib/domain/types';
 import type { PurchaseProductId } from '@/lib/domain/types';
 import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
+import { HeaderMenu } from '@/components/ui/HeaderMenu';
 
 interface ManageDashboardProps {
   publicId: string;
@@ -26,6 +27,12 @@ export function ManageDashboard({ publicId, name, ownerDrawingPath = null, parti
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [securityOpen, setSecurityOpen] = useState(false);
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [pinHint, setPinHint] = useState('');
+  const [securityMessage, setSecurityMessage] = useState<string | null>(null);
+  const [isSavingSecurity, setIsSavingSecurity] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<PurchaseProductId>('FRIENDS_10');
@@ -156,25 +163,64 @@ export function ManageDashboard({ publicId, name, ownerDrawingPath = null, parti
     }
   }
 
+  async function logout() {
+    await fetch(`/api/manage/${publicId}/session/logout`, { method: 'DELETE' });
+    router.replace(`/s/${publicId}`);
+    router.refresh();
+  }
+
+  async function updateSecurity(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSecurityMessage(null);
+    setIsSavingSecurity(true);
+    try {
+      const response = await fetch(`/api/manage/${publicId}/security`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPin, newPin, hint: pinHint }),
+      });
+      const result = await response.json().catch(() => ({})) as { message?: string };
+      if (!response.ok) {
+        setSecurityMessage(result.message ?? '관리 비밀번호를 변경하지 못했어요.');
+        return;
+      }
+      setSecurityOpen(false);
+      setCurrentPin('');
+      setNewPin('');
+      setPinHint('');
+      setMessage('관리 비밀번호를 변경했어요.');
+    } catch {
+      setSecurityMessage('연결을 확인하고 다시 시도해 주세요.');
+    } finally {
+      setIsSavingSecurity(false);
+    }
+  }
+
   return (
     <>
     <main className="manage-shell" ref={manageMainRef}>
       <header className="public-header">
         <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">←</Link>
         <span className="header-title">내 스캐치북</span>
-        <Link aria-label="친구 페이지 보기" className="header-draw-link" href={`/s/${publicId}`}>↗</Link>
+        <HeaderMenu>
+          <Link href={`/s/${publicId}`}>친구 페이지 보기</Link>
+          <Link href={`/m/${publicId}/share`}>스토리 이미지 만들기</Link>
+          <ShareSketchbookButton menuItem name={name} publicId={publicId} />
+          <button onClick={() => setSecurityOpen(true)} type="button">관리 비밀번호 변경</button>
+          <button onClick={logout} type="button">로그아웃</button>
+        </HeaderMenu>
       </header>
       <section className="manage-heading"><p className="eyebrow">{name}님의 스케치북</p><h1>친구들이 그린 나</h1></section>
       <section className="manage-summary">
-        <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
-        <progress max={limit} value={participantCount} />
         {ownerDrawingPath ? (
           <figure className="owner-original-card">
-            <figcaption><span>내가 그린 원본</span><b>원본</b></figcaption>
-            <Image alt="내가 그린 원본" height={600} src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={600} />
+            <figcaption><span>직접 그린 내 모습</span><b>원본</b></figcaption>
+            <Image alt="직접 그린 내 모습" height={600} src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={600} />
           </figure>
         ) : null}
-        <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">친구 그림 더 추가하기</button>
+        <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
+        <progress max={limit} value={participantCount} />
+        <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">저장 공간 확장하기</button>
       </section>
       {message ? <p className="submission-success" role="status">{message}</p> : null}
       <div className="manage-actions">
@@ -233,7 +279,7 @@ export function ManageDashboard({ publicId, name, ownerDrawingPath = null, parti
         <div className="purchase-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isPurchasing) setPurchaseOpen(false); }}>
           <dialog aria-labelledby="purchase-dialog-title" className="purchase-dialog" onCancel={(event) => { event.preventDefault(); if (!isPurchasing) setPurchaseOpen(false); }} ref={purchaseDialogRef}>
             <div className="purchase-dialog-heading">
-              <div><p className="eyebrow">모의 결제</p><h2 id="purchase-dialog-title">친구 그림 더 추가하기</h2></div>
+              <div><p className="eyebrow">모의 결제</p><h2 id="purchase-dialog-title">저장 공간 확장하기</h2></div>
               <button aria-label="결제창 닫기" className="purchase-dialog-close" disabled={isPurchasing} onClick={() => setPurchaseOpen(false)} type="button">×</button>
             </div>
             <p className="purchase-dialog-copy">필요한 만큼 친구 그림을 더 받을 수 있어요.</p>
@@ -252,6 +298,22 @@ export function ManageDashboard({ publicId, name, ownerDrawingPath = null, parti
             </button>
             <p className="purchase-mock-note">현재는 실제 금액이 청구되지 않는 모의 결제입니다.</p>
           </dialog>
+        </div>
+      ) : null}
+      {securityOpen ? (
+        <div className="dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isSavingSecurity) setSecurityOpen(false); }}>
+          <form aria-labelledby="manage-security-title" className="dialog-panel manage-security-dialog" onSubmit={updateSecurity}>
+            <div className="dialog-heading"><h2 id="manage-security-title">관리 비밀번호 변경</h2><button aria-label="비밀번호 변경 닫기" className="icon-button" disabled={isSavingSecurity} onClick={() => setSecurityOpen(false)} type="button">×</button></div>
+            <p>새 비밀번호는 숫자 4자리예요. 비밀번호는 복구할 수 없어요.</p>
+            <label className="field-label" htmlFor="current-manage-pin">현재 비밀번호</label>
+            <input autoComplete="current-password" id="current-manage-pin" inputMode="numeric" maxLength={4} onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, ''))} pattern="[0-9]{4}" required type="password" value={currentPin} />
+            <label className="field-label" htmlFor="new-manage-pin">새 비밀번호</label>
+            <input autoComplete="new-password" id="new-manage-pin" inputMode="numeric" maxLength={4} onChange={(event) => setNewPin(event.target.value.replace(/\D/g, ''))} pattern="[0-9]{4}" required type="password" value={newPin} />
+            <label className="field-label" htmlFor="new-manage-pin-hint">비밀번호 힌트 <span className="optional-label">선택</span></label>
+            <input id="new-manage-pin-hint" maxLength={40} onChange={(event) => setPinHint(event.target.value)} value={pinHint} />
+            {securityMessage ? <p className="form-error" role="alert">{securityMessage}</p> : null}
+            <button className="button button--primary" disabled={isSavingSecurity} type="submit">{isSavingSecurity ? '변경하는 중...' : '비밀번호 변경하기'}</button>
+          </form>
         </div>
       ) : null}
     </>

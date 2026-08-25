@@ -7,6 +7,8 @@ import { findSketchbookByPublicId, listVisibleDrawings } from '@/lib/sketchbooks
 import { isSketchbookFull } from '@/lib/sketchbooks/capacity';
 import { formatTimeAgo } from '@/lib/time/time-ago';
 import { galleryImageLoading } from '@/lib/images/loading';
+import { ModerationBlockedNotice } from './ModerationBlockedNotice';
+import { PublicSketchbookHeader } from './PublicSketchbookHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +19,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { publicId } = await params;
   const sketchbook = await findSketchbookByPublicId(publicId);
-  if (
-    !sketchbook
-    || sketchbook.status !== 'PUBLIC'
-    || sketchbook.moderationStatus === 'BLOCKED'
-  ) return { title: '페이지를 찾을 수 없어요' };
+  if (!sketchbook || sketchbook.status !== 'PUBLIC') {
+    return { title: '페이지를 찾을 수 없어요' };
+  }
+  if (sketchbook.moderationStatus === 'BLOCKED') {
+    return {
+      robots: { follow: false, index: false },
+      title: '이용이 제한된 스케치북',
+    };
+  }
 
   const title = `${sketchbook.name}의 스케치북`;
   const description = `${sketchbook.name}님을 기억나는 모습대로 그려주세요.`;
@@ -58,11 +64,8 @@ export default async function PublicSketchbookPage({
   const [{ publicId }, { submitted }] = await Promise.all([params, searchParams]);
   const sketchbook = await findSketchbookByPublicId(publicId);
 
-  if (
-    !sketchbook
-    || sketchbook.status !== 'PUBLIC'
-    || sketchbook.moderationStatus === 'BLOCKED'
-  ) notFound();
+  if (!sketchbook || sketchbook.status !== 'PUBLIC') notFound();
+  if (sketchbook.moderationStatus === 'BLOCKED') return <ModerationBlockedNotice />;
 
   const drawings = (await listVisibleDrawings(sketchbook.id))
     .filter((drawing) => drawing.moderationStatus === 'ACTIVE');
@@ -74,11 +77,7 @@ export default async function PublicSketchbookPage({
 
   return (
     <main className="public-sketchbook-shell">
-      <header className="public-header">
-        <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">←</Link>
-        <span className="header-title">{sketchbook.name}의 스캐치북</span>
-        {isFull ? <span className="header-draw-link is-disabled">마감</span> : <Link aria-label="친구 스케치 하기" className="header-draw-link" href={`/s/${publicId}/draw`}>✎</Link>}
-      </header>
+      <PublicSketchbookHeader name={sketchbook.name} publicId={publicId} />
 
       <section className="public-intro" aria-labelledby="public-title">
         <h1 id="public-title">{sketchbook.name}의 스케치북</h1>

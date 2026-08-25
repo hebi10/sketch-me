@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-export function ShareSketchbookButton({ publicId, name }: { publicId: string; name: string }) {
+export function ShareSketchbookButton({ publicId, name, menuItem = false }: { publicId: string; name: string; menuItem?: boolean }) {
   const [status, setStatus] = useState<string | null>(null);
 
   async function share() {
@@ -29,6 +29,10 @@ export function ShareSketchbookButton({ publicId, name }: { publicId: string; na
     } catch {
       setStatus('공유하지 못했어요. 링크를 다시 복사해 주세요.');
     }
+  }
+
+  if (menuItem) {
+    return <button onClick={share} type="button">친구에게 공유하기</button>;
   }
 
   return (

@@ -45,7 +45,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.getByRole('button', { name: '그림 삭제' })).toBeEnabled();
   });
 
-  it('내가 그린 원본이 있으면 친구 그림 목록보다 먼저 보여준다', () => {
+  it('직접 그린 내 모습이 있으면 친구 그림 목록보다 먼저 보여준다', () => {
     render(
       <ManageDashboard
         drawings={[]}
@@ -57,13 +57,13 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    expect(screen.getByRole('img', { name: '내가 그린 원본' })).toHaveAttribute(
+    expect(screen.getByRole('img', { name: '직접 그린 내 모습' })).toHaveAttribute(
       'src',
       expect.stringContaining('/api/sketchbooks/public-1/owner/image'),
     );
   });
 
-  it('내가 그린 원본이 없으면 원본 영역을 표시하지 않는다', () => {
+  it('직접 그린 내 모습이 없으면 원본 영역을 표시하지 않는다', () => {
     render(
       <ManageDashboard
         drawings={[]}
@@ -75,7 +75,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    expect(screen.queryByRole('img', { name: '내가 그린 원본' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: '직접 그린 내 모습' })).not.toBeInTheDocument();
   });
 
   it('상품을 선택해 모의 결제하고 참여 한도를 갱신한다', async () => {
@@ -95,8 +95,8 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
-    const dialog = screen.getByRole('dialog', { name: '친구 그림 더 추가하기' });
+    fireEvent.click(screen.getByRole('button', { name: '저장 공간 확장하기' }));
+    const dialog = screen.getByRole('dialog', { name: '저장 공간 확장하기' });
     expect(dialog).toBeVisible();
     expect(screen.getByRole('radio', { name: /10명 추가.*990원/ })).toBeChecked();
 
@@ -126,11 +126,11 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '저장 공간 확장하기' }));
     fireEvent.click(screen.getByRole('button', { name: '990원 모의 결제하기' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('결제 연결을 확인하고 다시 시도해 주세요.');
-    expect(screen.getByRole('dialog', { name: '친구 그림 더 추가하기' })).toBeVisible();
+    expect(screen.getByRole('dialog', { name: '저장 공간 확장하기' })).toBeVisible();
     expect(screen.getByRole('button', { name: '990원 모의 결제하기' })).toBeEnabled();
   });
 
@@ -145,7 +145,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    const trigger = screen.getByRole('button', { name: '친구 그림 더 추가하기' });
+    const trigger = screen.getByRole('button', { name: '저장 공간 확장하기' });
     fireEvent.click(trigger);
 
     expect(screen.getByRole('main')).toHaveAttribute('inert');

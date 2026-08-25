@@ -15,6 +15,10 @@ export async function GET(
   const token = new URL(request.url).searchParams.get('token');
   const sketchbook = await findSketchbookByPublicId(publicId);
 
+  if (sketchbook?.managePinHash) {
+    return new NextResponse(null, { status: 303, headers: { Location: `/m/${publicId}/login` } });
+  }
+
   if (!token || !sketchbook || !isValidManageToken(token, sketchbook.manageTokenHash)) {
     return new NextResponse('유효하지 않은 관리 복구 링크입니다.', { status: 403 });
   }

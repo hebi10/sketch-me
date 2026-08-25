@@ -1,17 +1,20 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { StoryImageComposer } from './StoryImageComposer';
 import type { StoryDrawing } from './StoryImageMaker';
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
-import { listDrawings } from '@/lib/sketchbooks/repository';
+import { findSketchbookByPublicId, listDrawings } from '@/lib/sketchbooks/repository';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SharePage({ params }: { params: Promise<{ publicId: string }> }) {
   const { publicId } = await params;
   const sketchbook = await getManagedSketchbook(publicId);
-  if (!sketchbook) notFound();
+  if (!sketchbook) {
+    if (await findSketchbookByPublicId(publicId)) redirect(`/m/${publicId}/login`);
+    notFound();
+  }
 
   const drawings = await listDrawings(sketchbook.id);
   const publicPath = `/s/${publicId}`;

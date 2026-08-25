@@ -8,13 +8,16 @@ import { getOwnerDrawingPath, getReferenceImagePath } from '@/lib/firebase/stora
 import { ImageOptimizationError, optimizeImageForStorage } from '@/lib/images/optimize';
 import { enforcePublicMutationLimit } from '@/lib/security/rate-limit';
 import {
-  createManageCookieValue,
+  createPinManageCookieValue,
   createManageToken,
   hashManageToken,
   MANAGE_COOKIE_NAME,
 } from '@/lib/sketchbooks/manage-session';
 import { createSketchbookDraft } from '@/lib/sketchbooks/create';
-import { saveSketchbook } from '@/lib/sketchbooks/repository';
+import { hashManagePin } from '@/lib/sketchbooks/manage-pin';
+import { createManagePinSession, saveSketchbook } from '@/lib/sketchbooks/repository';
+
+const manageSessionMaxAge = 60 * 60 * 24 * 30;
 
 function createPublicId() {
   return randomUUID().replaceAll('-', '').slice(0, 12);
@@ -44,6 +47,7 @@ export async function POST(request: Request) {
   }
 
   const manageToken = createManageToken();
+  const managePinHash = await hashManagePin(parsed.data.managePin);
   const sketchbookId = randomUUID();
   const ownerDrawingPath = parsed.data.ownerImageDataUrl ? getOwnerDrawingPath(sketchbookId) : null;
   const referenceImagePath = parsed.data.referenceImageDataUrl ? getReferenceImagePath(sketchbookId) : null;
@@ -52,6 +56,8 @@ export async function POST(request: Request) {
     publicId: createPublicId(),
     name: parsed.data.name,
     manageTokenHash: hashManageToken(manageToken),
+    managePinHash,
+    managePinHint: parsed.data.managePinHint,
     ownerDrawingPath,
     referenceImagePath,
     createdAt: new Date(),
@@ -77,20 +83,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ message }, { status: error instanceof ImageOptimizationError ? 400 : 500 });
   }
 
-  const response = NextResponse.json({
-    publicUrl: `/s/${sketchbook.publicId}`,
-    manageUrl: `/m/${sketchbook.publicId}`,
-    recoveryUrl: `/m/${sketchbook.publicId}/recover?token=${manageToken}`,
-  });
+  let session: { sessionId: string; token: string };
+  try {
+    session = await createManagePinSession(
+      sketchbook.id,
+      new Date(Date.now() + manageSessionMaxAge * 1_000),
+    );
+  } catch {
+    return NextResponse.json({ message: '스캐치북은 만들었지만 관리 세션을 시작하지 못했어요. 관리 비밀번호로 다시 접속해 주세요.' }, { status: 500 });
+  }
+
+  const response = NextResponse.json({ publicUrl: `/s/${sketchbook.publicId}`, manageUrl: `/m/${sketchbook.publicId}` });
 
   response.cookies.set({
     name: MANAGE_COOKIE_NAME,
-    value: createManageCookieValue(sketchbook.publicId, manageToken),
+    value: createPinManageCookieValue(sketchbook.publicId, session.sessionId, session.token),
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
-    maxAge: 60 * 60 * 24 * 365,
+    maxAge: manageSessionMaxAge,
   });
 
   return response;

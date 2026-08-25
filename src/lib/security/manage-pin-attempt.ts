@@ -20,3 +20,10 @@ export function nextManagePinAttempt(
     lockedUntil: failureCount >= maxFailures ? new Date(now.getTime() + lockDurationMs) : null,
   };
 }
+
+export function getManagePinAttemptSource(request: Request) {
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  const source = forwarded || request.headers.get('x-real-ip') || 'unknown';
+  return createHash('sha256').update(source).digest('hex');
+}
+import { createHash } from 'node:crypto';
