@@ -32,12 +32,14 @@
 ### 로그인 흐름
 
 1. `/admin/login`에서 Firebase Google 로그인을 실행한다.
-2. 클라이언트가 받은 Firebase ID 토큰을 `POST /api/admin/session`으로 전달한다.
-3. 서버가 Firebase Admin Auth로 토큰 서명, 만료, 이메일 인증 여부를 검증한다.
-4. 서버 환경 변수의 `ADMIN_UID`, `ADMIN_EMAIL`과 토큰의 UID·이메일이 모두 일치하는지 확인한다.
-5. 검증에 성공하면 최대 12시간의 Firebase 세션 쿠키를 `HttpOnly`, `SameSite=Strict`, `Path=/`로 발급하고 운영 HTTPS 환경에서만 `Secure`를 적용한다.
-6. `/admin` 페이지와 모든 `/api/admin/*` API는 서버에서 세션 쿠키를 폐기 여부까지 포함해 다시 검증한다.
-7. 로그아웃은 세션 쿠키를 만료하고 `/admin/login`으로 이동한다.
+2. 관리자 로그인용 Firebase Client Auth는 `inMemoryPersistence`를 사용해 브라우저 저장소에 인증 상태를 남기지 않는다.
+3. 클라이언트가 받은 Firebase ID 토큰을 `POST /api/admin/session`으로 전달한다.
+4. 서버가 Firebase Admin Auth로 토큰 서명, 만료, 이메일 인증 여부를 검증하고 `auth_time`이 현재 시각 기준 5분 이내인지 확인한다.
+5. 서버 환경 변수의 `ADMIN_UID`, `ADMIN_EMAIL`과 토큰의 UID·이메일이 모두 일치하는지 확인한다.
+6. 검증에 성공하면 최대 12시간의 Firebase 세션 쿠키를 `HttpOnly`, `SameSite=Strict`, `Path=/`로 발급하고 운영 HTTPS 환경에서만 `Secure`를 적용한다.
+7. 세션 쿠키 발급 성공 후 클라이언트 Firebase Auth에서 `signOut()`하고 `/admin`으로 이동한다.
+8. `/admin` 페이지와 모든 `/api/admin/*` API는 서버에서 세션 쿠키를 폐기 여부까지 포함해 다시 검증한다.
+9. 로그아웃은 세션 쿠키를 만료하고 `/admin/login`으로 이동한다.
 
 관리자 이메일과 UID는 클라이언트 번들에 포함하지 않는다. 주소 직접 입력, 변조된 쿠키, 허용되지 않은 Google 계정은 모두 접근할 수 없다. 운영 쿠키 이름은 `__Host-admin_session`을 사용하고 `Domain`은 지정하지 않는다. 로컬 HTTP 개발 환경에서는 `Secure`가 필요 없는 별도 쿠키 이름을 사용한다. 변경 API는 세션 검증과 함께 요청의 `Origin`이 서버 환경 변수 `ADMIN_ALLOWED_ORIGIN`과 정확히 일치하는지 확인해 외부 사이트에서 발생한 요청을 거부한다. 프록시의 `Host`, `X-Forwarded-Host`, `X-Forwarded-Proto`만으로 허용 Origin을 추론하지 않는다.
 
@@ -69,7 +71,7 @@
 - 모의 결제 누적 금액
 - 스케치북, 그림, 결제 관리 진입 링크
 
-통계는 실시간 구독하지 않는다. 관리자 대시보드 요청 시 Firestore 집계 쿼리를 사용하고 결과를 서버 메모리에 5분간 캐시한다. 운영 인스턴스 재시작 시 캐시가 사라지는 것은 허용한다.
+통계는 실시간 구독하지 않는다. 관리자 대시보드 요청 시 Firestore `count()`·`sum()` 집계 쿼리를 사용하고 성공 결과를 서버 메모리에 5분간 캐시한다. 동시에 들어온 요청은 같은 진행 중 Promise를 공유하되 집계가 실패하면 해당 Promise를 즉시 제거해 재시도가 새 쿼리를 실행하게 한다. 운영 인스턴스 재시작 시 캐시가 사라지는 것은 허용한다.
 오늘 집계의 날짜 경계는 서비스 기준 시간대인 `Asia/Seoul`의 00:00~24:00으로 계산한다. 결제 건수와 금액은 `SUCCEEDED` 상태의 모의 결제만 포함한다.
 
 ### `/admin/sketchbooks`
@@ -178,11 +180,15 @@ createdAt
 
 목록은 Firestore `limit(20)`과 문서 커서를 사용한다. 그림과 결제는 기존 스케치북 하위 컬렉션을 `collectionGroup`으로 조회한다. 그림은 실제 상태 값에 맞춰 `where('status', 'in', ['VISIBLE', 'HIDDEN'])`, `orderBy('createdAt', 'desc')`, 문서 커서를 조합해 이미지가 삭제된 `DELETED` 문서를 제외한다. 이 조합은 `COLLECTION_GROUP` 범위의 복합 인덱스로 명시하고 Firebase Emulator와 개발 프로젝트에서 실제 쿼리·커서 동작을 검증한다. 기존 문서에 `moderationStatus`가 없으므로 해당 필드의 존재를 전제로 필터링하지 않고 서버에서 `ACTIVE`로 해석한다. 실시간 리스너와 전체 문서 일괄 읽기는 사용하지 않는다.
 
+위 20개 제한은 관리자 목록에만 적용한다. 현재 친구 공개 목록의 `listVisibleDrawings()`는 스케치북 참여 한도 범위의 `VISIBLE` 그림을 제한 없이 조회하므로 전체 결과에서 `moderationStatus !== 'BLOCKED'`를 후처리한다. 공개 목록에 `limit()`을 추가하게 되면 필요한 ACTIVE 개수를 채울 때까지 커서를 이어 읽는 별도 설계 없이는 적용하지 않는다.
+
 ## 상태 변경 규칙
 
 - 스케치북 비활성화와 복구는 `moderationStatus`만 변경한다.
 - 그림 숨김과 복구도 `moderationStatus`만 변경한다.
+- 운영자 상태 변경은 `moderationStatus`, `moderatedAt`만 갱신하고 소유자 작업 시각을 나타내는 기존 `updatedAt`은 변경하지 않는다.
 - 상태 변경과 감사 로그 작성은 하나의 Firestore 트랜잭션으로 처리한다.
+- 상태 변경과 감사 로그에는 한 번 생성한 같은 서버 시각을 사용한다.
 - 이미 원하는 상태인 요청은 성공으로 응답하되 중복 감사 로그는 만들지 않는다.
 - 소유자 관리 API는 운영자 차단 상태를 해제할 수 없다.
 - 공개 조회 및 이미지 API는 운영자 차단 상태를 항상 확인한다.
@@ -203,6 +209,7 @@ createdAt
 - 로그인 취소와 허용되지 않은 계정은 서로 다른 안내를 제공한다.
 - 세션이 없거나 만료되면 관리자 페이지는 로그인 화면으로 이동하고 API는 `401`을 반환한다.
 - 허용되지 않은 계정은 `403`을 반환한다.
+- 잘못되었거나 최근 5분 내 로그인이 아닌 ID 토큰은 `401`, 허용 계정 불일치는 `403`, Firebase 설정 누락이나 서버 장애는 `500`을 반환한다.
 - 목록 조회 실패 시 빈 목록으로 표시하지 않고 오류와 재시도 행동을 제공한다.
 - 상태 변경 실패 시 기존 상태를 유지하고 확인 팝업 안에 오류를 표시한다.
 - Firebase 설정 누락은 서버 로그에 구체적으로 남기되 화면에는 비밀값을 노출하지 않는다.
@@ -210,6 +217,7 @@ createdAt
 ## 테스트와 완료 기준
 
 - 허용 UID·이메일 일치, 불일치, 이메일 미인증, 만료 토큰 단위 테스트
+- `auth_time` 누락·5분 초과·5분 이내 토큰과 클라이언트 in-memory persistence·세션 교환 후 `signOut()` 테스트
 - 관리자 세션 쿠키 생성·검증·만료 테스트
 - 관리자 API의 `401`, `403`, 정상 요청과 Origin 검증 테스트
 - 운영 App Hosting Origin과 로컬 Origin 설정에서 허용·거부가 정확히 동작하는지 확인
@@ -222,6 +230,7 @@ createdAt
 - `Drawing` 컬렉션 그룹의 `VISIBLE`·`HIDDEN` 필터, 최신순 정렬, 커서 페이지네이션 및 복합 인덱스를 Emulator와 개발 프로젝트에서 확인
 - 신규 그림·결제 목록이 비정규화 필드를 사용해 부모 문서 N+1 읽기를 만들지 않는지 확인
 - 통계 집계와 5분 캐시 테스트
+- 실패한 통계 Promise가 즉시 제거되어 다음 요청에서 집계를 다시 실행하는 테스트
 - Firebase Rules에서 클라이언트 직접 Firestore·Storage 접근이 계속 거부되는지 확인
 - Auth·Firestore·Storage Emulator 기반 관리자 E2E 테스트
 - Chrome에서 로그인, 대시보드, 스케치북 비활성화·복구, 그림 숨김·복구를 모바일 화면으로 확인

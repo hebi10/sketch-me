@@ -13,11 +13,15 @@
 ## Global Constraints
 
 - 운영자는 `ADMIN_UID`, `ADMIN_EMAIL`이 모두 일치하는 Google 계정 한 개만 허용한다.
+- 관리자 Client Auth는 `inMemoryPersistence`를 사용하고 세션 쿠키 교환 성공 후 `signOut()`한다.
+- 세션 발급은 ID 토큰의 `auth_time`이 현재 기준 5분 이내인 경우만 허용한다.
 - 운영 세션 쿠키는 `__Host-admin_session`, `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, 최대 12시간이다. 로컬 HTTP에서는 별도 이름과 `Secure=false`를 사용한다.
 - 변경 요청의 `Origin`은 `ADMIN_ALLOWED_ORIGIN`과 정확히 일치해야 한다.
 - 운영자 영구 삭제, 실제 결제 취소·환불, 신고 기능, 행동 분석은 포함하지 않는다.
 - `status`는 소유자 상태, `moderationStatus`는 운영자 상태이며 어느 작업도 상대 필드를 덮어쓰지 않는다.
+- 운영 상태 변경은 `updatedAt`을 건드리지 않고 `moderatedAt`과 감사 로그에 같은 시각을 기록한다.
 - 목록은 최신순 20개, 문서 커서 페이지네이션이며 실시간 리스너를 사용하지 않는다.
+- 통계는 Firestore 집계 쿼리의 성공 결과만 5분 캐시하고 실패한 Promise는 즉시 제거한다.
 - 관리자 UI는 너비 100%, 최대 650px, 모바일 카드 목록, 하단 고정 4개 내비게이션을 사용한다.
 - 주요 터치 영역은 44px 이상이며 색상만으로 상태를 전달하지 않는다.
 - 직접 Firestore·Storage 클라이언트 접근은 계속 거부한다.
@@ -40,6 +44,8 @@
 **Interfaces:**
 - Produces: `getAdminAuth(): Auth`
 - Produces: `AdminIdentity = { uid: string; email: string }`
+- Produces: `AdminAuthErrorCode = 'INVALID_TOKEN' | 'RECENT_LOGIN_REQUIRED' | 'FORBIDDEN' | 'CONFIGURATION' | 'SESSION_CREATION_FAILED'`
+- Produces: `AdminAuthError extends Error` with `code: AdminAuthErrorCode`
 - Produces: `createAdminSessionCookie(idToken: string): Promise<string>`
 - Produces: `verifyAdminSessionCookie(cookieValue?: string): Promise<AdminIdentity | null>`
 - Produces: `getAdminSessionCookieName(): string`
@@ -49,10 +55,18 @@
 - [ ] **Step 1: 관리자 인증 실패 테스트 작성**
 
 ```ts
-it('UID와 이메일이 모두 일치하고 이메일이 인증된 계정만 세션을 발급한다', async () => {
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-08-25T00:05:00.000Z'));
   vi.stubEnv('ADMIN_UID', 'admin-uid');
   vi.stubEnv('ADMIN_EMAIL', 'owner@example.com');
-  verifyIdToken.mockResolvedValue({ uid: 'admin-uid', email: 'owner@example.com', email_verified: true });
+});
+
+afterEach(() => vi.useRealTimers());
+
+it('UID와 이메일이 모두 일치하고 이메일이 인증된 계정만 세션을 발급한다', async () => {
+  verifyIdToken.mockResolvedValue({ uid: 'admin-uid', email: 'owner@example.com', email_verified: true, auth_time: 1_787_616_240 });
   createSessionCookie.mockResolvedValue('session-cookie');
 
   await expect(createAdminSessionCookie('id-token')).resolves.toBe('session-cookie');
@@ -60,12 +74,29 @@ it('UID와 이메일이 모두 일치하고 이메일이 인증된 계정만 세
 });
 
 it.each([
-  { uid: 'other', email: 'owner@example.com', email_verified: true },
-  { uid: 'admin-uid', email: 'other@example.com', email_verified: true },
-  { uid: 'admin-uid', email: 'owner@example.com', email_verified: false },
+  { uid: 'other', email: 'owner@example.com', email_verified: true, auth_time: 1_787_616_240 },
+  { uid: 'admin-uid', email: 'other@example.com', email_verified: true, auth_time: 1_787_616_240 },
+  { uid: 'admin-uid', email: 'owner@example.com', email_verified: false, auth_time: 1_787_616_240 },
 ])('허용되지 않은 클레임은 거부한다', async (claims) => {
   verifyIdToken.mockResolvedValue(claims);
-  await expect(createAdminSessionCookie('id-token')).rejects.toThrow('관리자 권한이 없습니다.');
+  await expect(createAdminSessionCookie('id-token')).rejects.toMatchObject({ code: 'FORBIDDEN' });
+});
+
+it.each([undefined, 1_787_615_900])('auth_time이 없거나 5분을 넘으면 재로그인을 요구한다', async (authTime) => {
+  verifyIdToken.mockResolvedValue({ uid: 'admin-uid', email: 'owner@example.com', email_verified: true, auth_time: authTime });
+  await expect(createAdminSessionCookie('id-token')).rejects.toMatchObject({ code: 'RECENT_LOGIN_REQUIRED' });
+  expect(createSessionCookie).not.toHaveBeenCalled();
+});
+
+it('검증할 수 없는 ID 토큰은 INVALID_TOKEN으로 구분한다', async () => {
+  verifyIdToken.mockRejectedValue(new Error('invalid token'));
+  await expect(createAdminSessionCookie('bad-token')).rejects.toMatchObject({ code: 'INVALID_TOKEN' });
+});
+
+it('관리자 환경 변수가 없으면 Firebase 호출 전에 CONFIGURATION 오류를 낸다', async () => {
+  vi.stubEnv('ADMIN_UID', '');
+  await expect(createAdminSessionCookie('id-token')).rejects.toMatchObject({ code: 'CONFIGURATION' });
+  expect(verifyIdToken).not.toHaveBeenCalled();
 });
 
 it('세션 검증 시 폐기 여부를 확인한다', async () => {
@@ -104,6 +135,13 @@ export function getAdminSessionCookieName() {
   return process.env.NODE_ENV === 'production' ? '__Host-admin_session' : 'admin_session';
 }
 
+export class AdminAuthError extends Error {
+  constructor(public readonly code: AdminAuthErrorCode, message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'AdminAuthError';
+  }
+}
+
 export function getAdminSessionCookieOptions() {
   return {
     httpOnly: true,
@@ -121,9 +159,28 @@ function toAllowedIdentity(claims: DecodedIdToken): AdminIdentity | null {
 }
 
 export async function createAdminSessionCookie(idToken: string) {
-  const claims = await getAdminAuth().verifyIdToken(idToken, true);
-  if (!toAllowedIdentity(claims)) throw new Error('관리자 권한이 없습니다.');
-  return getAdminAuth().createSessionCookie(idToken, { expiresIn: 12 * 60 * 60 * 1000 });
+  const missingConfig = ['ADMIN_UID', 'ADMIN_EMAIL'].filter((key) => !process.env[key]);
+  if (missingConfig.length > 0) {
+    console.error(`Admin auth configuration missing: ${missingConfig.join(', ')}`);
+    throw new AdminAuthError('CONFIGURATION', '관리자 인증 환경 변수가 설정되지 않았습니다.');
+  }
+  let claims: DecodedIdToken;
+  try {
+    claims = await getAdminAuth().verifyIdToken(idToken, true);
+  } catch (cause) {
+    throw new AdminAuthError('INVALID_TOKEN', '유효하지 않은 로그인 정보입니다.', { cause });
+  }
+  if (typeof claims.auth_time !== 'number' || Date.now() / 1000 - claims.auth_time > 5 * 60) {
+    throw new AdminAuthError('RECENT_LOGIN_REQUIRED', '다시 로그인해 주세요.');
+  }
+  if (!toAllowedIdentity(claims)) {
+    throw new AdminAuthError('FORBIDDEN', '관리자 권한이 없습니다.');
+  }
+  try {
+    return await getAdminAuth().createSessionCookie(idToken, { expiresIn: 12 * 60 * 60 * 1000 });
+  } catch (cause) {
+    throw new AdminAuthError('SESSION_CREATION_FAILED', '관리자 세션을 만들지 못했습니다.', { cause });
+  }
 }
 
 export async function verifyAdminSessionCookie(cookieValue?: string) {
@@ -165,7 +222,7 @@ git commit -m "feat: add single-account admin authentication"
 - Test: `tests/unit/ui/admin-login.test.tsx`
 
 **Interfaces:**
-- Consumes: `createAdminSessionCookie`, `verifyAdminSessionCookie`, `getAdminSessionCookieName`, `getAdminSessionCookieOptions`, `isAllowedAdminOrigin`
+- Consumes: `AdminAuthError`, `createAdminSessionCookie`, `verifyAdminSessionCookie`, `getAdminSessionCookieName`, `getAdminSessionCookieOptions`, `isAllowedAdminOrigin`
 - Produces: `getFirebaseClientAuth(): Auth`
 - Produces: `POST /api/admin/session` with `{ idToken: string }`
 - Produces: `DELETE /api/admin/session`
@@ -199,18 +256,43 @@ it('로그아웃은 세션 쿠키를 즉시 만료한다', async () => {
   expect(response.status).toBe(204);
   expect(response.headers.get('set-cookie')).toContain('Max-Age=0');
 });
+
+it.each([
+  { code: 'INVALID_TOKEN', status: 401 },
+  { code: 'RECENT_LOGIN_REQUIRED', status: 401 },
+  { code: 'FORBIDDEN', status: 403 },
+  { code: 'CONFIGURATION', status: 500 },
+  { code: 'SESSION_CREATION_FAILED', status: 500 },
+] as const)('$code 오류를 $status로 구분한다', async ({ code, status }) => {
+  createAdminSessionCookie.mockRejectedValue(new AdminAuthError(code, 'test'));
+  const response = await POST(validRequest);
+  expect(response.status).toBe(status);
+});
+
+it('예상하지 못한 Firebase 오류는 비밀값 없이 기록하고 500을 반환한다', async () => {
+  createAdminSessionCookie.mockRejectedValue(new Error('firebase unavailable'));
+  const response = await POST(validRequest);
+  expect(response.status).toBe(500);
+  expect(response.json()).resolves.toEqual({ message: '로그인 처리 중 오류가 발생했습니다.' });
+});
 ```
 
 - [ ] **Step 2: 로그인 UI 실패 테스트 작성**
 
 ```tsx
 it('Google 로그인 후 서버 세션을 만들고 관리자 홈으로 이동한다', async () => {
+  const auth = {} as Auth;
+  getFirebaseClientAuth.mockReturnValue(auth);
   signInWithPopup.mockResolvedValue({ user: { getIdToken: vi.fn().mockResolvedValue('id-token') } });
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
   render(<AdminLogin />);
   fireEvent.click(screen.getByRole('button', { name: 'Google 계정으로 로그인' }));
+  await waitFor(() => expect(setPersistence).toHaveBeenCalledWith(auth, inMemoryPersistence));
   await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/admin/session', expect.objectContaining({ method: 'POST' })));
+  expect(signOut).toHaveBeenCalledWith(auth);
   expect(replace).toHaveBeenCalledWith('/admin');
+  expect(setPersistence.mock.invocationCallOrder[0]).toBeLessThan(signInWithPopup.mock.invocationCallOrder[0]);
+  expect(signOut.mock.invocationCallOrder[0]).toBeLessThan(replace.mock.invocationCallOrder[0]);
 });
 ```
 
@@ -234,7 +316,7 @@ export function getFirebaseClientAuth() {
 }
 ```
 
-`AdminLogin`은 `GoogleAuthProvider`와 `signInWithPopup`을 사용하고, 팝업 취소는 `로그인이 취소됐습니다.`, 서버 `403`은 `허용된 관리자 계정이 아닙니다.`, 네트워크 실패는 `로그인 연결을 확인해 주세요.`로 구분한다.
+`AdminLogin`은 로그인 전에 `setPersistence(auth, inMemoryPersistence)`를 실행하고 `GoogleAuthProvider`와 `signInWithPopup`을 사용한다. 세션 API 성공 후 `signOut(auth)`가 끝난 다음 `/admin`으로 이동한다. 팝업 취소는 `로그인이 취소됐습니다.`, 서버 `401`은 `로그인 시간이 지났습니다. 다시 시도해 주세요.`, `403`은 `허용된 관리자 계정이 아닙니다.`, `500`은 `로그인 처리 중 오류가 발생했습니다.`, 네트워크 실패는 `로그인 연결을 확인해 주세요.`로 구분한다.
 `/admin/login/page.tsx`는 기존 세션을 서버에서 검증해 유효하면 `/admin`으로 redirect하고, 유효하지 않을 때만 `AdminLogin`을 렌더링한다.
 
 - [ ] **Step 5: 세션 API 구현**
@@ -249,8 +331,17 @@ export async function POST(request: Request) {
     const response = new NextResponse(null, { status: 204 });
     response.cookies.set(getAdminSessionCookieName(), session, getAdminSessionCookieOptions());
     return response;
-  } catch {
-    return NextResponse.json({ message: '허용된 관리자 계정이 아닙니다.' }, { status: 403 });
+  } catch (error) {
+    if (error instanceof AdminAuthError) {
+      if (error.code === 'INVALID_TOKEN' || error.code === 'RECENT_LOGIN_REQUIRED') {
+        return NextResponse.json({ message: '로그인 정보를 다시 확인해 주세요.' }, { status: 401 });
+      }
+      if (error.code === 'FORBIDDEN') {
+        return NextResponse.json({ message: '허용된 관리자 계정이 아닙니다.' }, { status: 403 });
+      }
+    }
+    console.error('Admin session creation failed', error instanceof Error ? error.name : 'UnknownError');
+    return NextResponse.json({ message: '로그인 처리 중 오류가 발생했습니다.' }, { status: 500 });
   }
 }
 ```
@@ -381,7 +472,8 @@ git commit -m "feat: add moderation metadata to content"
 - Produces: `AdminPage<T> = { items: T[]; nextCursor: string | null }`
 - Produces: `AdminDashboardStats`
 - Produces: `AdminAuditLog = { adminUid: string; action: string; targetType: 'SKETCHBOOK' | 'DRAWING'; targetId: string; publicId: string; previousModerationStatus: ModerationStatus; nextModerationStatus: ModerationStatus; createdAt: Date }`
-- Produces: `getCachedValue<T>(load: () => Promise<T>, nowMs: number): Promise<T>`
+- Produces: `getCachedValue(load: () => Promise<AdminDashboardStats>, nowMs: number): Promise<AdminDashboardStats>`
+- Produces: `resetAdminStatsCacheForTests(): void`
 - Produces: `listAdminSketchbooks(input): Promise<AdminPage<AdminSketchbookListItem>>`
 - Produces: `getAdminSketchbookDetail(id: string): Promise<AdminSketchbookDetail | null>`
 - Produces: `listAdminDrawings(input): Promise<AdminPage<AdminDrawingListItem>>`
@@ -391,6 +483,8 @@ git commit -m "feat: add moderation metadata to content"
 - [ ] **Step 1: 커서와 캐시 실패 테스트 작성**
 
 ```ts
+beforeEach(() => resetAdminStatsCacheForTests());
+
 it('createdAt과 전체 문서 경로를 불투명 커서로 왕복한다', () => {
   const cursor = encodeAdminCursor({ createdAt: '2026-08-25T00:00:00.000Z', path: 'sketchbooks/book-1/drawings/draw-1' });
   expect(decodeAdminCursor(cursor)).toEqual({ createdAt: '2026-08-25T00:00:00.000Z', path: 'sketchbooks/book-1/drawings/draw-1' });
@@ -402,6 +496,15 @@ it('5분 동안 같은 통계 Promise를 재사용한다', async () => {
   await getCachedValue(load, 1_000);
   await getCachedValue(load, 299_999);
   expect(load).toHaveBeenCalledTimes(1);
+});
+
+it('집계가 실패하면 Promise를 제거해 다음 요청에서 다시 조회한다', async () => {
+  const load = vi.fn()
+    .mockRejectedValueOnce(new Error('temporary failure'))
+    .mockResolvedValueOnce(stats);
+  await expect(getCachedValue(load, 1_000)).rejects.toThrow('temporary failure');
+  await expect(getCachedValue(load, 1_001)).resolves.toEqual(stats);
+  expect(load).toHaveBeenCalledTimes(2);
 });
 ```
 
@@ -444,11 +547,29 @@ export function decodeAdminCursor(value?: string): AdminCursor | null {
     return null;
   }
 }
+
+let cachedStats: { promise: Promise<AdminDashboardStats>; createdAtMs: number } | null = null;
+
+export function resetAdminStatsCacheForTests() {
+  cachedStats = null;
+}
+
+export async function getCachedValue(load: () => Promise<AdminDashboardStats>, nowMs: number) {
+  if (cachedStats && nowMs - cachedStats.createdAtMs < 5 * 60 * 1_000) return cachedStats.promise;
+  const promise = load();
+  cachedStats = { promise, createdAtMs: nowMs };
+  try {
+    return await promise;
+  } catch (error) {
+    if (cachedStats?.promise === promise) cachedStats = null;
+    throw error;
+  }
+}
 ```
 
 - [ ] **Step 5: Firestore 목록과 집계 구현**
 
-모든 목록은 `orderBy('createdAt', 'desc')`, `orderBy(FieldPath.documentId(), 'desc')` 순서로 21개를 읽어 20개만 반환하고 마지막 항목의 `createdAt`과 `document.ref.path`로 다음 커서를 만든다. 커서가 있으면 `startAfter(new Date(cursor.createdAt), getAdminFirestore().doc(cursor.path))`를 적용한다. 그림과 결제는 각각 `collectionGroup('drawings')`, `collectionGroup('purchases')`로 조회한다. 누락된 부모 정보는 중복 경로를 제거한 뒤 `getAll(...parentRefs)` 한 번으로 보완한다. 검색어가 있으면 공개 ID 정확 일치 쿼리를 먼저 실행하고 결과가 없을 때 이름 정확 일치 쿼리를 실행한다. 오늘 범위는 `Asia/Seoul` 00:00을 UTC Date로 변환해 집계한다. 통계는 전체·오늘 스케치북, 전체·오늘 비삭제 그림, 성공 모의 결제 건수·금액을 반환한다.
+모든 목록은 `orderBy('createdAt', 'desc')`, `orderBy(FieldPath.documentId(), 'desc')` 순서로 21개를 읽어 20개만 반환하고 마지막 항목의 `createdAt`과 `document.ref.path`로 다음 커서를 만든다. 커서가 있으면 `startAfter(new Date(cursor.createdAt), getAdminFirestore().doc(cursor.path))`를 적용한다. 그림과 결제는 각각 `collectionGroup('drawings')`, `collectionGroup('purchases')`로 조회한다. 누락된 부모 정보는 중복 경로를 제거한 뒤 `getAll(...parentRefs)` 한 번으로 보완한다. 검색어가 있으면 공개 ID 정확 일치 쿼리를 먼저 실행하고 결과가 없을 때 이름 정확 일치 쿼리를 실행한다. 오늘 범위는 `Asia/Seoul` 00:00을 UTC Date로 변환한다. 스케치북·그림 건수는 Firestore `count()`, `SUCCEEDED` 결제 건수와 금액은 `aggregate({ count: AggregateField.count(), amount: AggregateField.sum('amount') })`로 계산하고 성공한 통계만 5분간 유지한다.
 
 - [ ] **Step 6: 컬렉션 그룹 인덱스 추가**
 
@@ -500,12 +621,18 @@ git commit -m "feat: add paginated admin data repository"
 - [ ] **Step 1: 멱등 트랜잭션 실패 테스트 작성**
 
 ```ts
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
+
 it('ACTIVE에서 BLOCKED로 바꾸며 같은 트랜잭션에 감사 로그를 기록한다', async () => {
+  const now = new Date('2026-08-25T00:05:00.000Z');
+  vi.setSystemTime(now);
   documentGet.mockResolvedValue({ exists: true, data: () => ({ moderationStatus: 'ACTIVE', publicId: 'public-1' }) });
   await expect(setSketchbookModeration({ sketchbookId: 'book-1', moderationStatus: 'BLOCKED', adminUid: 'admin-uid' }))
     .resolves.toEqual({ changed: true, status: 'BLOCKED' });
-  expect(transaction.update).toHaveBeenCalledWith(sketchbookRef, expect.objectContaining({ moderationStatus: 'BLOCKED' }));
-  expect(transaction.set).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'BLOCK_SKETCHBOOK' }));
+  expect(transaction.update).toHaveBeenCalledWith(sketchbookRef, { moderationStatus: 'BLOCKED', moderatedAt: now });
+  expect(transaction.set).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'BLOCK_SKETCHBOOK', createdAt: now }));
+  expect(transaction.update).not.toHaveBeenCalledWith(sketchbookRef, expect.objectContaining({ updatedAt: expect.anything() }));
 });
 
 it('이미 BLOCKED이면 업데이트와 감사 로그를 만들지 않는다', async () => {
@@ -542,7 +669,8 @@ Expected: FAIL — 트랜잭션과 Route가 아직 없음
 ```ts
 const previous = document.data()?.moderationStatus === 'BLOCKED' ? 'BLOCKED' : 'ACTIVE';
 if (previous === input.moderationStatus) return { changed: false, status: previous };
-transaction.update(reference, { moderationStatus: input.moderationStatus, moderatedAt: new Date(), updatedAt: new Date() });
+const now = new Date();
+transaction.update(reference, { moderationStatus: input.moderationStatus, moderatedAt: now });
 transaction.set(auditReference, {
   adminUid: input.adminUid,
   action: input.moderationStatus === 'BLOCKED' ? 'BLOCK_SKETCHBOOK' : 'UNBLOCK_SKETCHBOOK',
@@ -551,11 +679,11 @@ transaction.set(auditReference, {
   publicId: String(document.data()?.publicId ?? ''),
   previousModerationStatus: previous,
   nextModerationStatus: input.moderationStatus,
-  createdAt: new Date(),
+  createdAt: now,
 });
 ```
 
-그림 트랜잭션은 그림 문서와 부모 스케치북 문서를 먼저 읽고 같은 구조로 `adminAuditLogs`를 작성한다. `status`, `bestRank`는 변경하지 않는다.
+그림 트랜잭션은 그림 문서와 부모 스케치북 문서를 먼저 읽고 같은 구조로 `adminAuditLogs`를 작성한다. 두 트랜잭션 모두 `updatedAt`, `status`, `bestRank`는 변경하지 않는다.
 
 - [ ] **Step 5: 변경 API 구현**
 
@@ -589,6 +717,7 @@ git commit -m "feat: add audited admin moderation actions"
 - Modify: `src/app/m/[publicId]/ManageDashboard.tsx`
 - Modify: `src/app/m/[publicId]/share/page.tsx`
 - Test: `tests/unit/api/public-moderation.test.ts`
+- Create: `tests/unit/sketchbooks/repository.test.ts`
 - Modify: `tests/e2e/sketchbook-flow.spec.ts`
 
 **Interfaces:**
@@ -618,11 +747,11 @@ it('차단된 그림의 기존 공개 주소는 no-store 404를 반환한다', a
 
 - [ ] **Step 2: 공개 UI와 Story 필터 실패 테스트 작성**
 
-공개 페이지에 전달되는 그림 중 BLOCKED가 렌더링되지 않고, 관리 화면에는 `운영자 숨김` 문구가 보이며, Story 목록에는 BLOCKED BEST가 포함되지 않는 기대값을 작성한다.
+공개 페이지에 전달되는 그림 중 BLOCKED가 렌더링되지 않고, 관리 화면에는 `운영자 숨김` 문구가 보이며, Story 목록에는 BLOCKED BEST가 포함되지 않는 기대값을 작성한다. `listVisibleDrawings()` 저장소 테스트에는 BLOCKED 20개 뒤에 ACTIVE 그림이 있는 fixture를 넣고 현재 쿼리가 `limit()` 없이 전체 `VISIBLE` 결과를 받은 뒤 ACTIVE 그림을 누락 없이 반환하는지 검증한다.
 
 - [ ] **Step 3: 테스트를 실행해 실패 확인**
 
-Run: `npm test -- tests/unit/api/public-moderation.test.ts tests/unit/ui/manage-dashboard.test.tsx`
+Run: `npm test -- tests/unit/api/public-moderation.test.ts tests/unit/sketchbooks/repository.test.ts tests/unit/ui/manage-dashboard.test.tsx`
 
 Expected: FAIL — 공개 경로가 운영 상태를 아직 확인하지 않음
 
@@ -634,7 +763,7 @@ if (!current.exists || currentData?.status !== 'PUBLIC' || currentData?.moderati
 }
 ```
 
-`listVisibleDrawings` 결과는 기존 `status === 'VISIBLE'` 쿼리 뒤 `moderationStatus !== 'BLOCKED'`로 필터링한다. `setBestDrawing`도 대상 그림의 운영 상태가 ACTIVE인 경우만 허용한다.
+`listVisibleDrawings`는 현재처럼 `limit()`을 추가하지 않고 스케치북의 전체 `status === 'VISIBLE'` 결과를 받은 뒤 `moderationStatus !== 'BLOCKED'`로 필터링한다. 따라서 선두에 BLOCKED 그림이 몰려 있어도 뒤의 ACTIVE 그림이 누락되지 않는다. 향후 공개 목록을 페이지네이션할 때만 ACTIVE 개수를 채울 때까지 커서를 이어 읽는 별도 구현을 추가한다. `setBestDrawing`도 대상 그림의 운영 상태가 ACTIVE인 경우만 허용한다.
 
 - [ ] **Step 5: 페이지·이미지·소유자 관리·Story에 차단 적용**
 
@@ -642,7 +771,7 @@ if (!current.exists || currentData?.status !== 'PUBLIC' || currentData?.moderati
 
 - [ ] **Step 6: 공개 차단 테스트와 기존 E2E 통과 확인**
 
-Run: `npm test -- tests/unit/api/public-moderation.test.ts tests/unit/ui/manage-dashboard.test.tsx`
+Run: `npm test -- tests/unit/api/public-moderation.test.ts tests/unit/sketchbooks/repository.test.ts tests/unit/ui/manage-dashboard.test.tsx`
 
 Run: `npx playwright test tests/e2e/sketchbook-flow.spec.ts --project=mobile-chrome`
 
@@ -651,7 +780,7 @@ Expected: PASS
 - [ ] **Step 7: 커밋**
 
 ```bash
-git add src/lib/sketchbooks/repository.ts src/app/s src/app/api/sketchbooks src/app/m tests/unit/api/public-moderation.test.ts tests/unit/ui/manage-dashboard.test.tsx tests/e2e/sketchbook-flow.spec.ts
+git add src/lib/sketchbooks/repository.ts src/app/s src/app/api/sketchbooks src/app/m tests/unit/api/public-moderation.test.ts tests/unit/sketchbooks/repository.test.ts tests/unit/ui/manage-dashboard.test.tsx tests/e2e/sketchbook-flow.spec.ts
 git commit -m "feat: enforce moderation across public content"
 ```
 
@@ -935,7 +1064,7 @@ export default async function globalSetup() {
 export async function seedAdminScenario() {
   const database = getAdminFirestore();
   const book = database.doc('sketchbooks/admin-e2e-book');
-  const createdAt = new Date('2026-08-25T00:00:00.000Z');
+  const createdAt = new Date();
   const ownerDrawingPath = 'sketchbooks/admin-e2e-book/owner/owner.webp';
   const drawingPath = 'sketchbooks/admin-e2e-book/drawings/admin-e2e-drawing.webp';
 
