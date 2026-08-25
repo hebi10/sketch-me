@@ -233,6 +233,20 @@ describe('AdminSketchbooksPage 데이터 경계', () => {
     expect(screen.getAllByRole('alert')).toHaveLength(2);
     expect(listAdminSketchbooks).not.toHaveBeenCalled();
   });
+
+  it('스케치북 컬렉션 아래 정확히 한 문서가 아닌 중첩 커서를 거부한다', async () => {
+    const nestedCursor = encodeAdminCursor({
+      createdAt: '2026-08-25T00:00:00.000Z',
+      path: 'users/user-1/sketchbooks/book-20',
+    });
+
+    render(await AdminSketchbooksPage({
+      searchParams: Promise.resolve({ cursor: nestedCursor }),
+    }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('페이지 위치 정보가 잘못되었습니다.');
+    expect(listAdminSketchbooks).not.toHaveBeenCalled();
+  });
 });
 
 describe('AdminSketchbookDetailPage 데이터 경계', () => {

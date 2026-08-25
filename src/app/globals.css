@@ -1550,6 +1550,16 @@ main {
 .admin-page {
   display: grid;
   gap: 24px;
+  min-width: 0;
+}
+
+.admin-page-heading,
+.admin-sketchbook-card,
+.admin-detail-section,
+.admin-moderation-dialog,
+.admin-moderation-dialog-heading,
+.admin-moderation-dialog-heading > div {
+  min-width: 0;
 }
 
 .admin-page-heading h1,
@@ -1568,6 +1578,18 @@ main {
   color: var(--muted);
   line-height: 1.65;
   margin: 9px 0 0;
+}
+
+.admin-page-heading h1,
+.admin-sketchbook-card-heading h2,
+.admin-detail-section h2,
+.admin-detail-section-heading span,
+.admin-recent-drawings strong,
+.admin-recent-drawings li > div:first-child span,
+.admin-moderation-dialog-heading h2,
+.admin-moderation-dialog-copy,
+.admin-moderation-error {
+  overflow-wrap: anywhere;
 }
 
 .admin-page-heading .eyebrow,
@@ -1824,6 +1846,7 @@ main {
   display: flex;
   gap: 16px;
   justify-content: space-between;
+  min-width: 0;
   padding-top: 10px;
 }
 
@@ -1847,16 +1870,6 @@ main {
   text-align: right;
 }
 
-.admin-moderation-backdrop {
-  align-items: end;
-  background: rgb(24 24 24 / 42%);
-  display: grid;
-  inset: 0;
-  padding: 16px;
-  position: fixed;
-  z-index: 110;
-}
-
 .admin-moderation-dialog {
   background: var(--canvas);
   border: 1px solid var(--line);
@@ -1876,7 +1889,7 @@ main {
 }
 
 .admin-moderation-dialog::backdrop {
-  display: none;
+  background: rgb(24 24 24 / 42%);
 }
 
 .admin-moderation-dialog-heading {

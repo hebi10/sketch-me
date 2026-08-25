@@ -28,7 +28,12 @@ function parseSketchbookCursor(value: string | string[] | undefined) {
   }
   const decoded = decodeAdminCursor(cursor);
   const pathSegments = decoded?.path.split('/');
-  if (!decoded || pathSegments?.at(-2) !== 'sketchbooks') {
+  if (
+    !decoded
+    || pathSegments?.length !== 2
+    || pathSegments[0] !== 'sketchbooks'
+    || !pathSegments[1]
+  ) {
     return { cursor: undefined, invalid: true };
   }
   return { cursor, invalid: false };

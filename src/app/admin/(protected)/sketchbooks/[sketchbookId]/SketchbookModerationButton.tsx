@@ -83,6 +83,7 @@ export function SketchbookModerationButton({
       </button>
       <AdminModerationDialog
         confirmLabel={confirmLabel}
+        confirmVariant={isBlocked ? 'primary' : 'danger'}
         description={description}
         error={error}
         onClose={close}

@@ -26,7 +26,9 @@ describe('SketchbookModerationButton', () => {
     fireEvent.click(screen.getByRole('button', { name: '서비스에서 비활성화' }));
     expect(screen.getByRole('dialog', { name: '스케치북을 비활성화할까요?' }))
       .toHaveAttribute('aria-modal', 'true');
-    fireEvent.click(screen.getByRole('button', { name: '비활성화하기' }));
+    const confirm = screen.getByRole('button', { name: '비활성화하기' });
+    expect(confirm).toHaveClass('button--danger');
+    fireEvent.click(confirm);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       '/api/admin/sketchbooks/book-1/moderation',
@@ -47,7 +49,10 @@ describe('SketchbookModerationButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '비활성화 해제' }));
     expect(screen.getByRole('dialog', { name: '스케치북 비활성화를 해제할까요?' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: '비활성화 해제하기' }));
+    const confirm = screen.getByRole('button', { name: '비활성화 해제하기' });
+    expect(confirm).toHaveClass('button--primary');
+    expect(confirm).not.toHaveClass('button--danger');
+    fireEvent.click(confirm);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       '/api/admin/sketchbooks/book-1/moderation',
@@ -87,6 +92,36 @@ describe('SketchbookModerationButton', () => {
     expect(closeButton).toHaveFocus();
   });
 
+  it('native dialog의 실제 바깥 좌표 클릭만 light-dismiss로 닫는다', () => {
+    render(<SketchbookModerationButton moderationStatus="ACTIVE" sketchbookId="book-1" />);
+    fireEvent.click(screen.getByRole('button', { name: '서비스에서 비활성화' }));
+
+    const dialog = screen.getByRole('dialog');
+    vi.spyOn(dialog, 'getBoundingClientRect').mockReturnValue({
+      bottom: 300,
+      height: 200,
+      left: 100,
+      right: 300,
+      toJSON: () => ({}),
+      top: 100,
+      width: 200,
+      x: 100,
+      y: 100,
+    });
+
+    fireEvent.click(screen.getByText(/친구 공개 페이지와 그리기 기능이 즉시 차단/), {
+      clientX: 50,
+      clientY: 50,
+    });
+    expect(screen.getByRole('dialog')).toBeVisible();
+
+    fireEvent.click(dialog, { clientX: 150, clientY: 150 });
+    expect(screen.getByRole('dialog')).toBeVisible();
+
+    fireEvent.click(dialog, { clientX: 50, clientY: 50 });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('처리 중에는 닫기와 중복 확인을 잠그고 Escape도 무시한다', async () => {
     let resolveRequest: ((value: { ok: boolean }) => void) | undefined;
     vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => {
@@ -100,6 +135,20 @@ describe('SketchbookModerationButton', () => {
     expect(screen.getByRole('button', { name: '상태 변경 닫기' })).toBeDisabled();
     expect(screen.getByRole('dialog')).toContainElement(document.activeElement as HTMLElement);
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(screen.getByRole('dialog')).toBeVisible();
+    const dialog = screen.getByRole('dialog');
+    vi.spyOn(dialog, 'getBoundingClientRect').mockReturnValue({
+      bottom: 300,
+      height: 200,
+      left: 100,
+      right: 300,
+      toJSON: () => ({}),
+      top: 100,
+      width: 200,
+      x: 100,
+      y: 100,
+    });
+    fireEvent.click(dialog, { clientX: 50, clientY: 50 });
     expect(screen.getByRole('dialog')).toBeVisible();
     expect(fetch).toHaveBeenCalledTimes(1);
 

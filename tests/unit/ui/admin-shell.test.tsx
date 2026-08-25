@@ -150,7 +150,7 @@ describe('관리자 대시보드 상태 UI', () => {
     render(<AdminError error={new Error('stats failed')} retry={retry} />);
     fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent('통계를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    expect(screen.getByRole('alert')).toHaveTextContent('관리자 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
     expect(retry).toHaveBeenCalledTimes(1);
     consoleError.mockRestore();
   });

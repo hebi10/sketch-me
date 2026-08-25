@@ -21,6 +21,7 @@ const focusableSelector = [
 
 type AdminModerationDialogProps = {
   confirmLabel: string;
+  confirmVariant: 'danger' | 'primary';
   description: string;
   error: string | null;
   onClose: () => void;
@@ -34,6 +35,7 @@ type AdminModerationDialogProps = {
 
 export function AdminModerationDialog({
   confirmLabel,
+  confirmVariant,
   description,
   error,
   onClose,
@@ -96,50 +98,56 @@ export function AdminModerationDialog({
 
   if (!open) return null;
 
-  function closeFromBackdrop(event: MouseEvent<HTMLDivElement>) {
-    if (event.target === event.currentTarget && !processing) onClose();
+  function closeFromBackdrop(event: MouseEvent<HTMLDialogElement>) {
+    if (event.target !== event.currentTarget || processingRef.current) return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const outsideDialog = event.clientX < bounds.left
+      || event.clientX > bounds.right
+      || event.clientY < bounds.top
+      || event.clientY > bounds.bottom;
+    if (outsideDialog) onClose();
   }
 
   return (
-    <div className="admin-moderation-backdrop" onMouseDown={closeFromBackdrop}>
-      <dialog
-        aria-busy={processing}
-        aria-describedby={descriptionId}
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className="admin-moderation-dialog"
-        onCancel={(event) => {
-          event.preventDefault();
-          if (!processing) onClose();
-        }}
-        ref={dialogRef}
-      >
-        <div className="admin-moderation-dialog-heading">
-          <div>
-            <p className="eyebrow">운영 상태</p>
-            <h2 id={titleId}>{title}</h2>
-          </div>
-          <button
-            aria-label="상태 변경 닫기"
-            className="admin-moderation-dialog-close"
-            disabled={processing}
-            onClick={onClose}
-            type="button"
-          >
-            ×
-          </button>
+    <dialog
+      aria-busy={processing}
+      aria-describedby={descriptionId}
+      aria-labelledby={titleId}
+      aria-modal="true"
+      className="admin-moderation-dialog"
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!processingRef.current) onClose();
+      }}
+      onClick={closeFromBackdrop}
+      ref={dialogRef}
+    >
+      <div className="admin-moderation-dialog-heading">
+        <div>
+          <p className="eyebrow">운영 상태</p>
+          <h2 id={titleId}>{title}</h2>
         </div>
-        <p className="admin-moderation-dialog-copy" id={descriptionId}>{description}</p>
-        {error ? <p className="admin-moderation-error" role="alert">{error}</p> : null}
-        <div className="admin-moderation-actions">
-          <Button disabled={processing} onClick={onClose} variant="secondary">
-            취소
-          </Button>
-          <Button disabled={processing} onClick={onConfirm} variant="danger">
-            {processing ? pendingLabel : confirmLabel}
-          </Button>
-        </div>
-      </dialog>
-    </div>
+        <button
+          aria-label="상태 변경 닫기"
+          className="admin-moderation-dialog-close"
+          disabled={processing}
+          onClick={onClose}
+          type="button"
+        >
+          ×
+        </button>
+      </div>
+      <p className="admin-moderation-dialog-copy" id={descriptionId}>{description}</p>
+      {error ? <p className="admin-moderation-error" role="alert">{error}</p> : null}
+      <div className="admin-moderation-actions">
+        <Button disabled={processing} onClick={onClose} variant="secondary">
+          취소
+        </Button>
+        <Button disabled={processing} onClick={onConfirm} variant={confirmVariant}>
+          {processing ? pendingLabel : confirmLabel}
+        </Button>
+      </div>
+    </dialog>
   );
 }
