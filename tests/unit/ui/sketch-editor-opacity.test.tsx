@@ -1,0 +1,83 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
+
+import { SketchEditor } from '@/components/sketch/SketchEditor';
+
+function createCanvasContext() {
+  return {
+    beginPath: vi.fn(),
+    clearRect: vi.fn(),
+    drawImage: vi.fn(),
+    fillRect: vi.fn(),
+    getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) })),
+    globalAlpha: 1,
+    globalCompositeOperation: 'source-over',
+    lineCap: 'round',
+    lineJoin: 'round',
+    lineTo: vi.fn(),
+    lineWidth: 5,
+    moveTo: vi.fn(),
+    stroke: vi.fn(),
+    strokeStyle: '#181818',
+  };
+}
+
+describe('SketchEditor 투명도 조절', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
+  });
+
+  it('펜 투명도 드래그 조절을 굵기 조절 위에 표시한다', () => {
+    render(<SketchEditor ariaLabel="그리기 캔버스" />);
+
+    const opacity = screen.getByRole('slider', { name: /펜 투명도/ });
+    const thickness = screen.getByRole('slider', { name: /굵기/ });
+
+    expect(opacity).toHaveValue('100');
+    expect(opacity.compareDocumentPosition(thickness) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.change(opacity, { target: { value: '40' } });
+    expect(opacity).toHaveValue('40');
+    expect(screen.getByText('40%')).toBeVisible();
+  });
+
+  it('펜에는 선택한 투명도를 적용하고 지우개는 불투명하게 처리한다', () => {
+    const context = createCanvasContext();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D);
+    render(<SketchEditor ariaLabel="그리기 캔버스" />);
+    const canvas = screen.getByLabelText('그리기 캔버스');
+    Object.defineProperty(canvas, 'setPointerCapture', { value: vi.fn() });
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+      bottom: 100,
+      height: 100,
+      left: 0,
+      right: 100,
+      toJSON: () => ({}),
+      top: 0,
+      width: 100,
+      x: 0,
+      y: 0,
+    });
+
+    fireEvent.change(screen.getByRole('slider', { name: /펜 투명도/ }), { target: { value: '40' } });
+    fireEvent.pointerDown(canvas, { clientX: 20, clientY: 20, pointerId: 1 });
+    expect(context.globalAlpha).toBe(0.4);
+
+    fireEvent.click(screen.getByRole('button', { name: '지우개' }));
+    fireEvent.pointerUp(canvas, { pointerId: 1 });
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30, pointerId: 2 });
+    expect(context.globalAlpha).toBe(1);
+  });
+
+  it('참고사진 투명도를 드래그 값에 맞춰 적용한다', () => {
+    render(<SketchEditor ariaLabel="그리기 캔버스" referenceImageUrl="/reference.webp" />);
+
+    fireEvent.click(screen.getByRole('button', { name: '참고사진' }));
+    const opacity = screen.getByRole('slider', { name: /사진 투명도/ });
+    fireEvent.change(opacity, { target: { value: '35' } });
+
+    expect(opacity).toHaveValue('35');
+    expect(screen.getByText('35%')).toBeVisible();
+    expect(screen.getByAltText('그림 참고 사진').parentElement).toHaveStyle({ opacity: '0.35' });
+  });
+});

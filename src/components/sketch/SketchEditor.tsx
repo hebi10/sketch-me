@@ -40,9 +40,11 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [tab, setTab] = useState<EditorTab>('draw');
     const [color, setColor] = useState<string>(sketchColors[0].value);
     const [lineWidth, setLineWidth] = useState(5);
+    const [penOpacity, setPenOpacity] = useState(100);
     const [eraser, setEraser] = useState(false);
     const [history, setHistory] = useState<CanvasHistory | null>(null);
     const [referenceScale, setReferenceScale] = useState(1);
+    const [referenceOpacity, setReferenceOpacity] = useState(100);
     const [referenceOffset, setReferenceOffset] = useState({ x: 0, y: 0 });
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [controlsOpen, setControlsOpen] = useState(false);
@@ -156,6 +158,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       const drawingContext = context();
       if (!drawingContext) return;
       drawingContext.globalCompositeOperation = eraser ? 'destination-out' : 'source-over';
+      drawingContext.globalAlpha = eraser ? 1 : penOpacity / 100;
       drawingContext.strokeStyle = color;
       drawingContext.lineCap = 'round';
       drawingContext.lineJoin = 'round';
@@ -197,6 +200,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       if (!drawingContext || !source) return;
       const image = new window.Image();
       image.onload = () => {
+        drawingContext.globalAlpha = 1;
         drawingContext.clearRect(0, 0, width, height);
         drawingContext.drawImage(image, 0, 0, width, height);
         setHistory(next);
@@ -207,6 +211,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     function clear() {
       const drawingContext = context();
       if (!drawingContext) return;
+      drawingContext.globalAlpha = 1;
       drawingContext.clearRect(0, 0, width, height);
       snapshot();
     }
@@ -240,7 +245,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       <section aria-label={isFullscreen ? '전체 화면 그리기' : undefined} aria-modal={isFullscreen || undefined} className={`sketch-editor ${isFullscreen ? 'sketch-editor--fullscreen' : ''}`} ref={editorRef} role={isFullscreen ? 'dialog' : undefined}>
         <div className={`sketch-stage sketch-stage--${tab}`} onPointerCancel={referencePointerEnd} onPointerDown={referencePointerDown} onPointerMove={referencePointerMove} onPointerUp={referencePointerEnd}>
           {referenceImageUrl ? (
-            <div className="reference-layer" style={{ transform: `translate(${referenceOffset.x}px, ${referenceOffset.y}px) scale(${referenceScale})` }}>
+            <div className="reference-layer" style={{ opacity: referenceOpacity / 100, transform: `translate(${referenceOffset.x}px, ${referenceOffset.y}px) scale(${referenceScale})` }}>
               <Image alt="그림 참고 사진" fill sizes="(max-width: 640px) 100vw, 600px" src={referenceImageUrl} unoptimized />
             </div>
           ) : null}
@@ -255,10 +260,11 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
           </nav>
           <div className="draw-tools">
             {tab === 'reference' ? (
-              <div className="reference-controls"><p>한 손가락으로 이동하고 두 손가락으로 확대·축소하세요.</p><label>확대<input max="3" min="0.6" onChange={(event) => setReferenceScale(Number(event.target.value))} step="0.1" type="range" value={referenceScale} /></label><button className="tool-button" onClick={() => { setReferenceOffset({ x: 0, y: 0 }); setReferenceScale(1); }} type="button">위치 초기화</button></div>
+              <div className="reference-controls"><p>한 손가락으로 이동하고 두 손가락으로 확대·축소하세요.</p><label className="range-control"><span>사진 투명도</span><strong>{referenceOpacity}%</strong><input aria-label="사진 투명도" max="100" min="10" onChange={(event) => setReferenceOpacity(Number(event.target.value))} step="5" type="range" value={referenceOpacity} /></label><label>확대<input max="3" min="0.6" onChange={(event) => setReferenceScale(Number(event.target.value))} step="0.1" type="range" value={referenceScale} /></label><button className="tool-button" onClick={() => { setReferenceOffset({ x: 0, y: 0 }); setReferenceScale(1); }} type="button">위치 초기화</button></div>
             ) : (
               <><div className="tool-row"><button className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button className="tool-button" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button">되돌리기</button><button className="tool-button" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button">다시 실행</button><button className="tool-button" onClick={clear} type="button">전체 삭제</button></div>
-              <div className="tool-row">{sketchColors.map((nextColor) => <button aria-label={`${nextColor.label} 색상`} aria-pressed={color === nextColor.value && !eraser} className={`color-swatch ${color === nextColor.value && !eraser ? 'is-active' : ''}`} key={nextColor.value} onClick={() => { setColor(nextColor.value); setEraser(false); setTab('draw'); }} style={{ backgroundColor: nextColor.value }} type="button" />)}<label className="line-width">굵기<input max="18" min="2" onChange={(event) => setLineWidth(Number(event.target.value))} type="range" value={lineWidth} /></label></div></>
+              <div className="tool-row">{sketchColors.map((nextColor) => <button aria-label={`${nextColor.label} 색상`} aria-pressed={color === nextColor.value && !eraser} className={`color-swatch ${color === nextColor.value && !eraser ? 'is-active' : ''}`} key={nextColor.value} onClick={() => { setColor(nextColor.value); setEraser(false); setTab('draw'); }} style={{ backgroundColor: nextColor.value }} type="button" />)}</div>
+              <div className="drawing-range-controls"><label className="range-control"><span>펜 투명도</span><strong>{penOpacity}%</strong><input aria-label="펜 투명도" max="100" min="10" onChange={(event) => setPenOpacity(Number(event.target.value))} step="5" type="range" value={penOpacity} /></label><label className="range-control"><span>굵기</span><strong>{lineWidth}</strong><input aria-label="굵기" max="18" min="2" onChange={(event) => setLineWidth(Number(event.target.value))} type="range" value={lineWidth} /></label></div></>
             )}
           </div>
         </div>
