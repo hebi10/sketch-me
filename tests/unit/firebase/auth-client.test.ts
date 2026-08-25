@@ -28,6 +28,7 @@ describe('getFirebaseClientAuth', () => {
   });
 
   it('emulator 환경 변수가 없으면 Auth emulator를 연결하지 않는다', async () => {
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST', '');
     const { getFirebaseClientAuth } = await import('@/lib/firebase/auth-client');
 
     const auth = getFirebaseClientAuth();
