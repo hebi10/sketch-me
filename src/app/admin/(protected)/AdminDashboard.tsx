@@ -49,9 +49,9 @@ export function AdminDashboard({ stats }: { stats: AdminDashboardStats }) {
           <strong>그림 관리</strong>
           <span id="admin-drawings-link-description">친구 그림과 공개 상태 검토</span>
         </Link>
-        <Link aria-describedby="admin-purchases-link-description" aria-label="결제 내역" className="admin-list-card" href="/admin/purchases">
+        <Link aria-describedby="admin-payments-link-description" aria-label="결제 내역" className="admin-list-card" href="/admin/payments">
           <strong>결제 내역</strong>
-          <span id="admin-purchases-link-description">모의 결제 성공 내역 확인</span>
+          <span id="admin-payments-link-description">모의 결제 성공 내역 확인</span>
         </Link>
       </nav>
     </section>

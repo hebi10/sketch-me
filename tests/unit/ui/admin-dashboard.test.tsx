@@ -1,11 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 
-const { getCachedAdminStats } = vi.hoisted(() => ({
+const { getCachedAdminStats, getRequiredAdminIdentity } = vi.hoisted(() => ({
   getCachedAdminStats: vi.fn(),
+  getRequiredAdminIdentity: vi.fn(),
 }));
 
 vi.mock('@/lib/admin/repository', () => ({ getCachedAdminStats }));
+vi.mock('@/lib/admin/server-session', () => ({ getRequiredAdminIdentity }));
 
 import { AdminDashboard } from '@/app/admin/(protected)/AdminDashboard';
 import AdminDashboardPage from '@/app/admin/(protected)/page';
@@ -19,6 +21,15 @@ const stats: AdminDashboardStats = {
   totalDrawings: 9_876,
   totalSketchbooks: 1_234,
 };
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  getRequiredAdminIdentity.mockResolvedValue({
+    email: 'owner@example.com',
+    uid: 'admin-uid',
+  });
+  getCachedAdminStats.mockResolvedValue(stats);
+});
 
 describe('AdminDashboard', () => {
   it('운영에 필요한 여섯 개 통계와 모의 결제 안내를 표시한다', () => {
@@ -44,15 +55,35 @@ describe('AdminDashboard', () => {
 
     expect(screen.getByRole('link', { name: '스케치북 관리' })).toHaveAttribute('href', '/admin/sketchbooks');
     expect(screen.getByRole('link', { name: '그림 관리' })).toHaveAttribute('href', '/admin/drawings');
-    expect(screen.getByRole('link', { name: '결제 내역' })).toHaveAttribute('href', '/admin/purchases');
+    expect(screen.getByRole('link', { name: '결제 내역' })).toHaveAttribute('href', '/admin/payments');
+  });
+});
+
+describe('AdminDashboardPage 데이터 경계', () => {
+  it('페이지 인증이 거부되면 통계 저장소를 호출하지 않는다', async () => {
+    getRequiredAdminIdentity.mockRejectedValue(new Error('NEXT_REDIRECT'));
+
+    await expect(AdminDashboardPage()).rejects.toThrow('NEXT_REDIRECT');
+
+    expect(getCachedAdminStats).not.toHaveBeenCalled();
   });
 
-  it('서버에서 캐시된 최신 통계를 읽어 대시보드에 전달한다', async () => {
-    getCachedAdminStats.mockResolvedValue(stats);
-
+  it('페이지 인증 직후 캐시된 통계를 읽어 대시보드에 전달한다', async () => {
     render(await AdminDashboardPage());
 
+    expect(getRequiredAdminIdentity).toHaveBeenCalledTimes(1);
     expect(getCachedAdminStats).toHaveBeenCalledTimes(1);
+    expect(getRequiredAdminIdentity.mock.invocationCallOrder[0])
+      .toBeLessThan(getCachedAdminStats.mock.invocationCallOrder[0]);
     expect(screen.getByText('12,870원')).toBeVisible();
+  });
+
+  it('인증 후 통계 조회 오류를 페이지 오류 경계로 전달한다', async () => {
+    getCachedAdminStats.mockRejectedValue(new Error('stats failed'));
+
+    await expect(AdminDashboardPage()).rejects.toThrow('stats failed');
+
+    expect(getRequiredAdminIdentity).toHaveBeenCalledTimes(1);
+    expect(getCachedAdminStats).toHaveBeenCalledTimes(1);
   });
 });

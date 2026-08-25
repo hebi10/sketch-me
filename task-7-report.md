@@ -35,3 +35,15 @@
 - 실제 Firebase 로그인이나 외부 서비스 동작은 수행하지 않았습니다.
 - 푸시와 배포는 수행하지 않았습니다.
 - 기존 `next-env.d.ts` 변경과 우발 파일 `{console.error(error)`, `{const`는 수정·삭제·스테이징하지 않습니다.
+
+## 리뷰 수정 1차
+
+- 보호 레이아웃의 인증은 UX 보호로만 취급하고, 모든 보호 관리자 데이터 페이지가 저장소 접근 직전에 `getRequiredAdminIdentity()`를 다시 호출해야 한다는 보안 규칙을 대시보드 페이지에 기록했습니다.
+- 실제 `AdminDashboardPage()`를 호출하는 테스트로 미인증 시 redirect 오류 전파와 통계 저장소 미호출, 인증 후 호출 순서와 렌더링, 통계 조회 오류 전파를 검증했습니다.
+- 하단 메뉴와 대시보드의 결제 경로를 설계 문서와 같은 `/admin/payments`로 통일했습니다.
+- RED: 집중 테스트에서 미인증 페이지의 정상 반환·통계 호출과 기존 `/admin/purchases` 링크 때문에 5개 테스트가 실패했습니다.
+- GREEN: `npm test -- tests/unit/ui/admin-dashboard.test.tsx tests/unit/ui/admin-shell.test.tsx` — 2 files, 13 tests 통과.
+- 전체 관리자 회귀: 11 files, 130 tests 통과.
+- 전체 단위·통합: `npm test` — 46 files, 240 tests 통과.
+- `npm run lint`, `npx tsc --noEmit` 통과.
+- 시각 변경이 없으므로 이미 1회 실행한 Impeccable detector는 재실행하지 않았습니다.

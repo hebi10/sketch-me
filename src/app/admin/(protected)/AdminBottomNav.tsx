@@ -7,7 +7,7 @@ const ADMIN_NAV_ITEMS = [
   { href: '/admin', label: '대시보드' },
   { href: '/admin/sketchbooks', label: '스케치북' },
   { href: '/admin/drawings', label: '그림' },
-  { href: '/admin/purchases', label: '결제' },
+  { href: '/admin/payments', label: '결제' },
 ] as const;
 
 function isCurrentAdminPath(pathname: string, href: string): boolean {

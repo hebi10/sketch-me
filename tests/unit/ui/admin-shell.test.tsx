@@ -89,7 +89,7 @@ describe('AdminShell', () => {
     expect(screen.getByRole('link', { name: '대시보드' })).toHaveAttribute('href', '/admin');
     expect(screen.getByRole('link', { name: '스케치북' })).toHaveAttribute('href', '/admin/sketchbooks');
     expect(screen.getByRole('link', { name: '그림' })).toHaveAttribute('href', '/admin/drawings');
-    expect(screen.getByRole('link', { name: '결제' })).toHaveAttribute('href', '/admin/purchases');
+    expect(screen.getByRole('link', { name: '결제' })).toHaveAttribute('href', '/admin/payments');
     expect(screen.getByRole('button', { name: '로그아웃' })).toBeVisible();
   });
 
