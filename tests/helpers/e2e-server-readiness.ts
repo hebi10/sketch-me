@@ -35,8 +35,16 @@ export async function verifyE2EServerReadiness(
   const deadline = Date.now() + timeoutMs;
 
   while (true) {
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) {
+      throw new Error('Timed out waiting for the local server to confirm the isolated Playwright E2E environment.');
+    }
+
+    const controller = new AbortController();
+    const requestTimeout = setTimeout(() => controller.abort(), remainingMs);
+    let response: Response | undefined;
     try {
-      const response = await fetch(`${origin}${E2E_READINESS_PATH}`, {
+      response = await fetch(`${origin}${E2E_READINESS_PATH}`, {
         cache: 'no-store',
         headers: {
           [E2E_READINESS_EMULATOR_HEADERS.auth]: expectedAuth,
@@ -45,17 +53,22 @@ export async function verifyE2EServerReadiness(
           [E2E_READINESS_ORIGIN_HEADER]: origin,
         },
         redirect: 'error',
+        signal: controller.signal,
       });
-      if (response.status === 204 && response.headers.get('x-sketch-me-e2e-ready') === '1') {
-        return;
-      }
-      throw new Error('The local server did not confirm the isolated Playwright E2E environment.');
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('did not confirm')) throw error;
-      if (Date.now() >= deadline) {
-        throw new Error('The local server did not confirm the isolated Playwright E2E environment.');
-      }
-      await delay(Math.min(intervalMs, Math.max(0, deadline - Date.now())));
+    } catch {
+      // Connection errors retry below until the shared deadline expires.
+    } finally {
+      clearTimeout(requestTimeout);
     }
+
+    if (response) {
+      if (response.status === 204 && response.headers.get('x-sketch-me-e2e-ready') === '1') return;
+      throw new Error('The local server did not confirm the isolated Playwright E2E environment.');
+    }
+
+    if (controller.signal.aborted || Date.now() >= deadline) {
+      throw new Error('Timed out waiting for the local server to confirm the isolated Playwright E2E environment.');
+    }
+    await delay(Math.min(intervalMs, Math.max(0, deadline - Date.now())));
   }
 }

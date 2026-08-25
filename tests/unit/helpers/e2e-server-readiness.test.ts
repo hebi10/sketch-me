@@ -31,6 +31,24 @@ async function startServer(status: number, readyHeader?: string, requireExpected
   return `http://127.0.0.1:${address.port}`;
 }
 
+async function startHangingServer() {
+  let resolveRequestClosed!: () => void;
+  const requestClosed = new Promise<void>((resolve) => {
+    resolveRequestClosed = resolve;
+  });
+  const server = createServer((_request, response) => {
+    response.once('close', resolveRequestClosed);
+  });
+  servers.push(server);
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  if (!address || typeof address === 'string') throw new Error('테스트 서버 주소를 확인하지 못했습니다.');
+  return {
+    baseUrl: `http://127.0.0.1:${address.port}`,
+    requestClosed,
+  };
+}
+
 describe('Playwright E2E server readiness handshake', () => {
   const expectedEmulators = {
     auth: '127.0.0.1:19099',
@@ -41,6 +59,7 @@ describe('Playwright E2E server readiness handshake', () => {
   afterEach(async () => {
     await Promise.all(servers.splice(0).map((server) => new Promise<void>((resolve, reject) => {
       server.close((error) => error ? reject(error) : resolve());
+      server.closeAllConnections();
     })));
   });
 
@@ -65,4 +84,19 @@ describe('Playwright E2E server readiness handshake', () => {
     ))
       .resolves.toBeUndefined();
   });
+
+  it('aborts a local readiness request that accepts TCP but never responds', async () => {
+    const { baseUrl, requestClosed } = await startHangingServer();
+    const startedAt = Date.now();
+
+    await expect(verifyE2EServerReadiness(
+      baseUrl,
+      expectedEmulators,
+      { intervalMs: 1, timeoutMs: 50 },
+    ))
+      .rejects.toThrow(/Timed out waiting.*isolated Playwright E2E environment/);
+
+    expect(Date.now() - startedAt).toBeLessThan(500);
+    await expect(requestClosed).resolves.toBeUndefined();
+  }, 1_000);
 });
