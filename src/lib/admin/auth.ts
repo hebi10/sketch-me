@@ -49,6 +49,7 @@ function toAllowedIdentity(claims: DecodedIdToken): AdminIdentity | null {
 
   if (
     !claims.email_verified
+    || !email
     || claims.uid !== process.env.ADMIN_UID
     || email !== process.env.ADMIN_EMAIL?.toLowerCase()
     || claims.firebase.sign_in_provider !== 'google.com'
