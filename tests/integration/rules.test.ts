@@ -15,6 +15,7 @@ import {
   getFirebaseEmulatorAddress,
   hasSafeFirebaseEmulatorEnvironment,
   LOCAL_FIREBASE_PROJECT_ID,
+  normalizeFirebaseAdminStorageEmulatorEnvironment,
   requireSafeFirebaseEmulatorEnvironment,
 } from '../helpers/firebase-emulator-safety';
 
@@ -24,12 +25,13 @@ type AdminStorage = ReturnType<typeof getStorage>;
 type AdminBucket = ReturnType<AdminStorage['bucket']>;
 let knownPrivateFile: ReturnType<AdminBucket['file']>;
 
-const knownPrivatePath = 'rules/admin-e2e-known-private.webp';
+const knownPrivatePath = 'sketchbooks/rules-public-book/drawings/rules-known/original.webp';
 const hasSafeRulesEmulators = hasSafeFirebaseEmulatorEnvironment(['firestore', 'storage']);
 
 describe.skipIf(!hasSafeRulesEmulators)('Firebase security rules', () => {
   beforeAll(async () => {
     requireSafeFirebaseEmulatorEnvironment(['firestore', 'storage']);
+    normalizeFirebaseAdminStorageEmulatorEnvironment();
     const firestore = getFirebaseEmulatorAddress('firestore');
     const storage = getFirebaseEmulatorAddress('storage');
     testEnvironment = await initializeTestEnvironment({

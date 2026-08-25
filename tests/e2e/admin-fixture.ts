@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { getAdminFirestore, getAdminStorage } from '../../src/lib/firebase/admin';
+import { normalizeFirebaseAdminStorageEmulatorEnvironment } from '../helpers/firebase-emulator-safety';
 
 export const ADMIN_E2E = {
   drawingId: 'admin-e2e-drawing',
@@ -19,6 +20,7 @@ export const ADMIN_E2E = {
 const FIXTURE_CREATED_AT = new Date('2026-08-25T00:00:00.000Z');
 
 export async function seedAdminScenario() {
+  normalizeFirebaseAdminStorageEmulatorEnvironment();
   const database = getAdminFirestore();
   const book = database.doc(`sketchbooks/${ADMIN_E2E.sketchbookId}`);
 

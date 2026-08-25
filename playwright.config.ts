@@ -1,15 +1,29 @@
 import { defineConfig, devices } from '@playwright/test';
 
-import { resolvePlaywrightEmulatorHosts } from './tests/helpers/firebase-emulator-safety';
+import {
+  normalizeFirebaseAdminStorageEmulatorEnvironment,
+  resolvePlaywrightEmulatorHosts,
+} from './tests/helpers/firebase-emulator-safety';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000';
 const managesFirebaseEmulators = !process.env.PLAYWRIGHT_SKIP_WEBSERVER;
 const emulatorHosts = resolvePlaywrightEmulatorHosts(process.env, managesFirebaseEmulators);
+const storageAdminEnvironment: NodeJS.ProcessEnv = {
+  ...process.env,
+  FIREBASE_PROJECT_ID: 'sketch-me-local',
+};
+const storageHost = normalizeFirebaseAdminStorageEmulatorEnvironment(
+  storageAdminEnvironment,
+  emulatorHosts.storage,
+);
+const adminStorageHost = storageAdminEnvironment.STORAGE_EMULATOR_HOST;
+if (!adminStorageHost) throw new Error('Storage Emulator 환경을 정규화하지 못했습니다.');
 const adminTestEnv = {
   FIREBASE_PROJECT_ID: 'sketch-me-local',
   FIREBASE_AUTH_EMULATOR_HOST: emulatorHosts.auth,
   FIRESTORE_EMULATOR_HOST: emulatorHosts.firestore,
-  FIREBASE_STORAGE_EMULATOR_HOST: emulatorHosts.storage,
+  FIREBASE_STORAGE_EMULATOR_HOST: storageHost,
+  STORAGE_EMULATOR_HOST: adminStorageHost,
   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'sketch-me-local.appspot.com',
   ADMIN_UID: 'admin-e2e-uid',
   ADMIN_EMAIL: 'admin@example.com',
