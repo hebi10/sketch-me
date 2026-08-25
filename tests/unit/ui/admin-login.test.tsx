@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { FirebaseError } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import { vi } from 'vitest';
 
@@ -112,6 +113,19 @@ describe('AdminLogin', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it('Google 팝업의 Firebase 네트워크 실패를 연결 안내로 보여준다', async () => {
+    signInWithPopup.mockRejectedValue(
+      new FirebaseError('auth/network-request-failed', 'network unavailable'),
+    );
+    render(<AdminLogin />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Google 계정으로 로그인' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('로그인 연결을 확인해 주세요.');
+    expect(fetch).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('네트워크 실패를 연결 안내로 보여주고 Firebase 로그인 상태를 정리한다', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
     render(<AdminLogin />);
@@ -143,8 +157,11 @@ describe('AdminLoginPage', () => {
 
   it('유효한 관리자 세션이 있으면 관리자 홈으로 이동한다', async () => {
     verifyAdminSessionCookie.mockResolvedValue({ email: 'owner@example.com', uid: 'admin-uid' });
+    redirect.mockImplementation(() => {
+      throw new Error('NEXT_REDIRECT');
+    });
 
-    await AdminLoginPage();
+    await expect(AdminLoginPage()).rejects.toThrow('NEXT_REDIRECT');
 
     expect(cookieGet).toHaveBeenCalledWith('admin_session');
     expect(verifyAdminSessionCookie).toHaveBeenCalledWith('session-cookie');

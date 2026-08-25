@@ -31,6 +31,15 @@ function isPopupCancelled(error: unknown): boolean {
     || error.code === 'auth/cancelled-popup-request';
 }
 
+function isFirebaseNetworkError(error: unknown): boolean {
+  return Boolean(
+    error
+    && typeof error === 'object'
+    && 'code' in error
+    && error.code === 'auth/network-request-failed',
+  );
+}
+
 function getLoginErrorMessage(error: unknown): string {
   if (isPopupCancelled(error)) {
     return '로그인이 취소됐습니다.';
@@ -46,7 +55,7 @@ function getLoginErrorMessage(error: unknown): string {
     return '로그인 처리 중 오류가 발생했습니다.';
   }
 
-  if (error instanceof TypeError) {
+  if (isFirebaseNetworkError(error) || error instanceof TypeError) {
     return '로그인 연결을 확인해 주세요.';
   }
 
