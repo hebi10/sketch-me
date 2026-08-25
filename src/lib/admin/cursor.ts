@@ -3,6 +3,8 @@ export type AdminCursor = {
   path: string;
 };
 
+export type AdminCursorCollection = 'drawings' | 'purchases' | 'sketchbooks';
+
 function isDocumentPath(path: string) {
   const segments = path.split('/');
   return segments.length >= 2
@@ -31,4 +33,22 @@ export function decodeAdminCursor(value?: string): AdminCursor | null {
   } catch {
     return null;
   }
+}
+
+export function isAdminCursorForCollection(
+  cursor: AdminCursor,
+  collectionId: AdminCursorCollection,
+) {
+  const segments = cursor.path.split('/');
+  if (collectionId === 'sketchbooks') {
+    return segments.length === 2
+      && segments[0] === 'sketchbooks'
+      && Boolean(segments[1]);
+  }
+
+  return segments.length === 4
+    && segments[0] === 'sketchbooks'
+    && Boolean(segments[1])
+    && segments[2] === collectionId
+    && Boolean(segments[3]);
 }

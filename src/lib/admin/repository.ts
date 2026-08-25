@@ -11,7 +11,13 @@ import {
 
 import type { Drawing, Purchase, Sketchbook } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
-import { decodeAdminCursor, encodeAdminCursor, type AdminCursor } from './cursor';
+import {
+  decodeAdminCursor,
+  encodeAdminCursor,
+  isAdminCursorForCollection,
+  type AdminCursor,
+  type AdminCursorCollection,
+} from './cursor';
 import { getCachedValue } from './stats-cache';
 import type {
   AdminDashboardStats,
@@ -100,11 +106,13 @@ function toAdminPurchase(
   };
 }
 
-function readCursor(value: string | undefined, collectionId: string) {
+function readCursor(
+  value: string | undefined,
+  collectionId: AdminCursorCollection,
+) {
   if (!value) return null;
   const cursor = decodeAdminCursor(value);
-  const segments = cursor?.path.split('/');
-  if (!cursor || !segments || segments.at(-2) !== collectionId) {
+  if (!cursor || !isAdminCursorForCollection(cursor, collectionId)) {
     throw new Error('유효하지 않은 관리자 커서입니다.');
   }
   return cursor;
