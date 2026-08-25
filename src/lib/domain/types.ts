@@ -10,6 +10,9 @@ export interface Sketchbook {
   publicId: string;
   name: string;
   manageTokenHash: string;
+  managePinHash?: string | null;
+  managePinHint?: string | null;
+  managePinEnabledAt?: Date | null;
   ownerDrawingPath: string | null;
   referenceImagePath: string | null;
   referenceImageEnabled: boolean;

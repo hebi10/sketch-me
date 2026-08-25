@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createManageCookieValue,
+  createPinManageCookieValue,
   hashManageToken,
   isValidManageSession,
   isValidManageToken,
@@ -13,12 +14,22 @@ describe('manage sessions', () => {
     expect(parseManageSession('book-12.token-value')).toEqual({
       publicId: 'book-12',
       token: 'token-value',
+      type: 'legacy',
+    });
+  });
+
+  it('parses a PIN session separately from a legacy recovery session', () => {
+    expect(parseManageSession(createPinManageCookieValue('book-12', 'session-1', 'session-token'))).toEqual({
+      publicId: 'book-12',
+      sessionId: 'session-1',
+      token: 'session-token',
+      type: 'pin',
     });
   });
 
   it('only accepts a session that matches both the sketchbook and token hash', () => {
-    expect(isValidManageSession({ publicId: 'book-12', token: 'token-value' }, 'book-12', 'hashed')).toBe(false);
-    expect(isValidManageSession({ publicId: 'book-12', token: 'token-value' }, 'book-12', 'e6c02a5742ea9d4de588eb9b9de7bed43dc17011552186bed3e98b2c5958ff4a')).toBe(true);
+    expect(isValidManageSession({ publicId: 'book-12', token: 'token-value', type: 'legacy' }, 'book-12', 'hashed')).toBe(false);
+    expect(isValidManageSession({ publicId: 'book-12', token: 'token-value', type: 'legacy' }, 'book-12', 'e6c02a5742ea9d4de588eb9b9de7bed43dc17011552186bed3e98b2c5958ff4a')).toBe(true);
   });
 
   it('exchanges only the correct recovery token for a management cookie value', () => {

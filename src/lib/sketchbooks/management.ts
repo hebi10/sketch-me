@@ -8,5 +8,7 @@ export async function getManagedSketchbook(publicId: string) {
   const cookieStore = await cookies();
   const session = parseManageSession(cookieStore.get(MANAGE_COOKIE_NAME)?.value);
 
-  return sketchbook && isValidManageSession(session, publicId, sketchbook.manageTokenHash) ? sketchbook : null;
+  return sketchbook && session?.type === 'legacy' && isValidManageSession(session, publicId, sketchbook.manageTokenHash)
+    ? sketchbook
+    : null;
 }

@@ -5,6 +5,8 @@ export const drawingStatusSchema = z.enum(['VISIBLE', 'HIDDEN', 'DELETED']);
 
 export const createSketchbookInputSchema = z.object({
   name: z.string().trim().min(1, '이름 또는 애칭을 입력해 주세요.').max(24, '이름은 24자 이내로 입력해 주세요.'),
+  managePin: z.string().regex(/^\d{4}$/, '관리 비밀번호는 숫자 4자리로 입력해 주세요.'),
+  managePinHint: z.string().trim().max(40, '비밀번호 힌트는 40자 이내로 입력해 주세요.').optional(),
   ownerImageDataUrl: z
     .string()
     .regex(/^data:image\/(png|webp);base64,/, '본인 그림 데이터를 다시 확인해 주세요.')

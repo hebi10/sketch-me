@@ -5,6 +5,8 @@ interface CreateSketchbookDraftParams {
   publicId: string;
   name: string;
   manageTokenHash: string;
+  managePinHash?: string | null;
+  managePinHint?: string | null;
   ownerDrawingPath?: string | null;
   referenceImagePath?: string | null;
   createdAt: Date;
@@ -15,6 +17,8 @@ export function createSketchbookDraft({
   publicId,
   name,
   manageTokenHash,
+  managePinHash = null,
+  managePinHint = null,
   ownerDrawingPath = null,
   referenceImagePath = null,
   createdAt,
@@ -24,6 +28,9 @@ export function createSketchbookDraft({
     publicId,
     name: name.trim(),
     manageTokenHash,
+    managePinHash,
+    managePinHint: managePinHint?.trim() || null,
+    managePinEnabledAt: managePinHash ? createdAt : null,
     ownerDrawingPath,
     referenceImagePath,
     referenceImageEnabled: Boolean(referenceImagePath),
