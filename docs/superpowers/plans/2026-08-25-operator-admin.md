@@ -993,7 +993,7 @@ Expected: FAIL — 관리자 그림·결제 화면이 없음
 
 - [ ] **Step 4: 관리자 이미지 API와 그림 목록 구현**
 
-관리자 이미지 API는 세션을 먼저 확인하고 `sketchbookId`, `drawingId`가 일치하는 문서만 Storage에서 내려준다. 서버 `page.tsx`는 저장소 결과를 `AdminDrawingList`에 전달하고, 순수 표시 컴포넌트의 그림 카드는 3:4 contain 미리보기, 작성자, 스케치북 이름·공개 ID, 제출일, 소유자 상태, 운영자 상태를 표시한다. `DrawingModerationButton`은 Task 8의 확인 dialog 패턴을 같은 컴포넌트 어휘로 사용한다.
+관리자 이미지 API는 세션을 먼저 확인하고 `sketchbookId`, `drawingId`가 일치하는 문서만 Storage에서 내려준다. 서버 `page.tsx`는 저장소 결과를 `AdminDrawingList`에 전달하고, 순수 표시 컴포넌트의 그림 카드는 정사각형 contain 미리보기, 작성자, 스케치북 이름·공개 ID, 제출일, 소유자 상태, 운영자 상태를 표시한다. `DrawingModerationButton`은 Task 8의 확인 dialog 패턴을 같은 컴포넌트 어휘로 사용한다.
 
 - [ ] **Step 5: 결제 목록 구현**
 

@@ -175,7 +175,7 @@
 - Create: `tests/unit/share/story-layout.test.ts`
 
 **Interfaces:**
-- Produces: BEST 1 큰 영역과 BEST 2~4 하단 영역 좌표, 실제 이미지 로딩과 1080×1920 PNG 다운로드
+- Produces: BEST 1 큰 영역과 BEST 2~4 하단 영역 좌표, 실제 이미지 로딩과 1080×1440(3:4) PNG 다운로드
 
 - [ ] **Step 1: 레이아웃 실패 테스트 작성**
 
@@ -191,7 +191,7 @@
 
 - [ ] **Step 4: PNG 크기 검증과 커밋**
 
-  다운로드 이벤트와 1080×1920 크기를 Playwright에서 확인한다.
+  다운로드 이벤트와 1080×1440 크기를 Playwright에서 확인한다.
 
   Commit: `feat: render best drawings in story image`
 
