@@ -1848,13 +1848,18 @@ main {
   background: var(--canvas);
   border: 1px solid var(--line);
   border-radius: 12px;
+  bottom: max(16px, env(safe-area-inset-bottom));
   color: var(--ink);
+  left: 16px;
   margin: 0 auto;
   max-height: calc(100dvh - 32px);
   max-width: 618px;
   overflow-y: auto;
   padding: 20px;
-  width: 100%;
+  position: fixed;
+  right: 16px;
+  top: auto;
+  width: calc(100% - 32px);
 }
 
 .admin-moderation-dialog::backdrop {
