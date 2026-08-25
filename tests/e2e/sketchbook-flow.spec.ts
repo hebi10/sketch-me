@@ -65,6 +65,13 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await friendPage.getByLabel('한마디 (선택)').fill('멋진 스케치북이야');
   await friendPage.getByRole('button', { name: '그림 남기기' }).click();
   await expect(friendPage.getByText('그림을 남겼어요. 고마워요!')).toBeVisible();
+  const publicDrawingImage = friendPage.getByRole('img', { name: '모바일 친구님의 그림' });
+  await expect(publicDrawingImage).toHaveAttribute('src', /\/api\/sketchbooks\/[^/]+\/drawings\/[^/]+\/image$/);
+  const publicDrawingImagePath = await publicDrawingImage.getAttribute('src');
+  const publicDrawingImageResponse = await friendPage.request.get(
+    new URL(publicDrawingImagePath!, friendPage.url()).href,
+  );
+  expect(publicDrawingImageResponse.headers()['cache-control']).toBe('private, no-store');
 
   const recoveredContext = await browser.newContext();
   const recoveredPage = await recoveredContext.newPage();
@@ -87,7 +94,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await expect(recoveredPage).toHaveURL(/\/share$/);
   await expect(recoveredPage.getByAltText('BEST 1 그림')).toBeVisible();
   const storyPreview = recoveredPage.getByRole('region', { name: '스토리 이미지 미리보기' });
-  await expect(storyPreview).toHaveCSS('background-image', /sketchbook-story-background\.webp/);
+  await expect(storyPreview).toHaveCSS('background-image', /sketchbook-share-background\.webp/);
   await expect(storyPreview.getByText('나도 스케치북에 그림 남기기')).toBeVisible();
   const previewRatio = await storyPreview.evaluate((element) => {
     const bounds = element.getBoundingClientRect();

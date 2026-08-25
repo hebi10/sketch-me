@@ -8,6 +8,43 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('ManageDashboard 친구 그림 추가 결제', () => {
+  it('운영자 숨김 그림은 삭제만 허용하고 공개와 BEST 조작을 비활성화한다', () => {
+    const createdAt = new Date('2026-08-25T00:00:00.000Z');
+    render(
+      <ManageDashboard
+        drawings={[{
+          authorName: '친구',
+          bestRank: 1,
+          createdAt,
+          id: 'blocked-drawing',
+          imagePath: 'sketchbooks/book-1/drawings/blocked.webp',
+          message: null,
+          moderatedAt: createdAt,
+          moderationStatus: 'BLOCKED',
+          sketchbookId: 'book-1',
+          sketchbookName: '내 이름',
+          sketchbookPublicId: 'public-1',
+          status: 'VISIBLE',
+          updatedAt: createdAt,
+          usedReferenceImage: false,
+        }]}
+        name="내 이름"
+        participantCount={1}
+        participantLimit={20}
+        publicId="public-1"
+      />,
+    );
+
+    expect(screen.getByText('운영자 숨김')).toBeVisible();
+    fireEvent.click(screen.getByText('그림 관리'));
+    expect(screen.getByRole('button', { name: '친구 페이지에서 숨기기' })).toBeDisabled();
+    screen.getAllByRole('button', { name: /^[1-4]$/ }).forEach((button) => {
+      expect(button).toBeDisabled();
+    });
+    expect(screen.getByRole('button', { name: 'BEST 해제' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '그림 삭제' })).toBeEnabled();
+  });
+
   it('내가 그린 원본이 있으면 친구 그림 목록보다 먼저 보여준다', () => {
     render(
       <ManageDashboard

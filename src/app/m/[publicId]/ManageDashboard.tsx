@@ -192,19 +192,23 @@ export function ManageDashboard({ publicId, name, ownerDrawingPath = null, parti
               </div>
               <p>{drawing.authorName}</p>
               {drawing.message ? <span>{drawing.message}</span> : null}
-              <span className="drawing-status">{drawing.status === 'VISIBLE' ? '공개 중' : '숨김'}</span>
+              <span className="drawing-status">
+                {drawing.moderationStatus === 'BLOCKED'
+                  ? '운영자 숨김'
+                  : drawing.status === 'VISIBLE' ? '공개 중' : '숨김'}
+              </span>
               <details className="drawing-actions">
                 <summary>그림 관리</summary>
                 <div className="drawing-action-panel">
-                  <button onClick={() => updateDrawing(drawing.id, { action: drawing.status === 'VISIBLE' ? 'hide' : 'show' })} type="button">
+                  <button disabled={drawing.moderationStatus === 'BLOCKED'} onClick={() => updateDrawing(drawing.id, { action: drawing.status === 'VISIBLE' ? 'hide' : 'show' })} type="button">
                     {drawing.status === 'VISIBLE' ? '친구 페이지에서 숨기기' : '친구 페이지에 공개하기'}
                   </button>
                   <div className="best-actions" aria-label="BEST 순위 지정">
                     {[1, 2, 3, 4].map((rank) => (
-                      <button aria-pressed={drawing.bestRank === rank} disabled={drawing.status !== 'VISIBLE'} key={rank} onClick={() => updateDrawing(drawing.id, { action: 'best', bestRank: rank })} type="button">{rank}</button>
+                      <button aria-pressed={drawing.bestRank === rank} disabled={drawing.status !== 'VISIBLE' || drawing.moderationStatus === 'BLOCKED'} key={rank} onClick={() => updateDrawing(drawing.id, { action: 'best', bestRank: rank })} type="button">{rank}</button>
                     ))}
                   </div>
-                  {drawing.bestRank ? <button onClick={() => updateDrawing(drawing.id, { action: 'clearBest' })} type="button">BEST 해제</button> : null}
+                  {drawing.bestRank ? <button disabled={drawing.moderationStatus === 'BLOCKED'} onClick={() => updateDrawing(drawing.id, { action: 'clearBest' })} type="button">BEST 해제</button> : null}
                   <button className="danger-action" onClick={() => deleteDrawing(drawing.id)} type="button">그림 삭제</button>
                 </div>
               </details>
