@@ -134,6 +134,19 @@ describe('admin repository Firestore indexes', () => {
       { collectionGroup, fields, queryScope },
     ]));
   });
+
+  it('전체 그림 count의 status-only collection-group 단일 필드 인덱스가 있다', () => {
+    expect(firestoreIndexes.fieldOverrides).toEqual(expect.arrayContaining([
+      {
+        collectionGroup: 'drawings',
+        fieldPath: 'status',
+        indexes: [
+          { order: 'ASCENDING', queryScope: 'COLLECTION_GROUP' },
+          { order: 'DESCENDING', queryScope: 'COLLECTION_GROUP' },
+        ],
+      },
+    ]));
+  });
 });
 
 type FakeReference = {
