@@ -4,11 +4,13 @@ import { isValidManageSession, MANAGE_COOKIE_NAME, parseManageSession } from './
 import { findSketchbookByPublicId, isManagePinSessionValid } from './repository';
 
 export async function getManagedSketchbook(publicId: string) {
-  const sketchbook = await findSketchbookByPublicId(publicId);
   const cookieStore = await cookies();
   const session = parseManageSession(cookieStore.get(MANAGE_COOKIE_NAME)?.value);
 
-  if (!sketchbook || !session || session.publicId !== publicId) return null;
+  if (!session || session.publicId !== publicId) return null;
+
+  const sketchbook = await findSketchbookByPublicId(publicId);
+  if (!sketchbook) return null;
   if (session.type === 'pin' && sketchbook.managePinHash) {
     return await isManagePinSessionValid(sketchbook.id, session) ? sketchbook : null;
   }

@@ -4,18 +4,28 @@ const {
   bucketFile,
   fileDownload,
   fileGetMetadata,
+  findSketchbookByPublicId,
   getAdminStorage,
-  getManagedSketchbook,
+  isManagePinSessionValid,
+  cookieGet,
 } = vi.hoisted(() => ({
   bucketFile: vi.fn(),
+  cookieGet: vi.fn(),
   fileDownload: vi.fn(),
   fileGetMetadata: vi.fn(),
+  findSketchbookByPublicId: vi.fn(),
   getAdminStorage: vi.fn(),
-  getManagedSketchbook: vi.fn(),
+  isManagePinSessionValid: vi.fn(),
 }));
 
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(async () => ({ get: cookieGet })),
+}));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminStorage }));
-vi.mock('@/lib/sketchbooks/management', () => ({ getManagedSketchbook }));
+vi.mock('@/lib/sketchbooks/repository', () => ({
+  findSketchbookByPublicId,
+  isManagePinSessionValid,
+}));
 
 import { GET } from '@/app/api/manage/[publicId]/owner/image/route';
 import type { Sketchbook } from '@/lib/domain/types';
@@ -46,7 +56,9 @@ const context = { params: Promise.resolve({ publicId: 'public-1' }) };
 describe('관리 세션 보호 소유자 이미지 API', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getManagedSketchbook.mockResolvedValue(blockedSketchbook);
+    cookieGet.mockReturnValue({ value: 'public-1.session-1.secret-token' });
+    findSketchbookByPublicId.mockResolvedValue(blockedSketchbook);
+    isManagePinSessionValid.mockResolvedValue(true);
     fileDownload.mockResolvedValue([Buffer.from('owner-image')]);
     fileGetMetadata.mockResolvedValue([{ contentType: 'image/webp' }]);
     getAdminStorage.mockReturnValue({
@@ -63,7 +75,8 @@ describe('관리 세션 보호 소유자 이미지 API', () => {
     const response = await GET(request, context);
 
     expect(response.status).toBe(200);
-    expect(getManagedSketchbook).toHaveBeenCalledWith('public-1');
+    expect(findSketchbookByPublicId).toHaveBeenCalledWith('public-1');
+    expect(isManagePinSessionValid).toHaveBeenCalled();
     expect(bucketFile).toHaveBeenCalledWith('sketchbooks/book-1/owner/original.webp');
     expect(response.headers.get('Cache-Control')).toBe('private, no-store');
     expect(response.headers.get('Content-Disposition')).toBe('inline');
@@ -76,21 +89,21 @@ describe('관리 세션 보호 소유자 이미지 API', () => {
   });
 
   it.each([
-    { label: '인증되지 않은', publicId: 'public-1' },
-    { label: '다른 공개 ID를 요청한', publicId: 'public-2' },
-  ])('$label 요청은 Storage를 읽지 않고 generic 401을 반환한다', async ({ publicId }) => {
-    getManagedSketchbook.mockResolvedValue(null);
+    { cookieValue: undefined, label: '인증되지 않은', publicId: 'public-1' },
+    { cookieValue: 'public-1.session-1.secret-token', label: '다른 공개 ID를 요청한', publicId: 'public-2' },
+  ])('$label 요청은 Firestore와 Storage를 읽지 않고 generic 401을 반환한다', async ({ cookieValue, publicId }) => {
+    cookieGet.mockReturnValue(cookieValue ? { value: cookieValue } : undefined);
 
     const response = await GET(request, { params: Promise.resolve({ publicId }) });
 
     expect(response.status).toBe(401);
-    expect(getManagedSketchbook).toHaveBeenCalledWith(publicId);
+    expect(findSketchbookByPublicId).not.toHaveBeenCalled();
     expect(getAdminStorage).not.toHaveBeenCalled();
     expect(await response.text()).toBe('');
   });
 
   it('소유자 그림이 없으면 Storage를 읽지 않고 generic 404를 반환한다', async () => {
-    getManagedSketchbook.mockResolvedValue({ ...blockedSketchbook, ownerDrawingPath: null });
+    findSketchbookByPublicId.mockResolvedValue({ ...blockedSketchbook, ownerDrawingPath: null });
 
     const response = await GET(request, context);
 
@@ -105,12 +118,26 @@ describe('관리 세션 보호 소유자 이미지 API', () => {
     'sketchbooks/book-1/owner/../reference/source.webp',
     'sketchbooks/book-1/owner/%2e%2e%2freference/source.webp',
   ])('다른 대상이나 traversal 가능성이 있는 경로는 Storage 접근 전에 404로 거부한다: %s', async (ownerDrawingPath) => {
-    getManagedSketchbook.mockResolvedValue({ ...blockedSketchbook, ownerDrawingPath });
+    findSketchbookByPublicId.mockResolvedValue({ ...blockedSketchbook, ownerDrawingPath });
 
     const response = await GET(request, context);
 
     expect(response.status).toBe(404);
     expect(getAdminStorage).not.toHaveBeenCalled();
+  });
+
+  it('7498352에서 생성한 scoped legacy PNG 원본도 소유자에게 반환한다', async () => {
+    findSketchbookByPublicId.mockResolvedValue({
+      ...blockedSketchbook,
+      ownerDrawingPath: 'sketchbooks/book-1/owner/original.png',
+    });
+    fileGetMetadata.mockResolvedValue([{ contentType: 'image/png' }]);
+
+    const response = await GET(request, context);
+
+    expect(response.status).toBe(200);
+    expect(bucketFile).toHaveBeenCalledWith('sketchbooks/book-1/owner/original.png');
+    expect(response.headers.get('Content-Type')).toBe('image/png');
   });
 
   it('Storage 오류와 안전하지 않은 콘텐츠 형식은 비밀값 없는 500으로 처리한다', async () => {

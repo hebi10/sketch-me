@@ -28,7 +28,7 @@ export function isOwnerDrawingPathFor(imagePath: string, sketchbookId: string) {
   return root === 'sketchbooks'
     && pathSketchbookId === sketchbookId
     && collection === 'owner'
-    && filename === 'original.webp';
+    && (filename === 'original.webp' || filename === 'original.png');
 }
 
 export function getDrawingImagePath(sketchbookId: string, drawingId: string) {
