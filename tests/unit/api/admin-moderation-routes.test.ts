@@ -52,6 +52,8 @@ const sketchbookContext = {
 const drawingContext = {
   params: Promise.resolve({ drawingId: 'draw-1', sketchbookId: 'book-1' }),
 };
+const exactUtf8LimitId = '가'.repeat(500);
+const oversizedUtf8Id = '가'.repeat(501);
 
 describe('admin moderation PATCH routes', () => {
   beforeEach(() => {
@@ -219,6 +221,9 @@ describe('admin moderation PATCH routes', () => {
   it.each([
     { label: '빈 ID', sketchbookId: '' },
     { label: '인코딩된 slash가 decode된 ID', sketchbookId: 'book/escape' },
+    { label: '한 개 점 ID', sketchbookId: '.' },
+    { label: '두 개 점 ID', sketchbookId: '..' },
+    { label: 'UTF-8 1,500 bytes 초과 ID', sketchbookId: oversizedUtf8Id },
   ])('스케치북의 $label는 moderation 호출 전 400으로 거부한다', async ({ sketchbookId }) => {
     const response = await patchSketchbook(
       requestWithBody({ moderationStatus: 'BLOCKED' }),
@@ -236,6 +241,9 @@ describe('admin moderation PATCH routes', () => {
     { drawingId: 'draw-1', label: '부모의 decode된 slash ID', sketchbookId: 'book/escape' },
     { drawingId: '', label: '그림의 빈 ID', sketchbookId: 'book-1' },
     { drawingId: 'draw/escape', label: '그림의 decode된 slash ID', sketchbookId: 'book-1' },
+    { drawingId: '.', label: '그림의 한 개 점 ID', sketchbookId: 'book-1' },
+    { drawingId: '..', label: '그림의 두 개 점 ID', sketchbookId: 'book-1' },
+    { drawingId: oversizedUtf8Id, label: '그림의 UTF-8 1,500 bytes 초과 ID', sketchbookId: 'book-1' },
   ])('그림 $label는 moderation 호출 전 400으로 거부한다', async ({ drawingId, sketchbookId }) => {
     const response = await patchDrawing(
       requestWithBody({ moderationStatus: 'BLOCKED' }),
@@ -246,6 +254,52 @@ describe('admin moderation PATCH routes', () => {
     await expect(response.json()).resolves.toEqual({ message: '요청을 확인해 주세요.' });
     expect(setSketchbookModeration).not.toHaveBeenCalled();
     expect(setDrawingModeration).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { label: 'backslash와 % ID', sketchbookId: 'book\\valid%25' },
+    { label: 'UTF-8 정확히 1,500 bytes ID', sketchbookId: exactUtf8LimitId },
+  ])('스케치북의 유효한 $label를 원문 그대로 moderation에 전달한다', async ({ sketchbookId }) => {
+    const response = await patchSketchbook(
+      requestWithBody({ moderationStatus: 'BLOCKED' }),
+      { params: Promise.resolve({ sketchbookId }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(setSketchbookModeration).toHaveBeenCalledWith({
+      adminUid: 'admin-uid',
+      moderationStatus: 'BLOCKED',
+      sketchbookId,
+    });
+  });
+
+  it.each([
+    {
+      drawingId: 'draw\\valid%2F',
+      label: 'backslash와 % ID',
+      sketchbookId: 'book\\valid%25',
+    },
+    {
+      drawingId: exactUtf8LimitId,
+      label: 'UTF-8 정확히 1,500 bytes ID',
+      sketchbookId: exactUtf8LimitId,
+    },
+  ])('그림의 유효한 $label를 원문 그대로 moderation에 전달한다', async ({
+    drawingId,
+    sketchbookId,
+  }) => {
+    const response = await patchDrawing(
+      requestWithBody({ moderationStatus: 'BLOCKED' }),
+      { params: Promise.resolve({ drawingId, sketchbookId }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(setDrawingModeration).toHaveBeenCalledWith({
+      adminUid: 'admin-uid',
+      drawingId,
+      moderationStatus: 'BLOCKED',
+      sketchbookId,
+    });
   });
 
   it.each([
