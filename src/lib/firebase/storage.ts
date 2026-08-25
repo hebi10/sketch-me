@@ -14,6 +14,23 @@ export function getOwnerDrawingPath(sketchbookId: string) {
   return `sketchbooks/${sketchbookId}/owner/original.webp`;
 }
 
+export function isOwnerDrawingPathFor(imagePath: string, sketchbookId: string) {
+  const segments = imagePath.split('/');
+  if (
+    segments.length !== 4
+    || !segments.every(isSafeStoragePathSegment)
+    || !isSafeStoragePathSegment(sketchbookId)
+  ) {
+    return false;
+  }
+
+  const [root, pathSketchbookId, collection, filename] = segments;
+  return root === 'sketchbooks'
+    && pathSketchbookId === sketchbookId
+    && collection === 'owner'
+    && filename === 'original.webp';
+}
+
 export function getDrawingImagePath(sketchbookId: string, drawingId: string) {
   return `sketchbooks/${sketchbookId}/drawings/${drawingId}/original.webp`;
 }

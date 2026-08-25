@@ -28,6 +28,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
           updatedAt: createdAt,
           usedReferenceImage: false,
         }]}
+        moderationStatus="ACTIVE"
         name="내 이름"
         participantCount={1}
         participantLimit={20}
@@ -49,6 +50,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     render(
       <ManageDashboard
         drawings={[]}
+        moderationStatus="ACTIVE"
         name="내 이름"
         ownerDrawingPath="sketchbooks/book-1/owner/original.webp"
         participantCount={0}
@@ -59,7 +61,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
 
     expect(screen.getByRole('img', { name: '직접 그린 내 모습' })).toHaveAttribute(
       'src',
-      expect.stringContaining('/api/sketchbooks/public-1/owner/image'),
+      expect.stringContaining('/api/manage/public-1/owner/image'),
     );
   });
 
@@ -67,6 +69,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     render(
       <ManageDashboard
         drawings={[]}
+        moderationStatus="ACTIVE"
         name="내 이름"
         ownerDrawingPath={null}
         participantCount={0}
@@ -88,6 +91,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     render(
       <ManageDashboard
         drawings={[]}
+        moderationStatus="ACTIVE"
         name="내 이름"
         participantCount={5}
         participantLimit={20}
@@ -119,6 +123,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     render(
       <ManageDashboard
         drawings={[]}
+        moderationStatus="ACTIVE"
         name="내 이름"
         participantCount={5}
         participantLimit={20}
@@ -138,6 +143,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     render(
       <ManageDashboard
         drawings={[]}
+        moderationStatus="ACTIVE"
         name="내 이름"
         participantCount={5}
         participantLimit={20}

@@ -169,6 +169,7 @@ a { color: inherit; text-decoration: none; }
 .manage-shell { margin: 0 auto; max-width: 650px; min-height: 100vh; padding: 20px; }
 .manage-heading { padding: 30px 0 20px; }
 .manage-heading h1 { font-size: clamp(1.85rem, 7.5vw, 3.1rem); letter-spacing: -0.06em; line-height: 1.14; margin: 0; }
+.manage-moderation-notice { margin-bottom: 14px; }
 .manage-summary { background: var(--canvas); border: 1px solid var(--line); display: grid; gap: 12px; padding: 16px; }
 .manage-summary p { margin: 0; }.manage-summary strong { color: var(--accent); font-size: 1.3rem; }
 .manage-summary progress { accent-color: var(--accent); height: 8px; width: 100%; }

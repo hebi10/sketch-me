@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import type { Drawing } from '@/lib/domain/types';
-import type { PurchaseProductId } from '@/lib/domain/types';
+import type { Drawing, ModerationStatus, PurchaseProductId } from '@/lib/domain/types';
 import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
@@ -14,13 +13,14 @@ import { HeaderMenu } from '@/components/ui/HeaderMenu';
 interface ManageDashboardProps {
   publicId: string;
   name: string;
+  moderationStatus: ModerationStatus;
   ownerDrawingPath?: string | null;
   participantCount: number;
   participantLimit: number;
   drawings: Drawing[];
 }
 
-export function ManageDashboard({ publicId, name, ownerDrawingPath = null, participantCount, participantLimit, drawings }: ManageDashboardProps) {
+export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawingPath = null, participantCount, participantLimit, drawings }: ManageDashboardProps) {
   const router = useRouter();
   const [limit, setLimit] = useState(participantLimit);
   const [message, setMessage] = useState<string | null>(null);
@@ -211,11 +211,17 @@ export function ManageDashboard({ publicId, name, ownerDrawingPath = null, parti
         </HeaderMenu>
       </header>
       <section className="manage-heading"><p className="eyebrow">{name}님의 스케치북</p><h1>친구들이 그린 나</h1></section>
+      {moderationStatus === 'BLOCKED' ? (
+        <section className="manage-moderation-notice status-notice status-notice--warning" role="status">
+          <strong>운영자 제한</strong>
+          <p>이 스케치북은 현재 친구 페이지에서 숨김 상태예요. 이 관리 화면에서 그림을 확인하거나 삭제할 수 있어요.</p>
+        </section>
+      ) : null}
       <section className="manage-summary">
         {ownerDrawingPath ? (
           <figure className="owner-original-card">
             <figcaption><span>직접 그린 내 모습</span><b>원본</b></figcaption>
-            <Image alt="직접 그린 내 모습" height={600} src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={600} />
+            <Image alt="직접 그린 내 모습" height={600} src={`/api/manage/${publicId}/owner/image`} unoptimized width={600} />
           </figure>
         ) : null}
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>

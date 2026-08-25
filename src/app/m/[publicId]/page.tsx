@@ -14,5 +14,5 @@ export default async function ManagePage({ params }: { params: Promise<{ publicI
     notFound();
   }
   const drawings = await listDrawings(sketchbook.id);
-  return <ManageDashboard drawings={drawings} name={sketchbook.name} ownerDrawingPath={sketchbook.ownerDrawingPath} participantCount={sketchbook.participantCount} participantLimit={sketchbook.participantLimit} publicId={publicId} />;
+  return <ManageDashboard drawings={drawings} moderationStatus={sketchbook.moderationStatus} name={sketchbook.name} ownerDrawingPath={sketchbook.ownerDrawingPath} participantCount={sketchbook.participantCount} participantLimit={sketchbook.participantLimit} publicId={publicId} />;
 }
