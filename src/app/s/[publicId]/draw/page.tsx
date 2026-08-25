@@ -1,21 +1,38 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { SketchCanvas } from './SketchCanvas';
 import { findSketchbookByPublicId } from '@/lib/sketchbooks/repository';
 import { isSketchbookFull } from '@/lib/sketchbooks/capacity';
+import { ModerationBlockedNotice } from '../ModerationBlockedNotice';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ publicId: string }>;
+}): Promise<Metadata> {
+  const { publicId } = await params;
+  const sketchbook = await findSketchbookByPublicId(publicId);
+
+  if (sketchbook?.status === 'PUBLIC' && sketchbook.moderationStatus === 'BLOCKED') {
+    return {
+      robots: { follow: false, index: false },
+      title: '이용이 제한된 스케치북',
+    };
+  }
+
+  return {};
+}
 
 export default async function DrawFriendPage({ params }: { params: Promise<{ publicId: string }> }) {
   const { publicId } = await params;
   const sketchbook = await findSketchbookByPublicId(publicId);
 
-  if (
-    !sketchbook
-    || sketchbook.status !== 'PUBLIC'
-    || sketchbook.moderationStatus === 'BLOCKED'
-  ) notFound();
+  if (!sketchbook || sketchbook.status !== 'PUBLIC') notFound();
+  if (sketchbook.moderationStatus === 'BLOCKED') return <ModerationBlockedNotice />;
 
   if (isSketchbookFull(sketchbook)) {
     return (

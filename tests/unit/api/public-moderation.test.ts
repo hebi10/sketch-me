@@ -47,7 +47,7 @@ import { GET as getOwnerImage } from '@/app/api/sketchbooks/[publicId]/owner/ima
 import { GET as getReferenceImage } from '@/app/api/sketchbooks/[publicId]/reference/image/route';
 import SharePage from '@/app/m/[publicId]/share/page';
 import PublicSketchbookPage, { generateMetadata } from '@/app/s/[publicId]/page';
-import DrawFriendPage from '@/app/s/[publicId]/draw/page';
+import DrawFriendPage, { generateMetadata as generateDrawMetadata } from '@/app/s/[publicId]/draw/page';
 
 const createdAt = new Date('2026-08-25T00:00:00.000Z');
 const sketchbook = {
@@ -110,21 +110,50 @@ describe('공개 경로 운영자 차단', () => {
     });
   });
 
-  it('차단된 스케치북의 공개 페이지는 그림 목록을 읽기 전에 404 처리한다', async () => {
+  it('차단된 스케치북의 공개 페이지는 내용을 노출하지 않는 이용 제한 안내를 나타낸다', async () => {
     findSketchbookByPublicId.mockResolvedValue({ ...sketchbook, moderationStatus: 'BLOCKED' });
+
+    render(await PublicSketchbookPage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(screen.getByRole('heading', { name: '현재 이용할 수 없는 스케치북이에요' })).toBeVisible();
+    expect(screen.queryByText('해비의 스케치북')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(listVisibleDrawings).not.toHaveBeenCalled();
+    await expect(generateMetadata({ params: Promise.resolve({ publicId: 'public-1' }) }))
+      .resolves.toEqual({
+        robots: { follow: false, index: false },
+        title: '이용이 제한된 스케치북',
+      });
+  });
+
+  it('차단된 스케치북의 그리기 페이지는 캔버스와 소유자 정보 없이 제한 안내만 나타낸다', async () => {
+    findSketchbookByPublicId.mockResolvedValue({ ...sketchbook, moderationStatus: 'BLOCKED' });
+
+    render(await DrawFriendPage({ params: Promise.resolve({ publicId: 'public-1' }) }));
+
+    expect(screen.getByRole('heading', { name: '현재 이용할 수 없는 스케치북이에요' })).toBeVisible();
+    expect(screen.queryByText(/\uD574\uBE44/)).not.toBeInTheDocument();
+    expect(document.querySelector('canvas')).not.toBeInTheDocument();
+    await expect(generateDrawMetadata({ params: Promise.resolve({ publicId: 'public-1' }) }))
+      .resolves.toEqual({
+        robots: { follow: false, index: false },
+        title: '이용이 제한된 스케치북',
+      });
+  });
+
+  it.each([
+    { label: '존재하지 않는', value: null },
+    { label: '비공개', value: { ...sketchbook, status: 'PRIVATE' } },
+  ])('$label 스케치북은 공개·그리기 페이지 모두 404 처리한다', async ({ value }) => {
+    findSketchbookByPublicId.mockResolvedValue(value);
 
     await expect(PublicSketchbookPage({
       params: Promise.resolve({ publicId: 'public-1' }),
       searchParams: Promise.resolve({}),
     })).rejects.toThrow('NEXT_NOT_FOUND');
-    expect(listVisibleDrawings).not.toHaveBeenCalled();
-    await expect(generateMetadata({ params: Promise.resolve({ publicId: 'public-1' }) }))
-      .resolves.toEqual({ title: '페이지를 찾을 수 없어요' });
-  });
-
-  it('차단된 스케치북의 그리기 페이지는 캔버스를 열지 않고 404 처리한다', async () => {
-    findSketchbookByPublicId.mockResolvedValue({ ...sketchbook, moderationStatus: 'BLOCKED' });
-
     await expect(DrawFriendPage({ params: Promise.resolve({ publicId: 'public-1' }) }))
       .rejects.toThrow('NEXT_NOT_FOUND');
   });

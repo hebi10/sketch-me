@@ -5,9 +5,11 @@ const { getAdminFirestore } = vi.hoisted(() => ({ getAdminFirestore: vi.fn() }))
 vi.mock('@/lib/firebase/admin', () => ({ getAdminFirestore }));
 
 import {
+  DrawingPublicPromotionBlockedError,
   listVisibleDrawings,
   saveDrawingWithinLimit,
   setBestDrawing,
+  updateDrawingForManagement,
 } from '@/lib/sketchbooks/repository';
 
 const createdAt = new Date('2026-08-25T00:00:00.000Z');
@@ -131,7 +133,48 @@ describe('공개 그림 저장소 운영자 차단', () => {
       runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
     });
 
-    await expect(setBestDrawing('book-1', 'drawing-1', 1)).rejects.toThrow();
+    await expect(setBestDrawing('book-1', 'drawing-1', 1))
+      .rejects.toBeInstanceOf(DrawingPublicPromotionBlockedError);
     expect(transaction.update).not.toHaveBeenCalled();
+  });
+
+  it('관리자가 차단한 그림을 show해도 최신 문서를 읽는 transaction에서 공개 승격을 거부한다', async () => {
+    const drawingReference = { id: 'drawing-1' };
+    const transaction = {
+      get: vi.fn().mockResolvedValue({
+        data: () => ({ moderationStatus: 'BLOCKED', status: 'HIDDEN' }),
+        exists: true,
+      }),
+      update: vi.fn(),
+    };
+    const runTransaction = vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction));
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          collection: vi.fn(() => ({ doc: vi.fn(() => drawingReference) })),
+        })),
+      })),
+      runTransaction,
+    });
+
+    await expect(updateDrawingForManagement('book-1', 'drawing-1', { status: 'VISIBLE' }))
+      .rejects.toBeInstanceOf(DrawingPublicPromotionBlockedError);
+    expect(transaction.get).toHaveBeenCalledWith(drawingReference);
+    expect(transaction.update).not.toHaveBeenCalled();
+  });
+
+  it('차단된 그림의 hide는 비공개 방향이므로 허용한다', async () => {
+    const update = vi.fn();
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          collection: vi.fn(() => ({ doc: vi.fn(() => ({ update })) })),
+        })),
+      })),
+    });
+
+    await updateDrawingForManagement('book-1', 'drawing-1', { status: 'HIDDEN' });
+
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ bestRank: null, status: 'HIDDEN' }));
   });
 });
