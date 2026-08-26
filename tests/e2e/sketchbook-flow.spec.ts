@@ -35,7 +35,7 @@ test('public image API를 Next optimizer로 직접 우회할 수 없다', async 
   expect(blockedResponse.headers()['cache-control']).toBe('private, no-store');
 
   const regularImageResponse = await request.get(
-    '/_next/image?url=%2Fbrand%2Fsketchbook-favicon-source.png&w=640&q=75',
+    '/_next/image?url=%2Fbrand%2Flanding-sketch-collage.webp&w=640&q=75',
   );
   expect(regularImageResponse.status()).toBe(200);
 });
@@ -52,7 +52,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await ownerPage.goto('/create');
   await ownerPage.getByLabel('이름 또는 애칭').fill(uniqueName);
   await ownerPage.getByLabel('관리 비밀번호').fill('1234');
-  await ownerPage.locator('#reference-image').setInputFiles(path.resolve('public/brand/sketchbook-favicon-source.png'));
+  await ownerPage.locator('#reference-image').setInputFiles(path.resolve('public/brand/landing-sketch-collage.webp'));
   await expect(ownerPage.getByRole('button', { name: '다른 사진 선택' })).toBeVisible();
   await ownerPage.getByRole('button', { name: '그림 그리기' }).click();
   await expect(ownerPage.getByAltText('그림 참고 사진')).toBeVisible();
