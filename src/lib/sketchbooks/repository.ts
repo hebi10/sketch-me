@@ -4,9 +4,23 @@ import type { PurchasePlan } from '@/lib/purchases/plans';
 import type { ManagePinAttemptState } from '@/lib/security/manage-pin-attempt';
 import { randomUUID } from 'node:crypto';
 import { createManageSessionToken, hashManageSessionToken } from './manage-pin';
-import type { PinManageSession } from './manage-session';
+import {
+  isValidManageToken,
+  type LegacyManageSession,
+  type PinManageSession,
+} from './manage-session';
 
 const collectionName = 'sketchbooks';
+const deletionJobCollectionName = 'sketchbookDeletionJobs';
+
+export interface SketchbookDeletionJob {
+  expiresAt: Date | null;
+  publicId: string;
+  sessionId: string | null;
+  sessionType: 'legacy' | 'pin';
+  sketchbookId: string;
+  tokenHash: string;
+}
 
 export class DrawingPublicPromotionBlockedError extends Error {
   constructor() {
@@ -273,10 +287,74 @@ export async function deleteSketchbookPermanently(sketchbookId: string) {
 }
 
 export async function markSketchbookDeletionStarted(sketchbookId: string) {
-  await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
-    status: 'DELETED',
-    updatedAt: new Date(),
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).set(
+    { status: 'DELETED', updatedAt: new Date() },
+    { merge: true },
+  );
+}
+
+export async function findSketchbookDeletionJob(publicId: string): Promise<SketchbookDeletionJob | null> {
+  const document = await getAdminFirestore().collection(deletionJobCollectionName).doc(publicId).get();
+  const data = document.data();
+  if (!document.exists || !data) return null;
+
+  return {
+    expiresAt: data.expiresAt ? toDate(data.expiresAt) : null,
+    publicId: String(data.publicId),
+    sessionId: data.sessionId ? String(data.sessionId) : null,
+    sessionType: data.sessionType === 'pin' ? 'pin' : 'legacy',
+    sketchbookId: String(data.sketchbookId),
+    tokenHash: String(data.tokenHash),
+  };
+}
+
+export async function createSketchbookDeletionJob(
+  sketchbook: Sketchbook,
+  session: LegacyManageSession | PinManageSession,
+) {
+  let expiresAt: Date | null = null;
+  let sessionId: string | null = null;
+  let tokenHash: string;
+
+  if (session.type === 'pin') {
+    const sessionDocument = await getAdminFirestore()
+      .collection(collectionName)
+      .doc(sketchbook.id)
+      .collection('manageSessions')
+      .doc(session.sessionId)
+      .get();
+    const sessionData = sessionDocument.data();
+    expiresAt = sessionData?.expiresAt ? toDate(sessionData.expiresAt) : null;
+    tokenHash = String(sessionData?.tokenHash ?? '');
+    sessionId = session.sessionId;
+    if (
+      !sessionDocument.exists
+      || !expiresAt
+      || expiresAt <= new Date()
+      || hashManageSessionToken(session.token) !== tokenHash
+    ) {
+      throw new Error('유효한 관리 세션을 찾을 수 없습니다.');
+    }
+  } else {
+    tokenHash = sketchbook.manageTokenHash;
+    if (!isValidManageToken(session.token, tokenHash)) {
+      throw new Error('유효한 관리 세션을 찾을 수 없습니다.');
+    }
+  }
+
+  await getAdminFirestore().collection(deletionJobCollectionName).doc(sketchbook.publicId).create({
+    createdAt: new Date(),
+    expiresAt,
+    publicId: sketchbook.publicId,
+    sessionId,
+    sessionType: session.type,
+    sketchbookId: sketchbook.id,
+    tokenHash,
   });
+}
+
+export async function deleteSketchbookDeletionJob(publicId: string) {
+  await getAdminFirestore().collection(deletionJobCollectionName).doc(publicId).delete();
 }
 
 export async function createManagePinSession(sketchbookId: string, expiresAt: Date) {

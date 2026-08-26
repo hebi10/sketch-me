@@ -2,23 +2,26 @@ import { vi } from 'vitest';
 
 const {
   deleteFiles,
+  deleteSketchbookDeletionJob,
   deleteSketchbookPermanently,
   getAdminStorage,
-  getManagedSketchbook,
   markSketchbookDeletionStarted,
   operations,
+  prepareSketchbookDeletion,
 } = vi.hoisted(() => ({
   deleteFiles: vi.fn(),
+  deleteSketchbookDeletionJob: vi.fn(),
   deleteSketchbookPermanently: vi.fn(),
   getAdminStorage: vi.fn(),
-  getManagedSketchbook: vi.fn(),
   markSketchbookDeletionStarted: vi.fn(),
   operations: [] as string[],
+  prepareSketchbookDeletion: vi.fn(),
 }));
 
 vi.mock('@/lib/firebase/admin', () => ({ getAdminStorage }));
-vi.mock('@/lib/sketchbooks/management', () => ({ getManagedSketchbook }));
+vi.mock('@/lib/sketchbooks/management', () => ({ prepareSketchbookDeletion }));
 vi.mock('@/lib/sketchbooks/repository', () => ({
+  deleteSketchbookDeletionJob,
   deleteSketchbookPermanently,
   markSketchbookDeletionStarted,
 }));
@@ -27,16 +30,19 @@ import { DELETE } from '@/app/api/manage/[publicId]/sketchbook/route';
 
 const request = new Request('http://localhost/api/manage/public-1/sketchbook', { method: 'DELETE' });
 const context = { params: Promise.resolve({ publicId: 'public-1' }) };
-const sketchbook = { id: 'book-1', publicId: 'public-1', status: 'PUBLIC' };
 
 describe('DELETE /api/manage/:publicId/sketchbook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     operations.length = 0;
-    getManagedSketchbook.mockResolvedValue(sketchbook);
+    prepareSketchbookDeletion.mockImplementation(async () => {
+      operations.push('preserve-authorization');
+      return { id: 'book-1', publicId: 'public-1' };
+    });
     markSketchbookDeletionStarted.mockImplementation(async () => { operations.push('mark-deleted'); });
     deleteFiles.mockImplementation(async () => { operations.push('delete-storage'); });
     deleteSketchbookPermanently.mockImplementation(async () => { operations.push('delete-firestore'); });
+    deleteSketchbookDeletionJob.mockImplementation(async () => { operations.push('remove-authorization'); });
     getAdminStorage.mockReturnValue({ bucket: vi.fn(() => ({ deleteFiles })) });
   });
 
@@ -44,7 +50,14 @@ describe('DELETE /api/manage/:publicId/sketchbook', () => {
     const response = await DELETE(request, context);
 
     expect(response.status).toBe(200);
-    expect(operations).toEqual(['mark-deleted', 'delete-storage', 'delete-firestore']);
+    expect(operations).toEqual([
+      'preserve-authorization',
+      'mark-deleted',
+      'delete-storage',
+      'delete-firestore',
+      'remove-authorization',
+    ]);
+    expect(prepareSketchbookDeletion).toHaveBeenCalledWith('public-1');
     expect(markSketchbookDeletionStarted).toHaveBeenCalledWith('book-1');
     expect(deleteFiles).toHaveBeenCalledWith({ prefix: 'sketchbooks/book-1/' });
     expect(response.headers.get('set-cookie')).toContain('sketchbook_manage_token=;');
@@ -63,19 +76,50 @@ describe('DELETE /api/manage/:publicId/sketchbook', () => {
     expect(failedResponse.status).toBe(500);
     expect(failedResponse.headers.get('set-cookie')).toBeNull();
     expect(deleteSketchbookPermanently).not.toHaveBeenCalled();
-    expect(operations).toEqual(['mark-deleted', 'delete-storage']);
+    expect(operations).toEqual(['preserve-authorization', 'mark-deleted', 'delete-storage']);
 
     const retriedResponse = await DELETE(request, context);
 
     expect(retriedResponse.status).toBe(200);
-    expect(getManagedSketchbook).toHaveBeenCalledTimes(2);
+    expect(prepareSketchbookDeletion).toHaveBeenCalledTimes(2);
     expect(operations).toEqual([
+      'preserve-authorization',
       'mark-deleted',
       'delete-storage',
+      'preserve-authorization',
       'mark-deleted',
       'delete-storage',
       'delete-firestore',
+      'remove-authorization',
     ]);
+  });
+
+  it('재귀 삭제가 루트와 세션을 지운 뒤 실패해도 외부 보존 권한으로 재시도한다', async () => {
+    prepareSketchbookDeletion
+      .mockResolvedValueOnce({ id: 'book-1', publicId: 'public-1', source: 'sketchbook' })
+      .mockResolvedValueOnce({ id: 'book-1', publicId: 'public-1', source: 'deletion-job' });
+    deleteSketchbookPermanently
+      .mockImplementationOnce(async () => {
+        operations.push('delete-firestore-partial');
+        throw new Error('recursive delete removed root before reporting a child failure');
+      })
+      .mockImplementationOnce(async () => { operations.push('delete-firestore'); });
+
+    const failedResponse = await DELETE(request, context);
+
+    expect(failedResponse.status).toBe(500);
+    expect(deleteSketchbookDeletionJob).not.toHaveBeenCalled();
+
+    const retriedResponse = await DELETE(request, context);
+
+    expect(retriedResponse.status).toBe(200);
+    expect(prepareSketchbookDeletion).toHaveBeenCalledTimes(2);
+    await expect(prepareSketchbookDeletion.mock.results[1]?.value).resolves.toEqual({
+      id: 'book-1',
+      publicId: 'public-1',
+      source: 'deletion-job',
+    });
+    expect(deleteSketchbookDeletionJob).toHaveBeenCalledWith('public-1');
   });
 
   it('삭제 시작 상태 기록이 실패하면 바이너리 삭제를 시작하지 않는다', async () => {

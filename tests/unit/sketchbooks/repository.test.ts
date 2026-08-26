@@ -1,10 +1,14 @@
 import { vi } from 'vitest';
 
+import { hashManageToken } from '@/lib/sketchbooks/manage-session';
+
 const { getAdminFirestore } = vi.hoisted(() => ({ getAdminFirestore: vi.fn() }));
 
 vi.mock('@/lib/firebase/admin', () => ({ getAdminFirestore }));
 
 import {
+  createSketchbookDeletionJob,
+  deleteSketchbookDeletionJob,
   DrawingPublicPromotionBlockedError,
   listVisibleDrawings,
   markSketchbookDeletionStarted,
@@ -180,8 +184,8 @@ describe('공개 그림 저장소 운영자 차단', () => {
   });
 
   it('전체 삭제 시작 시 공개 접근을 막는 DELETED 상태를 먼저 기록한다', async () => {
-    const update = vi.fn();
-    const document = { update };
+    const set = vi.fn();
+    const document = { set };
     const doc = vi.fn(() => document);
     const collection = vi.fn(() => ({ doc }));
     getAdminFirestore.mockReturnValue({ collection });
@@ -190,6 +194,58 @@ describe('공개 그림 저장소 운영자 차단', () => {
 
     expect(collection).toHaveBeenCalledWith('sketchbooks');
     expect(doc).toHaveBeenCalledWith('book-1');
-    expect(update).toHaveBeenCalledWith({ status: 'DELETED', updatedAt: expect.any(Date) });
+    expect(set).toHaveBeenCalledWith(
+      { status: 'DELETED', updatedAt: expect.any(Date) },
+      { merge: true },
+    );
+  });
+
+  it('PIN 삭제 재시도 권한을 원본 세션 만료와 함께 외부 문서 하나로 보존한다', async () => {
+    const expiresAt = new Date(Date.now() + 60_000);
+    const create = vi.fn();
+    const sessionGet = vi.fn().mockResolvedValue({
+      data: () => ({ expiresAt, tokenHash: hashManageToken('secret-token') }),
+      exists: true,
+    });
+    const collection = vi.fn((name: string) => name === 'sketchbookDeletionJobs'
+      ? { doc: vi.fn(() => ({ create })) }
+      : {
+          doc: vi.fn(() => ({
+            collection: vi.fn(() => ({
+              doc: vi.fn(() => ({ get: sessionGet })),
+            })),
+          })),
+        });
+    getAdminFirestore.mockReturnValue({ collection });
+
+    await createSketchbookDeletionJob(sketchbook, {
+      publicId: 'public-1',
+      sessionId: 'session-1',
+      token: 'secret-token',
+      type: 'pin',
+    });
+
+    expect(create).toHaveBeenCalledWith({
+      createdAt: expect.any(Date),
+      expiresAt,
+      publicId: 'public-1',
+      sessionId: 'session-1',
+      sessionType: 'pin',
+      sketchbookId: 'book-1',
+      tokenHash: hashManageToken('secret-token'),
+    });
+  });
+
+  it('전체 삭제 성공 시 외부 재시도 권한 문서를 즉시 제거한다', async () => {
+    const deleteDocument = vi.fn();
+    const doc = vi.fn(() => ({ delete: deleteDocument }));
+    const collection = vi.fn(() => ({ doc }));
+    getAdminFirestore.mockReturnValue({ collection });
+
+    await deleteSketchbookDeletionJob('public-1');
+
+    expect(collection).toHaveBeenCalledWith('sketchbookDeletionJobs');
+    expect(doc).toHaveBeenCalledWith('public-1');
+    expect(deleteDocument).toHaveBeenCalledOnce();
   });
 });
