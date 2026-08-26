@@ -3,7 +3,10 @@ import { NextResponse } from 'next/server';
 import { getAdminStorage } from '@/lib/firebase/admin';
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
 import { MANAGE_COOKIE_NAME } from '@/lib/sketchbooks/manage-session';
-import { deleteSketchbookPermanently } from '@/lib/sketchbooks/repository';
+import {
+  deleteSketchbookPermanently,
+  markSketchbookDeletionStarted,
+} from '@/lib/sketchbooks/repository';
 
 export async function DELETE(
   _request: Request,
@@ -14,6 +17,7 @@ export async function DELETE(
   if (!sketchbook) return NextResponse.json({ message: '관리 권한이 없습니다.' }, { status: 403 });
 
   try {
+    await markSketchbookDeletionStarted(sketchbook.id);
     await getAdminStorage().bucket().deleteFiles({ prefix: `sketchbooks/${sketchbook.id}/` });
     await deleteSketchbookPermanently(sketchbook.id);
   } catch {

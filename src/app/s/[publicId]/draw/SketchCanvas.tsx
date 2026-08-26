@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { SketchEditor, type SketchEditorHandle } from '@/components/sketch/SketchEditor';
+import { getPublicMutationHeaders } from '@/lib/security/app-check-client';
 
 interface SketchCanvasProps {
   publicId: string;
@@ -30,9 +31,10 @@ export function SketchCanvas({ publicId, referenceImageUrl, sketchbookName }: Sk
     setIsSubmitting(true);
 
     try {
+      const appCheckHeaders = await getPublicMutationHeaders();
       const response = await fetch(`/api/sketchbooks/${publicId}/drawings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...appCheckHeaders },
         body: JSON.stringify({ authorName, message, imageDataUrl, usedReferenceImage: Boolean(referenceImageUrl) }),
       });
       const result = (await response.json()) as { message?: string };

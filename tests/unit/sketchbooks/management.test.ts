@@ -78,6 +78,20 @@ describe('getManagedSketchbook 관리 세션 선행 검증', () => {
     });
   });
 
+  it('삭제 시작으로 DELETED가 된 뒤에도 같은 PIN 세션은 정리 재시도를 인증한다', async () => {
+    cookieGet.mockReturnValue({ value: 'public-1.session-1.secret-token' });
+    findSketchbookByPublicId.mockResolvedValue({ ...sketchbook, status: 'DELETED' });
+
+    await expect(getManagedSketchbook('public-1')).resolves.toEqual(
+      expect.objectContaining({ id: 'book-1', status: 'DELETED' }),
+    );
+
+    expect(isManagePinSessionValid).toHaveBeenCalledWith('book-1', expect.objectContaining({
+      sessionId: 'session-1',
+      token: 'secret-token',
+    }));
+  });
+
   it('publicId가 일치하는 legacy 후보는 기존 토큰 해시를 검증한다', async () => {
     cookieGet.mockReturnValue({ value: 'public-1.legacy-token' });
     findSketchbookByPublicId.mockResolvedValue({ ...sketchbook, managePinHash: null });

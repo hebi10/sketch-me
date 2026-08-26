@@ -7,6 +7,7 @@ import { createDrawingDraft } from '@/lib/drawings/create';
 import { getAdminStorage } from '@/lib/firebase/admin';
 import { getDrawingImagePath } from '@/lib/firebase/storage';
 import { ImageOptimizationError, optimizeImageForStorage } from '@/lib/images/optimize';
+import { enforceAppCheck } from '@/lib/security/app-check-server';
 import { enforcePublicMutationLimit } from '@/lib/security/rate-limit';
 import { findSketchbookByPublicId, saveDrawingWithinLimit } from '@/lib/sketchbooks/repository';
 
@@ -22,6 +23,9 @@ function dataUrlToBuffer(imageDataUrl: string) {
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
+  const appCheckResponse = await enforceAppCheck(request);
+  if (appCheckResponse) return appCheckResponse;
+
   const rateLimitResponse = enforcePublicMutationLimit(request, 'submitDrawing');
   if (rateLimitResponse) return rateLimitResponse;
 

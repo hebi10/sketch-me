@@ -272,6 +272,13 @@ export async function deleteSketchbookPermanently(sketchbookId: string) {
   await firestore.recursiveDelete(firestore.collection(collectionName).doc(sketchbookId));
 }
 
+export async function markSketchbookDeletionStarted(sketchbookId: string) {
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
+    status: 'DELETED',
+    updatedAt: new Date(),
+  });
+}
+
 export async function createManagePinSession(sketchbookId: string, expiresAt: Date) {
   const sessionId = randomUUID();
   const token = createManageSessionToken();

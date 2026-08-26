@@ -7,6 +7,7 @@ vi.mock('@/lib/firebase/admin', () => ({ getAdminFirestore }));
 import {
   DrawingPublicPromotionBlockedError,
   listVisibleDrawings,
+  markSketchbookDeletionStarted,
   saveDrawingWithinLimit,
   setBestDrawing,
   updateDrawingForManagement,
@@ -176,5 +177,19 @@ describe('공개 그림 저장소 운영자 차단', () => {
     await updateDrawingForManagement('book-1', 'drawing-1', { status: 'HIDDEN' });
 
     expect(update).toHaveBeenCalledWith(expect.objectContaining({ bestRank: null, status: 'HIDDEN' }));
+  });
+
+  it('전체 삭제 시작 시 공개 접근을 막는 DELETED 상태를 먼저 기록한다', async () => {
+    const update = vi.fn();
+    const document = { update };
+    const doc = vi.fn(() => document);
+    const collection = vi.fn(() => ({ doc }));
+    getAdminFirestore.mockReturnValue({ collection });
+
+    await markSketchbookDeletionStarted('book-1');
+
+    expect(collection).toHaveBeenCalledWith('sketchbooks');
+    expect(doc).toHaveBeenCalledWith('book-1');
+    expect(update).toHaveBeenCalledWith({ status: 'DELETED', updatedAt: expect.any(Date) });
   });
 });

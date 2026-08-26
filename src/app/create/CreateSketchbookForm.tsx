@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { SketchEditor, type SketchEditorHandle } from '@/components/sketch/SketchEditor';
+import { getPublicMutationHeaders } from '@/lib/security/app-check-client';
 
 interface CreateResult {
   manageUrl: string;
@@ -96,9 +97,10 @@ export function CreateSketchbookForm() {
     setIsSubmitting(true);
 
     try {
+      const appCheckHeaders = await getPublicMutationHeaders();
       const response = await fetch('/api/sketchbooks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...appCheckHeaders },
         body: JSON.stringify({ name, managePin, managePinHint: managePinHint || undefined, ownerImageDataUrl: drawingDataUrl ?? undefined, referenceImageDataUrl: referenceImageDataUrl ?? undefined }),
       });
       const data = (await response.json()) as Partial<CreateResult> & { message?: string };
