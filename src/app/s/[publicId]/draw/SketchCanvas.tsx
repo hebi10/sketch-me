@@ -20,6 +20,11 @@ export function SketchCanvas({ publicId, referenceImageUrl, sketchbookName }: Sk
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  function navigateBack() {
+    if (editorRef.current?.hasDrawing() && !window.confirm('저장하지 않은 그림이 있어요. 지금 나가면 그림이 사라집니다. 나가시겠어요?')) return;
+    router.back();
+  }
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const imageDataUrl = editorRef.current?.exportDrawing();
@@ -50,7 +55,7 @@ export function SketchCanvas({ publicId, referenceImageUrl, sketchbookName }: Sk
   return (
     <main className="draw-shell">
       <header className="draw-header">
-        <button aria-label="이전으로" className="icon-button" onClick={() => router.back()} type="button">←</button>
+        <button aria-label="이전으로" className="icon-button" onClick={navigateBack} type="button">←</button>
         <p>{sketchbookName}님을 그려주세요</p>
         <a className="draw-complete-link" href="#drawing-submit">완료</a>
       </header>
