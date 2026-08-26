@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 
-import { optimizeImageForStorage } from '@/lib/images/optimize';
+import { optimizeDrawingImages, optimizeImageForStorage } from '@/lib/images/optimize';
 
 async function makePng(width: number, height: number) {
   return sharp({
@@ -47,6 +47,20 @@ async function makeNoisySquare() {
 }
 
 describe('optimizeImageForStorage', () => {
+  it('친구 그림 원본과 90KB 이하 320px 갤러리 썸네일을 함께 만든다', async () => {
+    const result = await optimizeDrawingImages(await makeNoisySquare());
+    const [original, thumbnail] = await Promise.all([
+      sharp(result.original.buffer).metadata(),
+      sharp(result.thumbnail.buffer).metadata(),
+    ]);
+
+    expect(original).toMatchObject({ format: 'webp', height: 720, width: 720 });
+    expect(thumbnail).toMatchObject({ format: 'webp', height: 320, width: 320 });
+    expect(result.original.contentType).toBe('image/webp');
+    expect(result.thumbnail.contentType).toBe('image/webp');
+    expect(result.thumbnail.buffer.byteLength).toBeLessThanOrEqual(90_000);
+  });
+
   it('stores a sketch as a bounded WebP image', async () => {
     const result = await optimizeImageForStorage(await makeMarkedPortrait(), 'sketch');
     const metadata = await sharp(result.buffer).metadata();

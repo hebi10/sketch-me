@@ -25,6 +25,7 @@ describe('createSketchbookDraft', () => {
       manageTokenHash: 'hashed-token',
       participantLimit: 20,
       participantCount: 0,
+      entitlements: { watermarkFree: false },
       referenceImagePath: null,
       referenceImageEnabled: false,
       moderationStatus: 'ACTIVE',

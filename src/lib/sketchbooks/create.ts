@@ -34,6 +34,7 @@ export function createSketchbookDraft({
     ownerDrawingPath,
     referenceImagePath,
     referenceImageEnabled: Boolean(referenceImagePath),
+    entitlements: { watermarkFree: false },
     participantLimit: 20,
     participantCount: 0,
     status: 'PUBLIC',

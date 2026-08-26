@@ -35,6 +35,9 @@ function toDate(value: unknown) {
 }
 
 function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
+  const entitlements = data.entitlements && typeof data.entitlements === 'object'
+    ? data.entitlements as Record<string, unknown>
+    : {};
   return {
     id,
     publicId: String(data.publicId),
@@ -46,6 +49,7 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     ownerDrawingPath: data.ownerDrawingPath ? String(data.ownerDrawingPath) : null,
     referenceImagePath: data.referenceImagePath ? String(data.referenceImagePath) : null,
     referenceImageEnabled: Boolean(data.referenceImageEnabled),
+    entitlements: { watermarkFree: entitlements.watermarkFree === true },
     participantLimit: Number(data.participantLimit),
     participantCount: Number(data.participantCount),
     status: data.status as Sketchbook['status'],
@@ -77,12 +81,17 @@ export async function findSketchbookByPublicId(publicId: string) {
 }
 
 function toDrawing(id: string, data: Record<string, unknown>): Drawing {
+  const createdAt = toDate(data.createdAt);
   return {
     id,
     sketchbookId: String(data.sketchbookId),
     sketchbookPublicId: String(data.sketchbookPublicId ?? ''),
     sketchbookName: String(data.sketchbookName ?? ''),
     imagePath: String(data.imagePath),
+    thumbnailPath: data.thumbnailPath ? String(data.thumbnailPath) : null,
+    publicImageVersion: data.publicImageVersion
+      ? String(data.publicImageVersion)
+      : createdAt.getTime().toString(36),
     authorName: String(data.authorName),
     message: data.message ? String(data.message) : null,
     usedReferenceImage: Boolean(data.usedReferenceImage),
@@ -90,7 +99,7 @@ function toDrawing(id: string, data: Record<string, unknown>): Drawing {
     status: data.status as Drawing['status'],
     moderationStatus: data.moderationStatus === 'BLOCKED' ? 'BLOCKED' : 'ACTIVE',
     moderatedAt: data.moderatedAt ? toDate(data.moderatedAt) : null,
-    createdAt: toDate(data.createdAt),
+    createdAt,
     updatedAt: toDate(data.updatedAt),
   };
 }

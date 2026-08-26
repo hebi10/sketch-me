@@ -1,6 +1,11 @@
 import sharp from 'sharp';
 
-export type ImageStorageProfile = 'sketch' | 'reference';
+export type ImageStorageProfile = 'sketch' | 'reference' | 'thumbnail';
+
+export interface OptimizedImage {
+  buffer: Buffer;
+  contentType: 'image/webp';
+}
 
 const profiles = {
   sketch: {
@@ -17,6 +22,13 @@ const profiles = {
     fallbackQuality: 52,
     maxBytes: 600_000,
   },
+  thumbnail: {
+    width: 320,
+    height: 320,
+    quality: 68,
+    fallbackQuality: 50,
+    maxBytes: 90_000,
+  },
 } as const;
 
 export class ImageOptimizationError extends Error {}
@@ -28,7 +40,7 @@ async function encodeWebp(
   scale = 1,
 ) {
   const settings = profiles[profile];
-  const resizeOptions = profile === 'sketch'
+  const resizeOptions = profile !== 'reference'
     ? {
         width: Math.round(settings.width * scale),
         height: Math.round(settings.height * scale),
@@ -55,7 +67,7 @@ export async function optimizeImageForStorage(input: Buffer, profile: ImageStora
   try {
     let buffer = await encodeWebp(input, profile, settings.quality);
     if (buffer.byteLength > settings.maxBytes) {
-      buffer = await encodeWebp(input, profile, settings.fallbackQuality, profile === 'sketch' ? 1 : 0.85);
+      buffer = await encodeWebp(input, profile, settings.fallbackQuality, profile === 'reference' ? 0.85 : 1);
     }
     if (buffer.byteLength > settings.maxBytes) {
       throw new ImageOptimizationError(
@@ -67,4 +79,17 @@ export async function optimizeImageForStorage(input: Buffer, profile: ImageStora
     if (error instanceof ImageOptimizationError) throw error;
     throw new ImageOptimizationError('이미지를 읽거나 WebP로 변환하지 못했어요. 다른 이미지를 선택해 주세요.');
   }
+}
+
+export function optimizeDrawingThumbnail(input: Buffer) {
+  return optimizeImageForStorage(input, 'thumbnail');
+}
+
+export async function optimizeDrawingImages(input: Buffer) {
+  const [original, thumbnail] = await Promise.all([
+    optimizeImageForStorage(input, 'sketch'),
+    optimizeDrawingThumbnail(input),
+  ]);
+
+  return { original, thumbnail };
 }

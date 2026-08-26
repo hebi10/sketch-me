@@ -1,11 +1,34 @@
 import {
   getDrawingImagePath,
+  getDrawingThumbnailPath,
   getOwnerDrawingPath,
   isDrawingImagePathFor,
+  isDrawingThumbnailPathFor,
   isOwnerDrawingPathFor,
 } from '@/lib/firebase/storage';
 
 describe('drawing Storage path', () => {
+  it('그림별 결정적 WebP 썸네일 경로만 허용한다', () => {
+    expect(getDrawingThumbnailPath('book-1', 'draw-1')).toBe(
+      'sketchbooks/book-1/drawings/draw-1/thumbnail.webp',
+    );
+    expect(isDrawingThumbnailPathFor(
+      'sketchbooks/book-1/drawings/draw-1/thumbnail.webp',
+      'book-1',
+      'draw-1',
+    )).toBe(true);
+    expect(isDrawingThumbnailPathFor(
+      'sketchbooks/book-1/drawings/draw-1/%2E%2E/original.webp',
+      'book-1',
+      'draw-1',
+    )).toBe(false);
+    expect(isDrawingThumbnailPathFor(
+      'sketchbooks/other-book/drawings/draw-1/thumbnail.webp',
+      'book-1',
+      'draw-1',
+    )).toBe(false);
+  });
+
   it('현재 canonical 경로와 실제 이전 앱의 확장자 없는 경로만 허용한다', () => {
     expect(getDrawingImagePath('book-1', 'draw-1')).toBe(
       'sketchbooks/book-1/drawings/draw-1/original.webp',

@@ -10,6 +10,7 @@ describe('createDrawingDraft', () => {
       sketchbookPublicId: 'public-1',
       sketchbookName: '내 이름',
       imagePath: 'sketchbooks/book_123/drawings/drawing_123/original',
+      thumbnailPath: 'sketchbooks/book_123/drawings/drawing_123/thumbnail.webp',
       authorName: '  수연 ',
       message: '  늘 응원해! ',
       usedReferenceImage: false,
@@ -25,6 +26,8 @@ describe('createDrawingDraft', () => {
       bestRank: null,
       moderationStatus: 'ACTIVE',
       moderatedAt: null,
+      thumbnailPath: 'sketchbooks/book_123/drawings/drawing_123/thumbnail.webp',
+      publicImageVersion: expect.stringMatching(/^[0-9a-f-]{36}$/),
       status: 'VISIBLE',
     });
   });

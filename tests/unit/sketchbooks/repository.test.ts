@@ -78,7 +78,12 @@ describe('공개 그림 저장소 운영자 차단', () => {
     });
 
     await expect(listVisibleDrawings('book-1')).resolves.toEqual([
-      expect.objectContaining({ id: 'active-drawing', moderationStatus: 'ACTIVE' }),
+      expect.objectContaining({
+        id: 'active-drawing',
+        moderationStatus: 'ACTIVE',
+        publicImageVersion: createdAt.getTime().toString(36),
+        thumbnailPath: null,
+      }),
     ]);
     expect(where).toHaveBeenCalledWith('status', '==', 'VISIBLE');
     expect(query.limit).not.toHaveBeenCalled();

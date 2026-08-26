@@ -1,4 +1,5 @@
 import type { Drawing } from '@/lib/domain/types';
+import { randomUUID } from 'node:crypto';
 
 interface CreateDrawingDraftParams {
   id: string;
@@ -6,6 +7,7 @@ interface CreateDrawingDraftParams {
   sketchbookPublicId: string;
   sketchbookName: string;
   imagePath: string;
+  thumbnailPath: string;
   authorName: string;
   message?: string;
   usedReferenceImage: boolean;
@@ -18,6 +20,7 @@ export function createDrawingDraft({
   sketchbookPublicId,
   sketchbookName,
   imagePath,
+  thumbnailPath,
   authorName,
   message,
   usedReferenceImage,
@@ -31,6 +34,8 @@ export function createDrawingDraft({
     sketchbookPublicId,
     sketchbookName,
     imagePath,
+    thumbnailPath,
+    publicImageVersion: randomUUID(),
     authorName: authorName.trim(),
     message: trimmedMessage || null,
     usedReferenceImage,

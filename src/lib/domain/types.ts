@@ -5,6 +5,10 @@ export type PurchaseStatus = 'READY' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 export type PurchaseProductId = 'FRIENDS_10' | 'FRIENDS_50' | 'FRIENDS_100';
 export type ShareType = 'SELF_VS_FRIENDS' | 'FRIENDS_BEST';
 
+export interface SketchbookEntitlements {
+  watermarkFree: boolean;
+}
+
 export interface Sketchbook {
   id: string;
   publicId: string;
@@ -16,6 +20,7 @@ export interface Sketchbook {
   ownerDrawingPath: string | null;
   referenceImagePath: string | null;
   referenceImageEnabled: boolean;
+  entitlements: SketchbookEntitlements;
   participantLimit: number;
   participantCount: number;
   status: SketchbookStatus;
@@ -31,6 +36,8 @@ export interface Drawing {
   sketchbookPublicId: string;
   sketchbookName: string;
   imagePath: string;
+  thumbnailPath: string | null;
+  publicImageVersion: string;
   authorName: string;
   message: string | null;
   usedReferenceImage: boolean;
