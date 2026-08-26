@@ -23,6 +23,7 @@ interface StoryImageMakerProps {
   drawings: StoryDrawing[];
   name: string;
   publicUrl: string;
+  watermarkFree: boolean;
 }
 
 async function loadImage(source: string) {
@@ -58,7 +59,7 @@ function setFittedFont(
   }
 }
 
-export function StoryImageMaker({ backgroundImage, drawings, name, publicUrl }: StoryImageMakerProps) {
+export function StoryImageMaker({ backgroundImage, drawings, name, publicUrl, watermarkFree }: StoryImageMakerProps) {
   const [status, setStatus] = useState<string | null>(null);
 
   async function download() {
@@ -105,6 +106,19 @@ export function StoryImageMaker({ backgroundImage, drawings, name, publicUrl }: 
         context.font = slot.rank === 1 ? `600 30px ${storyStyle.fontFamily}` : `600 24px ${storyStyle.fontFamily}`;
         context.textAlign = 'left';
         context.fillText(`BEST ${slot.rank}`, slot.x + 14, slot.y + (slot.rank === 1 ? 39 : 33));
+        context.textAlign = 'center';
+      }
+
+      if (!watermarkFree) {
+        const watermark = await loadImage('/brand/sketchbook-watermark.webp');
+        context.save();
+        context.globalAlpha = 0.5;
+        context.drawImage(watermark, 758, 205, 58, 58);
+        context.fillStyle = storyStyle.ink;
+        context.font = `600 25px ${storyStyle.fontFamily}`;
+        context.textAlign = 'left';
+        context.fillText('스캐치북', 826, 243);
+        context.restore();
         context.textAlign = 'center';
       }
 

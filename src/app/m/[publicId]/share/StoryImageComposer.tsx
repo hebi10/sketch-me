@@ -4,18 +4,22 @@ import Image from 'next/image';
 import { useState } from 'react';
 
 import { StoryImageMaker, type StoryDrawing } from './StoryImageMaker';
+import { WatermarkPurchaseButton } from './WatermarkPurchaseButton';
 import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
 import { getStoryTheme, storyThemes } from '@/lib/share/story-themes';
 import { storyStyle } from '@/lib/share/story-style';
 
 interface StoryImageComposerProps {
   drawings: StoryDrawing[];
+  initialWatermarkFree: boolean;
   name: string;
+  publicId: string;
   publicUrl: string;
 }
 
-export function StoryImageComposer({ drawings, name, publicUrl }: StoryImageComposerProps) {
+export function StoryImageComposer({ drawings, initialWatermarkFree, name, publicId, publicUrl }: StoryImageComposerProps) {
   const [themeId, setThemeId] = useState<(typeof storyThemes)[number]['id']>(storyThemes[0].id);
+  const [watermarkFree, setWatermarkFree] = useState(initialWatermarkFree);
   const theme = getStoryTheme(themeId);
 
   return (
@@ -63,9 +67,20 @@ export function StoryImageComposer({ drawings, name, publicUrl }: StoryImageComp
           <strong>나도 스케치북에 그림 남기기</strong>
           <span>{publicUrl}</span>
         </div>
+        {!watermarkFree ? (
+          <div className="story-watermark">
+            <Image alt="스캐치북 워터마크" height={48} src="/brand/sketchbook-watermark.webp" unoptimized width={48} />
+            <span>스캐치북</span>
+          </div>
+        ) : null}
       </section>
       <p className="story-output-meta">1080 × 1440 · 3:4 공유 이미지</p>
-      <StoryImageMaker backgroundImage={theme.backgroundImage} drawings={drawings} name={name} publicUrl={publicUrl} />
+      {watermarkFree ? (
+        <p className="watermark-applied" role="status">워터마크 제거가 적용되어 있어요.</p>
+      ) : (
+        <WatermarkPurchaseButton onPurchased={() => setWatermarkFree(true)} publicId={publicId} />
+      )}
+      <StoryImageMaker backgroundImage={theme.backgroundImage} drawings={drawings} name={name} publicUrl={publicUrl} watermarkFree={watermarkFree} />
     </>
   );
 }

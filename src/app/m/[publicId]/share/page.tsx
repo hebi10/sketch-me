@@ -37,7 +37,13 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
         <span className="header-title">스토리 이미지</span>
         <span aria-hidden="true" className="header-balance" />
       </header>
-      <StoryImageComposer drawings={bestDrawings} name={sketchbook.name} publicUrl={publicPath} />
+      <StoryImageComposer
+        drawings={bestDrawings}
+        initialWatermarkFree={sketchbook.entitlements.watermarkFree}
+        name={sketchbook.name}
+        publicId={publicId}
+        publicUrl={publicPath}
+      />
     </main>
   );
 }
