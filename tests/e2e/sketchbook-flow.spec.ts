@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { expect, test } from '@playwright/test';
+import sharp from 'sharp';
 
 async function drawOnCanvas(page: import('@playwright/test').Page) {
   const canvas = page.locator('canvas').first();
@@ -64,8 +65,8 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await ownerPage.getByRole('button', { name: '내 스캐치북 관리하기' }).click();
   await expect(ownerPage.getByText(`${uniqueName}님의 스케치북`)).toBeVisible();
   await expect(ownerPage.getByRole('heading', { name: '친구들이 그린 나' }).first()).toBeVisible();
-  await ownerPage.getByRole('button', { name: '저장 공간 확장하기' }).click();
-  await expect(ownerPage.getByRole('dialog', { name: '저장 공간 확장하기' })).toBeVisible();
+  await ownerPage.getByRole('button', { name: '친구 그림 더 추가하기' }).click();
+  await expect(ownerPage.getByRole('dialog', { name: '상품 선택하기' })).toBeVisible();
   await ownerPage.getByRole('radio', { name: /50명 추가.*4,490원/ }).check();
   await ownerPage.getByRole('button', { name: '4,490원 모의 결제하기' }).click();
   await expect(ownerPage.getByText('모의 결제가 완료되어 친구 그림 50개가 추가됐어요.')).toBeVisible();
@@ -90,12 +91,18 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await friendPage.getByRole('button', { name: '그림 남기기' }).click();
   await expect(friendPage.getByText('그림을 남겼어요. 고마워요!')).toBeVisible();
   const publicDrawingImage = friendPage.getByRole('img', { name: '모바일 친구님의 그림' });
-  await expect(publicDrawingImage).toHaveAttribute('src', /\/api\/sketchbooks\/[^/]+\/drawings\/[^/]+\/image$/);
+  await expect(publicDrawingImage).toHaveAttribute('src', /\/api\/sketchbooks\/[^/]+\/drawings\/[^/]+\/thumbnail\?v=[^&]+$/);
   const publicDrawingImagePath = await publicDrawingImage.getAttribute('src');
   const publicDrawingImageResponse = await friendPage.request.get(
     new URL(publicDrawingImagePath!, friendPage.url()).href,
   );
-  expect(publicDrawingImageResponse.headers()['cache-control']).toBe('private, no-store');
+  expect(publicDrawingImageResponse.headers()['cache-control']).toBe('public, max-age=300, s-maxage=300, stale-while-revalidate=60');
+  expect(publicDrawingImageResponse.headers()['content-type']).toBe('image/webp');
+  expect(await sharp(await publicDrawingImageResponse.body()).metadata()).toMatchObject({
+    format: 'webp',
+    height: 320,
+    width: 320,
+  });
   const optimizedPublicDrawingResponse = await friendPage.request.get(
     `/_next/image?url=${encodeURIComponent(publicDrawingImagePath!)}&w=640&q=75`,
   );
@@ -132,11 +139,15 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   const storyPreview = managerPage.getByRole('region', { name: '스토리 이미지 미리보기' });
   await expect(storyPreview).toHaveCSS('background-image', /sketchbook-share-background\.webp/);
   await expect(storyPreview.getByText('나도 스케치북에 그림 남기기')).toBeVisible();
+  await expect(managerPage.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
   const previewRatio = await storyPreview.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
     return bounds.width / bounds.height;
   });
   expect(previewRatio).toBeCloseTo(3 / 4, 2);
+  await managerPage.getByRole('button', { name: '워터마크 없이 저장하기 · 990원' }).click();
+  await expect(managerPage.getByText('워터마크 제거가 적용되어 있어요.')).toBeVisible();
+  await expect(managerPage.getByRole('img', { name: '스캐치북 워터마크' })).toHaveCount(0);
   const downloadPromise = managerPage.waitForEvent('download', { timeout: 15_000 });
   await managerPage.getByRole('button', { name: 'PNG로 저장하기' }).click({ force: true });
   const download = await downloadPromise;

@@ -281,7 +281,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         {ownerDrawingPath ? (
           <figure className="owner-original-card">
             <figcaption><span>직접 그린 내 모습</span><b>원본</b></figcaption>
-            <Image alt="직접 그린 내 모습" height={600} src={`/api/manage/${publicId}/owner/image`} unoptimized width={600} />
+            <Image alt="직접 그린 내 모습" height={600} loading="eager" src={`/api/manage/${publicId}/owner/image`} unoptimized width={600} />
           </figure>
         ) : null}
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>

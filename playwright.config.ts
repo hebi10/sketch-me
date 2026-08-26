@@ -66,6 +66,11 @@ export default defineConfig({
       testIgnore: /admin-flow\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
-    { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 7'] },
+      // The mobile flow mutates one shared Firebase Emulator project and must stay deterministic.
+      workers: 1,
+    },
   ],
 });

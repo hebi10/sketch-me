@@ -65,6 +65,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       'src',
       expect.stringContaining('/api/manage/public-1/owner/image'),
     );
+    expect(screen.getByRole('img', { name: '직접 그린 내 모습' })).toHaveAttribute('loading', 'eager');
   });
 
   it('직접 그린 내 모습이 없으면 원본 영역을 표시하지 않는다', () => {

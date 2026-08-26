@@ -15,7 +15,7 @@ test('320×568 첫 화면에서 CTA와 개인정보 안내 링크를 바로 사�
   await page.goto('/');
 
   await expect(page.getByRole('link', { name: '내 스캐치북 만들기' })).toBeInViewport({ ratio: 1 });
-  const footerLink = page.getByRole('link', { name: '개인정보 처리 안내' });
+  const footerLink = page.getByRole('link', { name: '개인정보 처리방침' }).last();
   await expect(footerLink).toBeVisible();
   expect((await footerLink.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 });

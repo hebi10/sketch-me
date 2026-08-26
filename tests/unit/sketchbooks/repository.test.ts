@@ -61,7 +61,7 @@ describe('공개 그림 저장소 운영자 차단', () => {
   });
 
   it('VISIBLE 전체 결과에서 BLOCKED 20개 뒤의 ACTIVE 그림도 누락 없이 반환한다', async () => {
-    const { publicImageVersion: _publicImageVersion, ...legacyDrawing } = drawing;
+    const legacyDrawing = { ...drawing, publicImageVersion: undefined };
     const documents = [
       ...Array.from({ length: 20 }, (_, index) => ({
         data: () => ({ ...legacyDrawing, id: `blocked-${index}`, moderationStatus: 'BLOCKED' }),
