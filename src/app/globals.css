@@ -356,7 +356,7 @@ a { color: inherit; text-decoration: none; }
 
 .sketch-editor--fullscreen .editor-control-panel {
   bottom: max(10px, env(safe-area-inset-bottom));
-  left: calc(50% - 33px);
+  left: calc(50%);
   max-height: min(52dvh, 430px);
   max-width: 650px;
   overflow-y: auto;

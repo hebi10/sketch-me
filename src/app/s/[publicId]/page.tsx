@@ -146,7 +146,7 @@ export default async function PublicSketchbookPage({
           <p>이 스케치북의 첫 장을 열어 주세요. 기억나는 모습 그대로면 충분해요.</p>
           {isFull ? <span aria-disabled="true" className="button button--disabled">친구 그림 접수 마감</span> : <Link className="button button--primary" href={`/s/${publicId}/draw`}>첫 그림 남기기</Link>}
           <div className="public-empty-create">
-            <p>나도 친구들에게 그림을 받아보고 싶다면</p>
+            <p>나도 친구들에게 그림을 받아보고 싶다면 ↓</p>
             <Link className="button button--secondary" href="/create">내 스케치북 만들기</Link>
           </div>
         </section>
