@@ -359,6 +359,25 @@ a { color: inherit; text-decoration: none; }
 
 .fullscreen-controls .fullscreen-confirm { padding-inline: 14px; width: auto; }
 
+.fullscreen-import {
+  align-items: center;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  font-size: .75rem;
+  height: 52px;
+  justify-content: center;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.fullscreen-import input { height: 1px; opacity: 0; position: absolute; width: 1px; }
+
+.fullscreen-import:focus-within { border-color: var(--accent); outline: 3px solid color-mix(in srgb, var(--accent) 18%, white); }
+
 .fullscreen-drawing-error {
   background: var(--canvas);
   border: 1px solid var(--line);

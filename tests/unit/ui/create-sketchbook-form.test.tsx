@@ -1,0 +1,53 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
+
+import { CreateSketchbookForm } from '@/app/create/CreateSketchbookForm';
+
+const { push } = vi.hoisted(() => ({ push: vi.fn() }));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push }),
+}));
+
+const draftKey = 'sketch-me:create-draft:v1';
+
+describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    vi.stubGlobal('fetch', vi.fn());
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
+  });
+
+  it('세션 초안의 이름, PIN, 힌트를 복원한다', async () => {
+    sessionStorage.setItem(draftKey, JSON.stringify({ version: 1, name: '해비', managePin: '1234', managePinHint: '좋아하는 숫자' }));
+    render(<CreateSketchbookForm />);
+
+    await waitFor(() => expect(screen.getByLabelText('이름 또는 애칭')).toHaveValue('해비'));
+    expect(screen.getByLabelText('관리 비밀번호')).toHaveValue('1234');
+    expect(screen.getByLabelText(/비밀번호 힌트/)).toHaveValue('좋아하는 숫자');
+  });
+
+  it('숫자 네 자리가 아닌 PIN에는 제품 안내 문구를 표시한다', async () => {
+    render(<CreateSketchbookForm />);
+
+    fireEvent.invalid(screen.getByLabelText('관리 비밀번호'));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('관리 비밀번호는 숫자 4자리로 입력해 주세요.'));
+  });
+
+  it('생성에 성공하면 세션 초안을 지운다', async () => {
+    sessionStorage.setItem(draftKey, JSON.stringify({ version: 1, name: '해비', managePin: '1234', managePinHint: '좋아하는 숫자' }));
+    vi.mocked(fetch).mockResolvedValue({
+      json: async () => ({ manageUrl: '/m/abc', publicUrl: '/s/abc' }),
+      ok: true,
+    } as Response);
+    render(<CreateSketchbookForm />);
+    fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
+    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+
+    fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
+    expect(sessionStorage.getItem(draftKey)).toBeNull();
+  });
+});

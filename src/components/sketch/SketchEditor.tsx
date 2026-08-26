@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 import {
   createCanvasHistory,
@@ -22,13 +22,15 @@ export interface SketchEditorHandle {
 
 interface SketchEditorProps {
   ariaLabel: string;
+  initialDrawingDataUrl?: string | null;
+  onDrawingChange?: (dataUrl: string | null) => void;
   referenceImageUrl?: string | null;
 }
 
 type EditorTab = 'draw' | 'reference' | 'edit';
 
 export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
-  function SketchEditor({ ariaLabel, referenceImageUrl }, ref) {
+  function SketchEditor({ ariaLabel, initialDrawingDataUrl = null, onDrawingChange, referenceImageUrl }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const editorRef = useRef<HTMLElement>(null);
     const fullscreenEntryRef = useRef<HTMLButtonElement>(null);
@@ -51,9 +53,9 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
     const [drawingError, setDrawingError] = useState<string | null>(null);
 
-    function context() {
+    const context = useCallback(() => {
       return canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
-    }
+    }, []);
 
     function canvasPoint(event: React.PointerEvent<HTMLCanvasElement>) {
       const canvas = canvasRef.current;
@@ -72,7 +74,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       setHistory((current) => current ? pushSnapshot(current, next) : createCanvasHistory(next));
     }
 
-    function canvasHasDrawing() {
+    const canvasHasDrawing = useCallback(() => {
       const drawingContext = context();
       if (!drawingContext) return false;
       const pixels = drawingContext.getImageData(0, 0, width, height).data;
@@ -80,7 +82,17 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
         if (pixels[index] !== 0) return true;
       }
       return false;
-    }
+    }, [context]);
+
+    const requestExit = useCallback(() => {
+      if (canvasHasDrawing() && !window.confirm('그림을 그만두면 현재 작업이 사라집니다. 나가시겠어요?')) return;
+      const drawingContext = context();
+      drawingContext?.clearRect(0, 0, width, height);
+      setHistory((current) => current ? createCanvasHistory(current.snapshots[0]) : current);
+      setControlsOpen(false);
+      setDrawingError(null);
+      setIsFullscreen(false);
+    }, [canvasHasDrawing, context]);
 
     function createDrawingOutput() {
       const canvas = canvasRef.current;
@@ -108,6 +120,21 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }, []);
 
     useEffect(() => {
+      if (!initialDrawingDataUrl) return;
+      const drawingContext = context();
+      if (!drawingContext) return;
+      const image = new window.Image();
+      image.onload = () => {
+        drawingContext.globalAlpha = 1;
+        drawingContext.clearRect(0, 0, width, height);
+        drawingContext.drawImage(image, 0, 0, width, height);
+        snapshot();
+        setConfirmedDrawing(initialDrawingDataUrl);
+      };
+      image.src = initialDrawingDataUrl;
+    }, [context, initialDrawingDataUrl]);
+
+    useEffect(() => {
       if (!isFullscreen) {
         if (fullscreenRestoreFocusRef.current) {
           fullscreenRestoreFocusRef.current = false;
@@ -129,8 +156,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       }
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
-          setControlsOpen(false);
-          setIsFullscreen(false);
+          requestExit();
           return;
         }
         if (event.key !== 'Tab' || !editor) return;
@@ -156,7 +182,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
         inertSiblings.forEach(({ element, wasInert }) => { if (!wasInert) element.removeAttribute('inert'); });
         fullscreenRestoreFocusRef.current = true;
       };
-    }, [isFullscreen]);
+    }, [isFullscreen, requestExit]);
 
     function drawLine(from: { x: number; y: number }, to: { x: number; y: number }) {
       const drawingContext = context();
@@ -220,6 +246,44 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       snapshot();
     }
 
+    function importDrawing(event: React.ChangeEvent<HTMLInputElement>) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        setDrawingError('PNG, JPG, WEBP 그림만 불러올 수 있어요.');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        setDrawingError('그림 파일은 2MB 이하로 선택해 주세요.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result !== 'string') {
+          setDrawingError('그림 파일을 읽지 못했습니다. 다른 파일을 선택해 주세요.');
+          return;
+        }
+        const image = new window.Image();
+        image.onload = () => {
+          const drawingContext = context();
+          if (!drawingContext || !image.naturalWidth || !image.naturalHeight) return;
+          const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+          const drawWidth = image.naturalWidth * scale;
+          const drawHeight = image.naturalHeight * scale;
+          drawingContext.globalAlpha = 1;
+          drawingContext.clearRect(0, 0, width, height);
+          drawingContext.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+          snapshot();
+          setDrawingError(null);
+        };
+        image.onerror = () => setDrawingError('그림 파일을 열지 못했습니다. 다른 파일을 선택해 주세요.');
+        image.src = reader.result;
+      };
+      reader.onerror = () => setDrawingError('그림 파일을 읽지 못했습니다. 다른 파일을 선택해 주세요.');
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+
     function referencePointerDown(event: React.PointerEvent<HTMLDivElement>) {
       if (tab !== 'reference') return;
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -258,6 +322,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
         return;
       }
       setConfirmedDrawing(output);
+      onDrawingChange?.(output);
       setControlsOpen(false);
       setDrawingError(null);
       setIsFullscreen(false);
@@ -294,7 +359,9 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
         {isFullscreen ? (
           <><div className="fullscreen-controls">
               <button className="fullscreen-confirm" onClick={confirmDrawing} ref={fullscreenConfirmRef} type="button">확인</button>
+              <button aria-label="그리기 나가기" className="fullscreen-exit" onClick={requestExit} type="button"><Image alt="" height={30} src="/icons/fullscreen-back.webp" width={30} /></button>
               <button aria-expanded={controlsOpen} aria-label={controlsOpen ? '그리기 도구 닫기' : '그리기 도구 열기'} onClick={() => setControlsOpen((current) => !current)} type="button"><Image alt="" height={30} src="/icons/drawing-controls.webp" width={30} /></button>
+              <label className="fullscreen-import" htmlFor="drawing-import">그림 불러오기<input accept="image/jpeg,image/png,image/webp" aria-label="완성된 그림 불러오기" id="drawing-import" onChange={importDrawing} type="file" /></label>
             </div>{drawingError ? <p className="fullscreen-drawing-error" role="alert">{drawingError}</p> : null}</>
         ) : null}
       </section>
