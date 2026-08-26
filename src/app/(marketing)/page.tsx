@@ -20,7 +20,7 @@ export default function LandingPage() {
       <section className="landing-hero" aria-labelledby="landing-title">
         <div className="landing-copy">
           <p className="eyebrow">내 이미지 스케치북</p>
-          <h1 id="landing-title">친구들이 보는 내 이미지는??</h1>
+          <h1 id="landing-title">친구들이 보는 내 모습은?</h1>
           <p>내 스캐치북을 채울 수 있게 친구들에게 공유해보세요.</p>
         </div>
 

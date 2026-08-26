@@ -39,13 +39,20 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
   const manageMainRef = useRef<HTMLElement>(null);
   const purchaseDialogRef = useRef<HTMLDialogElement>(null);
   const purchaseTriggerRef = useRef<HTMLButtonElement>(null);
+  const securityDialogRef = useRef<HTMLDialogElement>(null);
+  const securityTriggerRef = useRef<HTMLButtonElement>(null);
   const purchaseRequestIdRef = useRef('');
   const isPurchasingRef = useRef(false);
+  const isSavingSecurityRef = useRef(false);
   const items = drawings.filter((drawing) => drawing.status !== 'DELETED');
 
   useEffect(() => {
     isPurchasingRef.current = isPurchasing;
   }, [isPurchasing]);
+
+  useEffect(() => {
+    isSavingSecurityRef.current = isSavingSecurity;
+  }, [isSavingSecurity]);
 
   useEffect(() => {
     if (!purchaseOpen) return;
@@ -89,11 +96,58 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
     };
   }, [purchaseOpen]);
 
+  useEffect(() => {
+    if (!securityOpen) return;
+    const dialog = securityDialogRef.current;
+    const main = manageMainRef.current;
+    const trigger = securityTriggerRef.current;
+    if (!dialog || !main) return;
+    const previouslyInert = main.hasAttribute('inert');
+    main.setAttribute('inert', '');
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+
+    const focusableSelector = 'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (!isSavingSecurityRef.current) setSecurityOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = [...dialog.querySelectorAll<HTMLElement>(focusableSelector)];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    dialog.addEventListener('keydown', handleKeyDown);
+    dialog.querySelector<HTMLElement>(focusableSelector)?.focus();
+
+    return () => {
+      dialog.removeEventListener('keydown', handleKeyDown);
+      if (dialog.open && typeof dialog.close === 'function') dialog.close();
+      if (!previouslyInert) main.removeAttribute('inert');
+      trigger?.focus();
+    };
+  }, [securityOpen]);
+
   function openPurchaseDialog() {
     purchaseRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? `purchase_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     setMessage(null);
     setPurchaseError(null);
     setPurchaseOpen(true);
+  }
+
+  function openSecurityDialog() {
+    setSecurityMessage(null);
+    setSecurityOpen(true);
   }
 
   async function updateDrawing(drawingId: string, body: Record<string, unknown>) {
@@ -198,7 +252,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
 
   return (
     <>
-    <main className="manage-shell" ref={manageMainRef}>
+    <main className="manage-shell manage-system-sans" ref={manageMainRef}>
       <header className="public-header">
         <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">←</Link>
         <span className="header-title">내 스캐치북</span>
@@ -206,7 +260,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
           <Link href={`/s/${publicId}`}>친구 페이지 보기</Link>
           <Link href={`/m/${publicId}/share`}>스토리 이미지 만들기</Link>
           <ShareSketchbookButton menuItem name={name} publicId={publicId} />
-          <button onClick={() => setSecurityOpen(true)} type="button">관리 비밀번호 변경</button>
+          <button onClick={openSecurityDialog} ref={securityTriggerRef} type="button">관리 비밀번호 변경</button>
           <button onClick={logout} type="button">로그아웃</button>
         </HeaderMenu>
       </header>
@@ -307,8 +361,8 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         </div>
       ) : null}
       {securityOpen ? (
-        <div className="dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isSavingSecurity) setSecurityOpen(false); }}>
-          <form aria-labelledby="manage-security-title" className="dialog-panel manage-security-dialog" onSubmit={updateSecurity}>
+          <dialog aria-labelledby="manage-security-title" className="manage-security-dialog manage-security-modal manage-system-sans" onCancel={(event) => { event.preventDefault(); if (!isSavingSecurity) setSecurityOpen(false); }} ref={securityDialogRef}>
+          <form onSubmit={updateSecurity}>
             <div className="dialog-heading"><h2 id="manage-security-title">관리 비밀번호 변경</h2><button aria-label="비밀번호 변경 닫기" className="icon-button" disabled={isSavingSecurity} onClick={() => setSecurityOpen(false)} type="button">×</button></div>
             <p>새 비밀번호는 숫자 4자리예요. 비밀번호는 복구할 수 없어요.</p>
             <label className="field-label" htmlFor="current-manage-pin">현재 비밀번호</label>
@@ -320,7 +374,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
             {securityMessage ? <p className="form-error" role="alert">{securityMessage}</p> : null}
             <button className="button button--primary" disabled={isSavingSecurity} type="submit">{isSavingSecurity ? '변경하는 중...' : '비밀번호 변경하기'}</button>
           </form>
-        </div>
+          </dialog>
       ) : null}
     </>
   );

@@ -3,9 +3,19 @@ import { expect, test } from '@playwright/test';
 test('랜딩에서 스캐치북 생성으로 이동한다', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: '친구들이 보는 내 이미지는??' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '친구들이 보는 내 모습은?' })).toBeVisible();
   await page.getByRole('link', { name: '내 스캐치북 만들기' }).click();
 
   await expect(page).toHaveURL(/\/create$/);
   await expect(page.getByRole('heading', { name: '내 스캐치북 만들기' })).toBeVisible();
+});
+
+test('320×568 첫 화면에서 CTA와 개인정보 안내 링크를 바로 사용할 수 있다', async ({ page }) => {
+  await page.setViewportSize({ height: 568, width: 320 });
+  await page.goto('/');
+
+  await expect(page.getByRole('link', { name: '내 스캐치북 만들기' })).toBeInViewport({ ratio: 1 });
+  const footerLink = page.getByRole('link', { name: '개인정보 처리 안내' });
+  await expect(footerLink).toBeVisible();
+  expect((await footerLink.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 });

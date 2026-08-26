@@ -163,4 +163,46 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.getByRole('main')).not.toHaveAttribute('inert');
     expect(trigger).toHaveFocus();
   });
+
+  it('관리 비밀번호 변경을 네이티브 dialog로 열고 Escape 뒤 실행 버튼에 포커스를 되돌린다', () => {
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={5}
+        participantLimit={20}
+        publicId="public-4"
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: '관리 비밀번호 변경' });
+    fireEvent.click(trigger);
+
+    const dialog = screen.getByRole('dialog', { name: '관리 비밀번호 변경' });
+    expect(dialog.tagName).toBe('DIALOG');
+    expect(screen.getByRole('main')).toHaveAttribute('inert');
+    expect(screen.getByRole('button', { name: '비밀번호 변경 닫기' })).toHaveFocus();
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog', { name: '관리 비밀번호 변경' })).not.toBeInTheDocument();
+    expect(screen.getByRole('main')).not.toHaveAttribute('inert');
+    expect(trigger).toHaveFocus();
+  });
+
+  it('관리 화면의 운영 데이터는 시스템 고딕체 범위로 표시한다', () => {
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={5}
+        participantLimit={20}
+        publicId="public-5"
+      />,
+    );
+
+    expect(screen.getByRole('main')).toHaveClass('manage-system-sans');
+  });
 });
