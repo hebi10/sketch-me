@@ -32,4 +32,13 @@ describe('PrivacyPage', () => {
     expect(screen.getByText(/입력한 관리 비밀번호 원문은 서버에 저장하지 않습니다/)).toBeVisible();
     expect(screen.getByText(/생성 중에는 브라우저의 sessionStorage 초안에 임시 저장되며, 생성에 성공하거나 탭 또는 브라우저 세션이 끝나면 사라집니다/)).toBeVisible();
   });
+
+  it('갤러리 썸네일과 공개 캐시, 직접 삭제 동작을 안내한다', () => {
+    render(<PrivacyPage />);
+
+    expect(screen.getByText(/갤러리용 320px WebP 썸네일을 별도로 생성/)).toBeVisible();
+    expect(screen.getByText(/공개 갤러리의 썸네일은.*최대 약 5분간.*캐시/)).toBeVisible();
+    expect(screen.getByText(/숨김·삭제하면 새 공개 버전으로 바뀌거나 접근이 차단/)).toBeVisible();
+    expect(screen.getByText(/관리 화면에서 전체 삭제를 요청하면 먼저 공개 접근을 막고/)).toBeVisible();
+  });
 });

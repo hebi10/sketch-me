@@ -8,7 +8,7 @@ describe('TermsPage', () => {
     render(<TermsPage />);
 
     expect(screen.getByRole('heading', { name: '서비스 이용 및 결제 안내' })).toBeVisible();
-    expect(screen.getByText(/구매한 추가 인원은 서비스 운영 중 만료되지 않습니다/)).toBeVisible();
+    expect(screen.getByText(/구매한 추가 인원과 워터마크 제거 권한은 서비스 운영 중 만료되지 않습니다/)).toBeVisible();
     expect(screen.getByText(/구매일로부터 최소 1년간 서비스 이용을 보장/)).toBeVisible();
     expect(screen.getByText(/1년 안에 운영자 사유로 서비스를 종료하면 해당 구매 금액을 전액 환불/)).toBeVisible();
   });
@@ -19,6 +19,15 @@ describe('TermsPage', () => {
     expect(screen.getByText(/종료일 최소 30일 전/)).toBeVisible();
     expect(screen.getByText(/환불 대상을 확인한 날부터 3영업일 이내/)).toBeVisible();
     expect(screen.getByText(/현재는 실제 금액이 청구되지 않는 모의 결제/)).toBeVisible();
+  });
+
+  it('현재 인원 추가 가격과 워터마크 제거 상품을 정확히 안내한다', () => {
+    render(<TermsPage />);
+
+    expect(screen.getByText('친구 그림 10명 추가 · 990원')).toBeVisible();
+    expect(screen.getByText('친구 그림 50명 추가 · 4,490원')).toBeVisible();
+    expect(screen.getByText('친구 그림 100명 추가 · 8,490원')).toBeVisible();
+    expect(screen.getByText('결과 이미지 워터마크 제거 · 990원')).toBeVisible();
   });
 
   it('랜딩에서 개인정보와 이용·결제 정책으로 이동할 수 있다', () => {

@@ -69,7 +69,7 @@ export async function seedAdminScenario() {
       sketchbookName: '관리자 E2E',
       provider: 'MOCK',
       productType: 'FRIENDS_50',
-      amount: 3900,
+      amount: 4490,
       additionalLimit: 50,
       paymentStatus: 'SUCCEEDED',
       paidAt: FIXTURE_CREATED_AT,
