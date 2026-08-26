@@ -185,6 +185,7 @@ export async function updateDrawingForManagement(
   const changes = {
     ...update,
     ...(update.status === 'HIDDEN' ? { bestRank: null } : {}),
+    ...(update.status ? { publicImageVersion: randomUUID() } : {}),
     updatedAt: new Date(),
   };
 
@@ -225,12 +226,20 @@ export async function deleteDrawingForManagement(sketchbookId: string, drawingId
     }
     const drawing = drawingDocument.data();
     if (drawing?.status === 'DELETED') return null;
-    transaction.update(drawingReference, { status: 'DELETED', bestRank: null, updatedAt: new Date() });
+    transaction.update(drawingReference, {
+      status: 'DELETED',
+      bestRank: null,
+      publicImageVersion: randomUUID(),
+      updatedAt: new Date(),
+    });
     transaction.update(sketchbookReference, {
       participantCount: Math.max(0, Number(sketchbookDocument.data()?.participantCount) - 1),
       updatedAt: new Date(),
     });
-    return String(drawing?.imagePath ?? '');
+    return {
+      imagePath: String(drawing?.imagePath ?? ''),
+      thumbnailPath: drawing?.thumbnailPath ? String(drawing.thumbnailPath) : null,
+    };
   });
 }
 

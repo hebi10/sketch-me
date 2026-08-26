@@ -8,6 +8,7 @@ vi.mock('@/lib/firebase/admin', () => ({ getAdminFirestore }));
 
 import {
   createSketchbookDeletionJob,
+  deleteDrawingForManagement,
   deleteSketchbookDeletionJob,
   DrawingPublicPromotionBlockedError,
   listVisibleDrawings,
@@ -185,7 +186,47 @@ describe('공개 그림 저장소 운영자 차단', () => {
 
     await updateDrawingForManagement('book-1', 'drawing-1', { status: 'HIDDEN' });
 
-    expect(update).toHaveBeenCalledWith(expect.objectContaining({ bestRank: null, status: 'HIDDEN' }));
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({
+      bestRank: null,
+      publicImageVersion: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      status: 'HIDDEN',
+    }));
+  });
+
+  it('그림 삭제는 공개 버전을 바꾸고 원본·썸네일 정리 대상을 함께 반환한다', async () => {
+    const sketchbookReference = { id: 'book-1' };
+    const drawingReference = { id: 'drawing-1' };
+    const transaction = {
+      get: vi.fn()
+        .mockResolvedValueOnce({ data: () => ({ participantCount: 1 }), exists: true })
+        .mockResolvedValueOnce({
+          data: () => ({
+            imagePath: 'sketchbooks/book-1/drawings/drawing-1/original.webp',
+            status: 'VISIBLE',
+            thumbnailPath: 'sketchbooks/book-1/drawings/drawing-1/thumbnail.webp',
+          }),
+          exists: true,
+        }),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn(() => ({ doc: vi.fn(() => drawingReference) })),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<unknown>) => callback(transaction)),
+    });
+
+    await expect(deleteDrawingForManagement('book-1', 'drawing-1')).resolves.toEqual({
+      imagePath: 'sketchbooks/book-1/drawings/drawing-1/original.webp',
+      thumbnailPath: 'sketchbooks/book-1/drawings/drawing-1/thumbnail.webp',
+    });
+    expect(transaction.update).toHaveBeenCalledWith(drawingReference, expect.objectContaining({
+      publicImageVersion: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      status: 'DELETED',
+    }));
   });
 
   it('전체 삭제 시작 시 공개 접근을 막는 DELETED 상태를 먼저 기록한다', async () => {

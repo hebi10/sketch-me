@@ -29,6 +29,7 @@ const emptySketchbook: Sketchbook = {
   participantCount: 0,
   participantLimit: 20,
   publicId: 'public-1',
+  entitlements: { watermarkFree: false },
   referenceImageEnabled: false,
   referenceImagePath: null,
   status: 'PUBLIC',

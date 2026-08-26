@@ -1,6 +1,7 @@
 import type { ModerationStatus } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
 import type { Firestore } from 'firebase-admin/firestore';
+import { randomUUID } from 'node:crypto';
 
 type ModerationResult = {
   changed: boolean;
@@ -90,6 +91,7 @@ export async function setDrawingModeration(
     transaction.update(drawingReference, {
       moderatedAt: now,
       moderationStatus: input.moderationStatus,
+      publicImageVersion: randomUUID(),
     });
     transaction.set(firestore.collection('adminAuditLogs').doc(), {
       action: input.moderationStatus === 'BLOCKED'

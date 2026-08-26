@@ -54,7 +54,10 @@ describe('관리 그림 운영 상태 경계', () => {
       bucket: vi.fn(() => ({ file: vi.fn(() => ({ delete: fileDelete })) })),
     });
     clearBestDrawing.mockResolvedValue(undefined);
-    deleteDrawingForManagement.mockResolvedValue('sketchbooks/book-1/drawings/drawing-1.webp');
+    deleteDrawingForManagement.mockResolvedValue({
+      imagePath: 'sketchbooks/book-1/drawings/drawing-1/original.webp',
+      thumbnailPath: 'sketchbooks/book-1/drawings/drawing-1/thumbnail.webp',
+    });
     setBestDrawing.mockResolvedValue(undefined);
     updateDrawingForManagement.mockResolvedValue(undefined);
   });
@@ -88,6 +91,8 @@ describe('관리 그림 운영 상태 경계', () => {
 
     expect(response.status).toBe(200);
     expect(deleteDrawingForManagement).toHaveBeenCalledWith('book-1', 'drawing-1');
-    expect(fileDelete).toHaveBeenCalledWith({ ignoreNotFound: true });
+    expect(fileDelete).toHaveBeenCalledTimes(2);
+    expect(fileDelete).toHaveBeenNthCalledWith(1, { ignoreNotFound: true });
+    expect(fileDelete).toHaveBeenNthCalledWith(2, { ignoreNotFound: true });
   });
 });

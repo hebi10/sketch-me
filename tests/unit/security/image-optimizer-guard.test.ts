@@ -16,6 +16,7 @@ describe('Next image optimizer 공개 이미지 경계', () => {
 
   it.each([
     '/api/sketchbooks/public-1/drawings/drawing-1/image',
+    '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
     'http://localhost/api/sketchbooks/public-1/owner/image',
     'https://example.com/api/sketchbooks/public-1/reference/image?download=1',
     '%2Fapi%2Fsketchbooks%2Fpublic-1%2Fdrawings%2Fdrawing-1%2Fimage',
@@ -31,7 +32,6 @@ describe('Next image optimizer 공개 이미지 경계', () => {
   it.each([
     '/brand/sketchbook-kakao-share.webp',
     '/api/sketchbooks/public-1/profile/image',
-    '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail',
     'https://images.example.com/photo.webp',
   ])('일반 이미지 optimizer 요청 %s은 통과시킨다', (source) => {
     const response = proxy(optimizerRequest(source));

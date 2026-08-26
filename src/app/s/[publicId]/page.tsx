@@ -104,7 +104,7 @@ export default async function PublicSketchbookPage({
             <div className="friend-drawing-grid">
               {drawings.map((drawing, index) => (
                 <article className="friend-drawing-card" key={drawing.id}>
-                  <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} />
+                  <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/thumbnail?v=${encodeURIComponent(drawing.publicImageVersion)}`} unoptimized width={255} />
                   <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{formatTimeAgo(drawing.createdAt)}</span></div>
                 </article>
               ))}
@@ -122,7 +122,7 @@ export default async function PublicSketchbookPage({
                   <article className="best-drawing-card" key={rank}>
                     <div className="best-drawing-image">
                       <b>BEST {rank}</b>
-                      {drawing ? <Image alt={`BEST ${rank}, ${drawing.authorName}님의 그림`} height={255} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} /> : <span>선정 전</span>}
+                      {drawing ? <Image alt={`BEST ${rank}, ${drawing.authorName}님의 그림`} height={255} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/thumbnail?v=${encodeURIComponent(drawing.publicImageVersion)}`} unoptimized width={255} /> : <span>선정 전</span>}
                     </div>
                     <p>{drawing?.authorName ?? '기다리는 중'}</p>
                   </article>
@@ -134,7 +134,7 @@ export default async function PublicSketchbookPage({
           <section className="public-feed-section recent-section" aria-labelledby="recent-drawing-heading">
             <div className="section-title-row"><h2 id="recent-drawing-heading">◷ 최근 올라온 그림</h2></div>
             <article className="recent-drawing-card">
-              <Image alt={`${recentDrawing?.authorName}님의 최근 그림`} height={90} src={`/api/sketchbooks/${publicId}/drawings/${recentDrawing?.id}/image`} unoptimized width={90} />
+              <Image alt={`${recentDrawing?.authorName}님의 최근 그림`} height={90} src={`/api/sketchbooks/${publicId}/drawings/${recentDrawing?.id}/thumbnail?v=${encodeURIComponent(recentDrawing?.publicImageVersion ?? '')}`} unoptimized width={90} />
               <div><strong>{recentDrawing?.authorName}</strong><span>{recentDrawing ? formatTimeAgo(recentDrawing.createdAt) : null}</span>{recentDrawing?.message ? <p>{recentDrawing.message}</p> : null}</div>
             </article>
             <p className="kind-comment">✎ 따뜻한 말 한마디가 큰 힘이 돼요. 서로 존중하는 댓글을 남겨주세요!</p>

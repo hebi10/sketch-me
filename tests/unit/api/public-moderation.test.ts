@@ -64,6 +64,7 @@ const sketchbook = {
   participantCount: 1,
   participantLimit: 20,
   publicId: 'public-1',
+  entitlements: { watermarkFree: false },
   referenceImageEnabled: true,
   referenceImagePath: 'sketchbooks/book-1/reference.webp',
   status: 'PUBLIC' as const,
@@ -75,6 +76,8 @@ const drawing = {
   createdAt,
   id: 'drawing-1',
   imagePath: 'sketchbooks/book-1/drawings/drawing-1.webp',
+  thumbnailPath: 'sketchbooks/book-1/drawings/drawing-1/thumbnail.webp',
+  publicImageVersion: 'version-1',
   message: null,
   moderatedAt: null,
   moderationStatus: 'ACTIVE' as const,
@@ -171,15 +174,15 @@ describe('공개 경로 운영자 차단', () => {
 
     expect(screen.getByRole('img', { name: '친구님의 그림' })).toHaveAttribute(
       'src',
-      '/api/sketchbooks/public-1/drawings/drawing-1/image',
+      '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
     );
     expect(screen.getByRole('img', { name: 'BEST 1, 친구님의 그림' })).toHaveAttribute(
       'src',
-      '/api/sketchbooks/public-1/drawings/drawing-1/image',
+      '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
     );
     expect(screen.getByRole('img', { name: '친구님의 최근 그림' })).toHaveAttribute(
       'src',
-      '/api/sketchbooks/public-1/drawings/drawing-1/image',
+      '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
     );
   });
 

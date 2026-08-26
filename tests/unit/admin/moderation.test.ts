@@ -232,6 +232,7 @@ describe('admin moderation transactions', () => {
     expect(transaction.update).toHaveBeenCalledWith(drawingReference, {
       moderatedAt: now,
       moderationStatus: 'BLOCKED',
+      publicImageVersion: expect.stringMatching(/^[0-9a-f-]{36}$/),
     });
     expect(transaction.set).toHaveBeenCalledWith(auditReference, {
       action: 'BLOCK_DRAWING',
@@ -280,6 +281,7 @@ describe('admin moderation transactions', () => {
     expect(transaction.update).toHaveBeenCalledWith(expect.anything(), {
       moderatedAt: expect.any(Date),
       moderationStatus: 'ACTIVE',
+      publicImageVersion: expect.stringMatching(/^[0-9a-f-]{36}$/),
     });
     expect(transaction.set).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
       action: 'UNBLOCK_DRAWING',

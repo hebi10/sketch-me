@@ -46,9 +46,12 @@ export async function DELETE(
   const sketchbook = await getManagedSketchbook(publicId);
   if (!sketchbook) return NextResponse.json({ message: '관리 권한이 없습니다.' }, { status: 403 });
 
-  const imagePath = await deleteDrawingForManagement(sketchbook.id, drawingId);
-  if (imagePath) {
-    await getAdminStorage().bucket().file(imagePath).delete({ ignoreNotFound: true });
+  const imagePaths = await deleteDrawingForManagement(sketchbook.id, drawingId);
+  if (imagePaths) {
+    const paths = [imagePaths.imagePath, imagePaths.thumbnailPath].filter((path): path is string => Boolean(path));
+    await Promise.all(paths.map((path) => (
+      getAdminStorage().bucket().file(path).delete({ ignoreNotFound: true })
+    )));
   }
   return NextResponse.json({ ok: true });
 }

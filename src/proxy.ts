@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-const publicSketchbookImagePath = /^\/api\/sketchbooks\/[^/]+\/(?:drawings\/[^/]+\/image|owner\/image|reference\/image)\/?$/;
+const publicSketchbookImagePath = /^\/api\/sketchbooks\/[^/]+\/(?:drawings\/[^/]+\/(?:image|thumbnail)|owner\/image|reference\/image)\/?$/;
 
 function decodeImageSource(value: string) {
   let decoded = value;
