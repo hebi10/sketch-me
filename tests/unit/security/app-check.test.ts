@@ -37,6 +37,7 @@ describe('공개 mutation App Check 클라이언트 헤더', () => {
     vi.clearAllMocks();
     vi.resetModules();
     vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY', '');
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED', 'false');
   });
 
   afterEach(() => {
@@ -52,8 +53,20 @@ describe('공개 mutation App Check 클라이언트 헤더', () => {
     expect(getToken).not.toHaveBeenCalled();
   });
 
+  it('공개 활성 플래그가 비활성이면 사이트 키가 있어도 Firebase를 초기화하거나 토큰을 발급하지 않는다', async () => {
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY', 'public-site-key');
+    getToken.mockResolvedValue({ token: 'token-that-must-not-be-issued' });
+    const { getPublicMutationHeaders } = await import('@/lib/security/app-check-client');
+
+    await expect(getPublicMutationHeaders()).resolves.toEqual({});
+    expect(getFirebaseClientApp).not.toHaveBeenCalled();
+    expect(initializeAppCheck).not.toHaveBeenCalled();
+    expect(getToken).not.toHaveBeenCalled();
+  });
+
   it('사이트 키가 있으면 한 번만 지연 초기화하고 매 요청에 최신 토큰을 싣는다', async () => {
     vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY', 'public-site-key');
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED', 'true');
     const appCheck = { name: 'app-check' };
     initializeAppCheck.mockReturnValue(appCheck);
     getToken

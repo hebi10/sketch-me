@@ -52,7 +52,11 @@ export function CreateSketchbookForm() {
         }
       }
     } catch {
-      sessionStorage.removeItem(draftKey);
+      try {
+        sessionStorage.removeItem(draftKey);
+      } catch {
+        // Session drafts are optional and must not block creating a sketchbook.
+      }
     } finally {
       queueMicrotask(() => { if (isCurrent) setHasLoadedDraft(true); });
     }
@@ -63,7 +67,11 @@ export function CreateSketchbookForm() {
     if (!hasLoadedDraft || draftClearedRef.current) return;
     const draft: CreateDraft = { managePin, managePinHint, name, version: 1 };
     if (ownerImageDataUrl) draft.ownerImageDataUrl = ownerImageDataUrl;
-    sessionStorage.setItem(draftKey, JSON.stringify(draft));
+    try {
+      sessionStorage.setItem(draftKey, JSON.stringify(draft));
+    } catch {
+      // Session drafts are optional and must not block creating a sketchbook.
+    }
   }, [hasLoadedDraft, managePin, managePinHint, name, ownerImageDataUrl]);
 
   function selectReference(event: React.ChangeEvent<HTMLInputElement>) {
@@ -106,7 +114,11 @@ export function CreateSketchbookForm() {
       const data = (await response.json()) as Partial<CreateResult> & { message?: string };
       if (!response.ok || !data.manageUrl || !data.publicUrl) throw new Error(data.message ?? '스캐치북을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.');
       draftClearedRef.current = true;
-      sessionStorage.removeItem(draftKey);
+      try {
+        sessionStorage.removeItem(draftKey);
+      } catch {
+        // The completed sketchbook remains available even when draft cleanup fails.
+      }
       setCreated(data as CreateResult);
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : '스캐치북을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.');

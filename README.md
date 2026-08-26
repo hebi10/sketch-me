@@ -97,17 +97,17 @@ Firebase 규칙·동시성 통합 테스트는 `FIREBASE_PROJECT_ID=sketch-me-lo
 
 - `apphosting.yaml`의 `maxInstances: 1`을 유지하고 Firebase·Google Cloud 예산 알림을 설정합니다.
 - 공개 생성·제출 API에는 인스턴스 단위 속도 제한이 적용됩니다. 여러 인스턴스로 확장할 때는 Redis 또는 Cloud Armor 같은 공유 제한 장치로 교체합니다.
-- Firebase App Check는 아래 절차로 명시적으로 활성화하기 전까지 강제하지 않습니다. 저장소에는 실제 사이트 키나 서비스 계정 키를 넣지 않습니다.
+- Firebase App Check는 아래 절차로 공개 토큰 발급 플래그와 서버 검증 강제를 모두 명시적으로 활성화하기 전까지 동작하지 않습니다. 저장소에는 실제 사이트 키나 서비스 계정 키를 넣지 않습니다.
 - 오류율과 Storage·Firestore 사용량 알림은 Firebase Console에서 별도로 설정합니다.
 - 배포 전 `/privacy` 안내와 관리 화면의 전체 삭제 동작을 에뮬레이터에서 확인합니다.
 - 운영자 차단은 이후 공개 응답을 막지만, 이미 내려받았거나 외부에 저장된 Story PNG는 회수할 수 없습니다.
 
 ## 선택적 Firebase App Check
 
-공개 생성·그림 제출 Route Handler만 선택적으로 App Check 토큰을 검증합니다. 비활성 상태에서는 Firebase App Check 초기화나 검증을 호출하지 않습니다. 활성 상태에서는 각 공개 mutation 요청의 첫 단계에서 정확히 한 번 검증하며, 유효하지 않거나 없는 토큰은 401, 사이트 키 또는 서버 검증 구성이 잘못된 경우는 503으로 응답합니다. 기존 인스턴스 메모리 기반 속도 제한은 그대로 유지하며, Firebase 무료 할당량을 소모하는 Firestore 기반 rate limiter로 바꾸지 않습니다.
+공개 생성·그림 제출 Route Handler만 선택적으로 App Check 토큰을 검증합니다. `NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED=true`와 `NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY`가 모두 있을 때만 브라우저가 Firebase App Check를 초기화하고 토큰을 발급합니다. 서버는 `FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED=true`일 때만 토큰을 검증합니다. 기본값은 두 플래그 모두 `false`이며, 보호 배포에서는 세 설정을 함께 활성화합니다. 활성 상태에서는 각 공개 mutation 요청의 첫 단계에서 정확히 한 번 검증하며, 유효하지 않거나 없는 토큰은 401, 사이트 키 또는 서버 검증 구성이 잘못된 경우는 503으로 응답합니다. 기존 인스턴스 메모리 기반 속도 제한은 그대로 유지하며, Firebase 무료 할당량을 소모하는 Firestore 기반 rate limiter로 바꾸지 않습니다.
 
 1. 별도 승인된 Firebase 프로젝트의 App Check에서 현재 웹 앱과 reCAPTCHA v3 공급자를 등록하고 공개 사이트 키를 발급합니다.
-2. 같은 배포에 `NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY`와 `FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED=true`를 함께 설정합니다. 공개 변수는 빌드 시 번들에 고정되므로 사이트 키를 넣은 새 빌드와 서버 강제를 동시에 배포해야 합니다.
+2. 같은 배포에 `NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY`, `NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED=true`, `FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED=true`를 함께 설정합니다. 공개 플래그와 사이트 키는 빌드 시 번들에 고정되므로, 두 공개 변수와 서버 검증 강제를 동시에 새 빌드로 배포해야 합니다.
 3. 서버 런타임의 Firebase 프로젝트 ID와 Application Default Credentials가 같은 프로젝트를 가리키는지 확인합니다. 서비스 계정 JSON이나 reCAPTCHA 비밀값은 클라이언트 변수에 넣지 않습니다.
 4. 배포 후 정상 브라우저에서 스케치북 생성과 그림 제출을 각각 한 번 확인하고, 토큰 없는 직접 POST가 401인지 확인합니다. 503이 보이면 강제를 끄고 사이트 키·프로젝트·서버 자격 증명을 먼저 점검합니다.
 5. Firebase App Check 지표, Route Handler 401/503 비율, Firestore·Storage 사용량과 예산 알림을 함께 관찰합니다.

@@ -389,7 +389,7 @@ a { color: inherit; text-decoration: none; }
 .fullscreen-drawing-error {
   background: var(--canvas);
   border: 1px solid var(--line);
-  bottom: max(132px, calc(env(safe-area-inset-bottom) + 122px));
+  bottom: max(242px, calc(env(safe-area-inset-bottom) + 232px));
   color: var(--ink);
   font-size: .82rem;
   margin: 0;

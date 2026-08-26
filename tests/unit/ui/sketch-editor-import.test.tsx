@@ -43,6 +43,7 @@ describe('SketchEditor 완성 그림 불러오기', () => {
     fireEvent.change(screen.getByLabelText('완성된 그림 불러오기'), { target: { files: [file] } });
 
     await waitFor(() => expect(context.drawImage).toHaveBeenCalledWith(expect.anything(), 0, 180, 720, 360));
+    expect(screen.getByRole('status')).toHaveTextContent('그림을 불러왔어요. 확인을 누르면 제출할 수 있어요.');
     fireEvent.click(screen.getByRole('button', { name: '확인' }));
     expect(onDrawingChange).toHaveBeenCalledWith('data:image/webp;base64,confirmed');
   });

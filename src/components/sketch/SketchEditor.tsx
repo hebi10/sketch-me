@@ -52,6 +52,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [controlsOpen, setControlsOpen] = useState(false);
     const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
     const [drawingError, setDrawingError] = useState<string | null>(null);
+    const [drawingImportStatus, setDrawingImportStatus] = useState<string | null>(null);
 
     const context = useCallback(() => {
       return canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -91,6 +92,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       setHistory((current) => current ? createCanvasHistory(current.snapshots[0]) : current);
       setControlsOpen(false);
       setDrawingError(null);
+      setDrawingImportStatus(null);
       setIsFullscreen(false);
     }, [canvasHasDrawing, context]);
 
@@ -249,6 +251,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     function importDrawing(event: React.ChangeEvent<HTMLInputElement>) {
       const file = event.target.files?.[0];
       if (!file) return;
+      setDrawingImportStatus(null);
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
         setDrawingError('PNG, JPG, WEBP 그림만 불러올 수 있어요.');
         return;
@@ -275,6 +278,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
           drawingContext.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
           snapshot();
           setDrawingError(null);
+          setDrawingImportStatus('그림을 불러왔어요. 확인을 누르면 제출할 수 있어요.');
         };
         image.onerror = () => setDrawingError('그림 파일을 열지 못했습니다. 다른 파일을 선택해 주세요.');
         image.src = reader.result;
@@ -312,6 +316,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     function openDrawing() {
       setControlsOpen(false);
       setDrawingError(null);
+      setDrawingImportStatus(null);
       setIsFullscreen(true);
     }
 
@@ -325,6 +330,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       onDrawingChange?.(output);
       setControlsOpen(false);
       setDrawingError(null);
+      setDrawingImportStatus(null);
       setIsFullscreen(false);
     }
 
@@ -362,7 +368,8 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
               <button aria-label="그리기 나가기" className="fullscreen-exit" onClick={requestExit} type="button"><Image alt="" height={30} src="/icons/fullscreen-back.webp" width={30} /></button>
               <button aria-expanded={controlsOpen} aria-label={controlsOpen ? '그리기 도구 닫기' : '그리기 도구 열기'} onClick={() => setControlsOpen((current) => !current)} type="button"><Image alt="" height={30} src="/icons/drawing-controls.webp" width={30} /></button>
               <label className="fullscreen-import" htmlFor="drawing-import">그림 불러오기<input accept="image/jpeg,image/png,image/webp" aria-label="완성된 그림 불러오기" id="drawing-import" onChange={importDrawing} type="file" /></label>
-            </div>{drawingError ? <p className="fullscreen-drawing-error" role="alert">{drawingError}</p> : null}</>
+            </div>{drawingError ? <p className="fullscreen-drawing-error" role="alert">{drawingError}</p> : null}
+            {drawingImportStatus ? <p className="sr-only" role="status">{drawingImportStatus}</p> : null}</>
         ) : null}
       </section>
     );

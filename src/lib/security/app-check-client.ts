@@ -23,7 +23,7 @@ function getPublicMutationAppCheck(siteKey: string) {
 
 export async function getPublicMutationHeaders(): Promise<Record<string, string>> {
   const siteKey = process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY;
-  if (!siteKey) return {};
+  if (process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED !== 'true' || !siteKey) return {};
 
   try {
     const { token } = await getToken(getPublicMutationAppCheck(siteKey));

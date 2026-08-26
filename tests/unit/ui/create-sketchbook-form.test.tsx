@@ -18,6 +18,10 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('세션 초안의 이름, PIN, 힌트를 복원한다', async () => {
     sessionStorage.setItem(draftKey, JSON.stringify({ version: 1, name: '해비', managePin: '1234', managePinHint: '좋아하는 숫자' }));
     render(<CreateSketchbookForm />);
@@ -49,5 +53,76 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
     expect(sessionStorage.getItem(draftKey)).toBeNull();
+  });
+
+  it('초안 읽기에 실패해도 스케치북을 생성한다', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('저장소를 읽을 수 없습니다.');
+    });
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new Error('저장소에서 삭제할 수 없습니다.');
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      json: async () => ({ manageUrl: '/m/abc', publicUrl: '/s/abc' }),
+      ok: true,
+    } as Response);
+
+    render(<CreateSketchbookForm />);
+    fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
+    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
+  });
+
+  it('초안 저장 공간이 부족해도 스케치북을 생성한다', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('저장 공간이 부족합니다.', 'QuotaExceededError');
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      json: async () => ({ manageUrl: '/m/abc', publicUrl: '/s/abc' }),
+      ok: true,
+    } as Response);
+
+    render(<CreateSketchbookForm />);
+    fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
+    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
+  });
+
+  it('초안 저장에 실패해도 스케치북을 생성한다', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('저장소에 쓸 수 없습니다.');
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      json: async () => ({ manageUrl: '/m/abc', publicUrl: '/s/abc' }),
+      ok: true,
+    } as Response);
+
+    render(<CreateSketchbookForm />);
+    fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
+    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
+  });
+
+  it('초안 삭제에 실패해도 스케치북을 생성한다', async () => {
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new Error('저장소에서 삭제할 수 없습니다.');
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      json: async () => ({ manageUrl: '/m/abc', publicUrl: '/s/abc' }),
+      ok: true,
+    } as Response);
+
+    render(<CreateSketchbookForm />);
+    fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
+    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
   });
 });
