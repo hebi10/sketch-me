@@ -3,6 +3,29 @@ import { render, screen } from '@testing-library/react';
 import PrivacyPage from '@/app/privacy/page';
 
 describe('PrivacyPage', () => {
+  it('처리 항목과 보유 기간, Firebase 처리 위치를 공개한다', () => {
+    render(<PrivacyPage />);
+
+    expect(screen.getByRole('heading', { name: '개인정보 처리방침' })).toBeVisible();
+    expect(screen.getByText('시행일: 2026년 8월 26일')).toBeVisible();
+    expect(screen.getByRole('heading', { name: '처리하는 개인정보' })).toBeVisible();
+    expect(screen.getByText(/이름 또는 애칭, 관리 비밀번호의 일방향 해시/)).toBeVisible();
+    expect(screen.getByText(/스케치북을 삭제할 때까지/)).toBeVisible();
+    expect(screen.getByRole('heading', { name: '처리위탁 및 국외 이전' })).toBeVisible();
+    expect(screen.getByText(/Cloud Firestore.*대한민국 서울/)).toBeVisible();
+    expect(screen.getByText(/Cloud Storage.*미국 버지니아/)).toBeVisible();
+    expect(screen.getByText(/Firebase App Hosting.*대만/)).toBeVisible();
+  });
+
+  it('제3자 제공 여부와 권리 행사 연락처를 안내한다', () => {
+    render(<PrivacyPage />);
+
+    expect(screen.getByRole('heading', { name: '개인정보의 제3자 제공' })).toBeVisible();
+    expect(screen.getByText(/제3자에게 제공하지 않습니다/)).toBeVisible();
+    expect(screen.getByRole('heading', { name: '이용자의 권리와 행사 방법' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'asdlkj0104@gmail.com' })).toHaveAttribute('href', 'mailto:asdlkj0104@gmail.com');
+  });
+
   it('관리 PIN이 생성 중 브라우저 세션 초안에만 임시 저장됨을 안내한다', () => {
     render(<PrivacyPage />);
 

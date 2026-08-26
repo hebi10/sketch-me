@@ -103,6 +103,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     const dialog = screen.getByRole('dialog', { name: '저장 공간 확장하기' });
     expect(dialog).toBeVisible();
     expect(screen.getByRole('radio', { name: /10명 추가.*990원/ })).toBeChecked();
+    expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms');
 
     fireEvent.click(screen.getByRole('radio', { name: /50명 추가.*3,900원/ }));
     fireEvent.click(screen.getByRole('button', { name: '3,900원 모의 결제하기' }));

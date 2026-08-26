@@ -357,6 +357,10 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
               {isPurchasing ? '모의 결제 처리 중...' : `${getPurchasePlan(selectedProductId)?.amount.toLocaleString('ko-KR')}원 모의 결제하기`}
             </button>
             <p className="purchase-mock-note">현재는 실제 금액이 청구되지 않는 모의 결제입니다.</p>
+            <p className="purchase-policy-note">
+              추가 인원은 서비스 운영 중 만료되지 않으며, 실제 결제 시 구매일로부터 1년간 서비스를 보장합니다.{' '}
+              <Link href="/terms">서비스 이용 및 결제 안내</Link>
+            </p>
           </dialog>
         </div>
       ) : null}

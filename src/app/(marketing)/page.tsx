@@ -12,7 +12,8 @@ export default function LandingPage() {
           <summary aria-label="메뉴 열기">☰</summary>
           <nav aria-label="빠른 메뉴">
             <Link href="/create">스케치북 만들기</Link>
-            <Link href="/privacy">개인정보 처리 안내</Link>
+            <Link href="/privacy">개인정보 처리방침</Link>
+            <Link href="/terms">서비스 이용 및 결제 안내</Link>
           </nav>
         </details>
       </header>
@@ -40,7 +41,10 @@ export default function LandingPage() {
           </Link>
         </div>
       </section>
-      <footer className="marketing-footer"><Link href="/privacy">개인정보 처리 안내</Link></footer>
+      <footer className="marketing-footer">
+        <Link href="/privacy">개인정보 처리방침</Link>
+        <Link href="/terms">서비스 이용 및 결제 안내</Link>
+      </footer>
     </main>
   );
 }

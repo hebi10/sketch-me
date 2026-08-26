@@ -1,6 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { BrandWordmark } from '@/components/ui/BrandWordmark';
+
+export const metadata: Metadata = {
+  title: '개인정보 처리방침',
+  description: '스캐치북 서비스가 개인정보와 그림, 사진을 처리하는 방법을 안내합니다.',
+};
 
 export default function PrivacyPage() {
   return (
@@ -10,16 +16,135 @@ export default function PrivacyPage() {
         <BrandWordmark />
         <span aria-hidden="true" className="header-balance" />
       </header>
-      <article>
-        <p className="eyebrow">개인정보 처리 안내</p>
-        <h1>그림과 사진을 이렇게 다뤄요</h1>
-        <section><h2>저장하는 정보</h2><p>스케치북 이름, 본인 그림, 선택한 참고 사진, 친구가 남긴 이름·그림·한마디를 저장합니다. 관리를 위해 비밀번호의 일방향 해시, 선택한 비밀번호 힌트와 관리 세션 정보도 저장합니다. 입력한 관리 비밀번호 원문은 서버에 저장하지 않습니다. 다만 생성 중에는 브라우저의 sessionStorage 초안에 임시 저장되며, 생성에 성공하거나 탭 또는 브라우저 세션이 끝나면 사라집니다.</p></section>
-        <section><h2>사용 목적과 공개 범위</h2><p>친구가 공개 링크에서 그림을 남기고 결과를 함께 보기 위해서만 사용합니다. 참고 사진은 그림을 그리는 화면에서만 제공됩니다.</p></section>
-        <section><h2>보관과 삭제</h2><p>스케치북을 운영하는 동안 보관합니다. 관리 화면에서 전체 삭제를 시작하면 먼저 공개 접근을 막은 뒤 관련 사진, 그림과 기록을 영구 삭제합니다. 삭제 도중 일시적으로 실패하면 같은 관리 세션에서 다시 시도할 수 있습니다.</p></section>
-        <section><h2>관리 비밀번호 보호</h2><p>관리 비밀번호는 복구할 수 없습니다. 다른 사람이 추측하기 어려운 숫자 4자리를 사용하고 공유하지 마세요. 관리가 끝난 공용 기기에서는 브라우저 세션을 정리해 주세요.</p></section>
-        <section><h2>자동 보안 확인</h2><p>운영자가 Firebase App Check를 활성화한 환경에서는 자동화된 남용을 줄이기 위해 공개 생성·제출 요청의 보안 확인 토큰을 처리합니다. 이 기능은 사용자를 식별하는 프로필 정보로 사용하지 않습니다.</p></section>
+
+      <article className="legal-document">
+        <div className="legal-intro">
+          <p className="eyebrow">개인정보 처리 안내</p>
+          <h1>개인정보 처리방침</h1>
+          <p>스캐치북은 서비스를 제공하는 데 필요한 정보만 처리하고, 이용자가 직접 삭제하고 관리할 수 있도록 합니다.</p>
+          <p className="legal-effective-date">시행일: 2026년 8월 26일</p>
+        </div>
+
+        <nav aria-label="개인정보 처리방침 목차" className="legal-toc">
+          <a href="#privacy-items">처리 정보</a>
+          <a href="#privacy-retention">보관·삭제</a>
+          <a href="#privacy-transfer">국외 이전</a>
+          <a href="#privacy-rights">이용자 권리</a>
+        </nav>
+
+        <section id="privacy-purpose">
+          <h2>처리 목적</h2>
+          <ul>
+            <li>스케치북 생성, 공개 링크 공유와 친구 그림 접수</li>
+            <li>소유자의 그림 관리, BEST 선정과 스토리 이미지 제작</li>
+            <li>모의 결제에 따른 참여 가능 인원 추가와 구매 기록 관리</li>
+            <li>비정상 요청 차단, 관리자 운영과 서비스 보안 유지</li>
+          </ul>
+        </section>
+
+        <section id="privacy-items">
+          <h2>처리하는 개인정보</h2>
+          <dl className="legal-data-list">
+            <div>
+              <dt>스케치북 생성</dt>
+              <dd>이름 또는 애칭, 관리 비밀번호의 일방향 해시, 선택한 비밀번호 힌트, 공개·관리 ID와 생성 시각을 처리합니다.</dd>
+            </div>
+            <div>
+              <dt>선택 정보</dt>
+              <dd>소유자가 직접 그린 그림과 참고 사진을 선택한 경우에만 저장합니다.</dd>
+            </div>
+            <div>
+              <dt>친구 그림 제출</dt>
+              <dd>작성자의 이름 또는 애칭, 그림, 선택한 한마디, 참고 사진 사용 여부와 제출 시각을 처리합니다.</dd>
+            </div>
+            <div>
+              <dt>모의 결제</dt>
+              <dd>선택 상품, 표시 금액, 추가 인원, 주문·요청 ID, 처리 상태와 시각을 저장합니다. 현재 실제 결제정보나 카드정보는 처리하지 않습니다.</dd>
+            </div>
+            <div>
+              <dt>보안 정보</dt>
+              <dd>요청 IP는 생성·제출 횟수 제한을 위해 서버 메모리에서 최대 1시간 처리합니다. 관리 로그인 실패 시 접속정보를 해시한 값과 실패 횟수를 스케치북 삭제 시까지 저장할 수 있습니다.</dd>
+            </div>
+          </dl>
+          <p>입력한 관리 비밀번호 원문은 서버에 저장하지 않습니다. 다만 생성 중에는 브라우저의 sessionStorage 초안에 임시 저장되며, 생성에 성공하거나 탭 또는 브라우저 세션이 끝나면 사라집니다.</p>
+        </section>
+
+        <section id="privacy-public">
+          <h2>공개 범위</h2>
+          <p>공개 링크를 아는 사람은 스케치북 이름, 공개 상태인 친구 그림, 작성자 이름 또는 애칭과 한마디를 볼 수 있습니다. 참고 사진은 친구가 그림을 그리는 화면에서만 제공되며 공개 갤러리에는 표시하지 않습니다.</p>
+          <p>본인이나 다른 사람의 민감한 정보, 연락처 또는 공개를 원하지 않는 내용은 이름과 한마디에 입력하지 마세요.</p>
+        </section>
+
+        <section id="privacy-retention">
+          <h2>보유 기간과 파기</h2>
+          <ul>
+            <li>스케치북, 그림, 사진, 한마디와 모의 구매 기록: 스케치북을 삭제할 때까지</li>
+            <li>관리 로그인 세션: 발급일로부터 최대 30일 또는 로그아웃·스케치북 삭제 시까지</li>
+            <li>관리자 로그인 세션: 발급일로부터 최대 12시간 또는 로그아웃 시까지</li>
+            <li>브라우저 생성 초안: 생성 완료 또는 브라우저 세션 종료 시까지</li>
+            <li>IP 기반 요청 제한 정보: 서버 메모리에서 최대 1시간</li>
+          </ul>
+          <p>관리 화면에서 전체 삭제를 요청하면 먼저 공개 접근을 막고 Firestore 기록과 Storage 파일을 삭제합니다. Google의 백업 시스템에서는 삭제 요청 후 최대 180일 안에 제거될 수 있습니다. 관련 법령에 별도 보존 의무가 생기는 경우에는 해당 정보만 분리하여 정해진 기간 보관합니다.</p>
+        </section>
+
+        <section id="privacy-third-party">
+          <h2>개인정보의 제3자 제공</h2>
+          <p>스캐치북은 이용자의 개인정보를 별도 제3자에게 제공하지 않습니다. 다만 이용자가 공개 링크를 직접 공유하여 정보가 공개되는 경우와 법령에 따라 제출 의무가 있는 경우는 제외합니다.</p>
+        </section>
+
+        <section id="privacy-transfer">
+          <h2>처리위탁 및 국외 이전</h2>
+          <p>서비스 제공을 위해 Google LLC의 Firebase·Google Cloud 서비스를 사용합니다. 서비스 이용에 필요한 정보는 암호화된 네트워크를 통해 전송되며, 스케치북 삭제 또는 서비스 계약 종료 시까지 처리됩니다.</p>
+          <ul className="legal-location-list">
+            <li>Cloud Firestore: 데이터베이스 저장, 대한민국 서울</li>
+            <li>Cloud Storage for Firebase: 그림·사진 저장, 미국 버지니아</li>
+            <li>Firebase App Hosting: 웹 서비스 제공과 요청 처리, 대만</li>
+            <li>Firebase Authentication: 관리자 Google 로그인, 미국</li>
+            <li>Firebase App Check: 자동화된 남용 방지, Google 글로벌 인프라</li>
+          </ul>
+          <p>국외 처리는 이용자가 요청한 서비스 제공에 필요합니다. 이를 원하지 않으면 정보를 입력하지 않거나 관리 화면에서 스케치북을 삭제할 수 있지만, 해당 기능은 이용할 수 없습니다. 자세한 처리 위치와 보호조치는 <a href="https://firebase.google.com/support/privacy">Firebase 개인정보 및 보안 안내</a>에서 확인할 수 있습니다.</p>
+        </section>
+
+        <section id="privacy-storage">
+          <h2>쿠키와 브라우저 저장소</h2>
+          <p>스케치북 관리 권한을 유지하기 위해 필수 관리 쿠키를 최대 30일간 사용합니다. 이 쿠키는 HTTP 전용으로 설정하며 광고나 이용자 추적에 사용하지 않습니다. 쿠키를 삭제하거나 차단하면 관리 비밀번호로 다시 로그인해야 합니다.</p>
+          <p>생성 화면의 입력 유실을 줄이기 위해 이름, 관리 비밀번호, 힌트와 직접 그린 그림 초안을 sessionStorage에 임시 저장합니다. 참고 사진은 초안에 저장하지 않습니다.</p>
+        </section>
+
+        <section id="privacy-rights">
+          <h2>이용자의 권리와 행사 방법</h2>
+          <p>소유자는 관리 화면에서 그림 공개 여부를 바꾸거나 그림과 스케치북 전체를 삭제할 수 있습니다. 개인정보 열람, 정정, 삭제 또는 처리정지를 요청하려면 아래 이메일로 공개 ID와 요청 내용을 보내 주세요. 필요한 경우 권한 확인을 요청할 수 있으며 관련 법령에서 정한 절차에 따라 처리합니다.</p>
+        </section>
+
+        <section id="privacy-safety">
+          <h2>안전성 확보 조치</h2>
+          <ul>
+            <li>관리 비밀번호와 관리 토큰의 일방향 해시 저장</li>
+            <li>HTTP 전용·보안·SameSite 속성을 적용한 관리 쿠키</li>
+            <li>Firestore·Storage 보안 규칙과 서버 권한 검증</li>
+            <li>App Check, 요청 횟수 제한과 관리 로그인 잠금</li>
+            <li>운영자 계정 제한과 그림·스케치북 숨김 처리</li>
+          </ul>
+        </section>
+
+        <section id="privacy-contact">
+          <h2>개인정보 문의</h2>
+          <p>개인정보 보호와 관련한 문의, 불만 또는 권리 행사는 스캐치북 운영자에게 요청할 수 있습니다.</p>
+          <p><a href="mailto:asdlkj0104@gmail.com">asdlkj0104@gmail.com</a></p>
+          <p>침해 상담이 필요한 경우 개인정보침해 신고센터(국번 없이 118) 또는 개인정보분쟁조정위원회(1833-6972)를 이용할 수 있습니다.</p>
+        </section>
+
+        <section id="privacy-change">
+          <h2>처리방침 변경</h2>
+          <p>내용이 바뀌면 시행 전에 서비스 화면을 통해 알립니다. 이용자 권리에 중대한 변경은 적용일 30일 전부터 안내합니다.</p>
+          <p>버전 1.0 · 2026년 8월 26일 시행</p>
+        </section>
       </article>
-      <Link className="button button--secondary" href="/">홈으로 돌아가기</Link>
+
+      <nav aria-label="정책 문서" className="legal-page-links">
+        <Link href="/terms">서비스 이용 및 결제 안내</Link>
+        <Link href="/">홈으로 돌아가기</Link>
+      </nav>
     </main>
   );
 }

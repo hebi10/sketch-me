@@ -234,12 +234,31 @@ a { color: inherit; text-decoration: none; }
 .delete-confirm-actions { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
 .danger-outline { border-color: color-mix(in srgb, var(--danger) 50%, var(--line)); color: var(--danger); width: 100%; }
 .legal-shell { margin: 0 auto; max-width: 650px; min-height: 100vh; padding: 20px clamp(16px, 4.6vw, 28px) 40px; }
-.legal-shell article { padding: 34px 0 24px; }
-.legal-shell h1 { font-size: clamp(1.8rem, 8vw, 2.8rem); line-height: 1.2; margin: 0 0 32px; }
-.legal-shell section { border-top: 1px solid var(--line); padding: 20px 0; }
-.legal-shell section h2 { font-size: 1rem; margin: 0 0 8px; }
-.legal-shell section p { color: var(--muted); line-height: 1.7; margin: 0; }
-.marketing-footer { color: var(--muted); font-size: var(--font-size-caption); padding-top: 24px; text-align: center; }
+.legal-document { padding: 34px 0 24px; }
+.legal-intro { max-width: 32rem; }
+.legal-shell h1 { font-size: var(--font-size-compact-display); letter-spacing: -.04em; line-height: 1.18; margin: 0; }
+.legal-intro > p:not(.eyebrow):not(.legal-effective-date) { color: var(--muted); line-height: 1.65; margin: 16px 0 0; }
+.legal-effective-date { color: var(--muted); font-size: var(--font-size-caption); margin: 12px 0 0; }
+.legal-toc { border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 4px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 28px 0 8px; padding: 8px; }
+.legal-toc a { align-items: center; color: var(--muted); display: flex; font-size: var(--font-size-caption); min-height: 44px; padding: 6px 8px; }
+.legal-document section { margin-top: clamp(34px, 8vw, 52px); scroll-margin-top: 16px; }
+.legal-document section h2 { font-size: 1rem; margin: 0 0 12px; }
+.legal-document section p, .legal-document section li, .legal-data-list dd { color: var(--muted); line-height: 1.7; }
+.legal-document section p { margin: 0; }
+.legal-document section p + p { margin-top: 12px; }
+.legal-document section ul { margin: 0; padding-left: 1.2rem; }
+.legal-document section li + li { margin-top: 8px; }
+.legal-document section ul + p, .legal-document section p + ul { margin-top: 14px; }
+.legal-document section strong { color: var(--ink); }
+.legal-document section a { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+.legal-data-list { display: grid; gap: 18px; margin: 0 0 18px; }
+.legal-data-list div { display: grid; gap: 5px; }
+.legal-data-list dt { font-weight: 700; }
+.legal-data-list dd { margin: 0; }
+.legal-location-list { display: grid; gap: 8px; }
+.legal-page-links { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 44px 0 max(8px, env(safe-area-inset-bottom)); }
+.legal-page-links a { align-items: center; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); display: flex; font-size: var(--font-size-caption); justify-content: center; min-height: 48px; padding: 8px; text-align: center; }
+.marketing-footer { color: var(--muted); display: flex; flex-wrap: wrap; font-size: var(--font-size-caption); justify-content: center; padding-top: 24px; text-align: center; }
 .marketing-footer a { align-items: center; display: inline-flex; justify-content: center; min-height: 44px; padding-inline: 8px; }
 
 @media (max-width: 720px) {
@@ -266,6 +285,10 @@ a { color: inherit; text-decoration: none; }
   .line-width { flex: 1 1 100%; margin-left: 0; min-height: 44px; }
   .line-width input { max-width: none; width: 100%; }
   .story-preview { min-height: 0; }
+}
+
+@media (max-width: 360px) {
+  .legal-page-links { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
@@ -536,6 +559,20 @@ a { color: inherit; text-decoration: none; }
   font-size: .75rem;
   margin: 8px 0 0;
   text-align: center;
+}
+
+.purchase-policy-note {
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+  margin: 10px 0 0;
+  text-align: center;
+}
+
+.purchase-policy-note a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 @media (min-width: 651px) {
