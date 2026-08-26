@@ -374,10 +374,10 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
         </div>
         {isFullscreen ? (
           <><div className="fullscreen-controls">
-              <button className="fullscreen-confirm" onClick={confirmDrawing} ref={fullscreenConfirmRef} type="button">확인</button>
+              <button aria-label="확인" className="fullscreen-confirm" onClick={confirmDrawing} ref={fullscreenConfirmRef} type="button"><Image alt="" height={30} src="/icons/fullscreen-confirm.webp" width={30} /></button>
               <button aria-label="그리기 나가기" className="fullscreen-exit" onClick={requestExit} type="button"><Image alt="" height={30} src="/icons/fullscreen-back.webp" width={30} /></button>
               <button aria-expanded={controlsOpen} aria-label={controlsOpen ? '그리기 도구 닫기' : '그리기 도구 열기'} onClick={() => setControlsOpen((current) => !current)} type="button"><Image alt="" height={30} src="/icons/drawing-controls.webp" width={30} /></button>
-              <label className="fullscreen-import" htmlFor="drawing-import">그림 불러오기<input accept="image/jpeg,image/png,image/webp" aria-label="완성된 그림 불러오기" id="drawing-import" onChange={importDrawing} type="file" /></label>
+              <label className="fullscreen-import" htmlFor="drawing-import"><Image alt="" height={30} src="/icons/drawing-import.webp" width={30} /><input accept="image/jpeg,image/png,image/webp" aria-label="완성된 그림 불러오기" id="drawing-import" onChange={importDrawing} type="file" /></label>
             </div>{drawingError ? <p className="fullscreen-drawing-error" role="alert">{drawingError}</p> : null}
             {drawingImportStatus ? <p className="sr-only" role="status">{drawingImportStatus}</p> : null}</>
         ) : null}

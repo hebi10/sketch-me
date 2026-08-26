@@ -410,8 +410,6 @@ a { color: inherit; text-decoration: none; }
   border-color: var(--accent);
 }
 
-.fullscreen-controls .fullscreen-confirm { padding-inline: 14px; width: auto; }
-
 .fullscreen-import {
   align-items: center;
   background: var(--canvas);
@@ -425,6 +423,7 @@ a { color: inherit; text-decoration: none; }
   justify-content: center;
   padding: 8px 10px;
   text-align: center;
+  width: 52px;
 }
 
 .fullscreen-import input { height: 1px; opacity: 0; position: absolute; width: 1px; }

@@ -69,4 +69,19 @@ describe('SketchEditor 전체 화면 모드', () => {
     expect(screen.getByRole('img', { name: '그린 그림 미리보기' })).toBeVisible();
     expect(screen.getByRole('button', { name: '외부 버튼' })).not.toHaveAttribute('inert');
   });
+
+  it('확인과 그림 불러오기 동작을 글자 없는 이미지 아이콘으로 표시한다', () => {
+    render(<SketchEditor ariaLabel="그리기 캔버스" />);
+
+    fireEvent.click(screen.getByRole('button', { name: '그림 그리기' }));
+
+    const confirmButton = screen.getByRole('button', { name: '확인' });
+    const importInput = screen.getByLabelText('완성된 그림 불러오기');
+    const importLabel = importInput.closest('label');
+
+    expect(confirmButton).not.toHaveTextContent('확인');
+    expect(confirmButton.querySelector('img')).toHaveAttribute('src', expect.stringContaining('fullscreen-confirm.webp'));
+    expect(importLabel).not.toHaveTextContent('그림 불러오기');
+    expect(importLabel?.querySelector('img')).toHaveAttribute('src', expect.stringContaining('drawing-import.webp'));
+  });
 });
