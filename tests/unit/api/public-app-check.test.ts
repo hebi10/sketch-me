@@ -11,10 +11,12 @@ const {
   findSketchbookByPublicId,
   getAdminStorage,
   getPublicMutationHeaders,
+  optimizeDrawingImages,
   optimizeImageForStorage,
   push,
   saveDrawingWithinLimit,
   saveSketchbook,
+  storageFile,
 } = vi.hoisted(() => ({
   createManagePinSession: vi.fn(),
   enforceAppCheck: vi.fn(),
@@ -24,10 +26,12 @@ const {
   findSketchbookByPublicId: vi.fn(),
   getAdminStorage: vi.fn(),
   getPublicMutationHeaders: vi.fn(),
+  optimizeDrawingImages: vi.fn(),
   optimizeImageForStorage: vi.fn(),
   push: vi.fn(),
   saveDrawingWithinLimit: vi.fn(),
   saveSketchbook: vi.fn(),
+  storageFile: vi.fn(),
 }));
 
 vi.mock('@/lib/security/app-check-server', () => ({ enforceAppCheck }));
@@ -36,6 +40,7 @@ vi.mock('@/lib/security/rate-limit', () => ({ enforcePublicMutationLimit }));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminStorage }));
 vi.mock('@/lib/images/optimize', () => ({
   ImageOptimizationError: class ImageOptimizationError extends Error {},
+  optimizeDrawingImages,
   optimizeImageForStorage,
 }));
 vi.mock('@/lib/sketchbooks/repository', () => ({
@@ -79,9 +84,10 @@ describe('공개 mutation Route Handler App Check 순서', () => {
     enforcePublicMutationLimit.mockReturnValue(null);
     getAdminStorage.mockReturnValue({
       bucket: vi.fn(() => ({
-        file: vi.fn(() => ({ delete: fileDelete, save: fileSave })),
+        file: storageFile,
       })),
     });
+    storageFile.mockReturnValue({ delete: fileDelete, save: fileSave });
     createManagePinSession.mockResolvedValue({ sessionId: 'session-1', token: 'session-token' });
     findSketchbookByPublicId.mockResolvedValue({
       id: 'book-1',
@@ -93,6 +99,10 @@ describe('공개 mutation Route Handler App Check 순서', () => {
       status: 'PUBLIC',
     });
     optimizeImageForStorage.mockResolvedValue({ buffer: Buffer.from('webp'), contentType: 'image/webp' });
+    optimizeDrawingImages.mockResolvedValue({
+      original: { buffer: Buffer.from('original-webp'), contentType: 'image/webp' },
+      thumbnail: { buffer: Buffer.from('thumbnail-webp'), contentType: 'image/webp' },
+    });
   });
 
   it('스케치북 생성은 App Check 거절 시 다른 제한·저장 동작 전에 중단한다', async () => {
@@ -132,6 +142,77 @@ describe('공개 mutation Route Handler App Check 순서', () => {
     expect(findSketchbookByPublicId).not.toHaveBeenCalled();
     expect(optimizeImageForStorage).not.toHaveBeenCalled();
     expect(saveDrawingWithinLimit).not.toHaveBeenCalled();
+  });
+});
+
+describe('친구 그림 원본·썸네일 동시 저장', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    enforceAppCheck.mockResolvedValue(null);
+    enforcePublicMutationLimit.mockReturnValue(null);
+    findSketchbookByPublicId.mockResolvedValue({
+      id: 'book-1',
+      moderationStatus: 'ACTIVE',
+      name: '해비',
+      participantCount: 0,
+      participantLimit: 20,
+      publicId: 'public-1',
+      status: 'PUBLIC',
+    });
+    optimizeDrawingImages.mockResolvedValue({
+      original: { buffer: Buffer.from('original-webp'), contentType: 'image/webp' },
+      thumbnail: { buffer: Buffer.from('thumbnail-webp'), contentType: 'image/webp' },
+    });
+    storageFile.mockReturnValue({ delete: fileDelete, save: fileSave });
+    getAdminStorage.mockReturnValue({
+      bucket: vi.fn(() => ({ file: storageFile })),
+    });
+  });
+
+  function drawingRequest() {
+    return new Request('http://localhost/api/sketchbooks/public-1/drawings', {
+      body: JSON.stringify({
+        authorName: '친구',
+        imageDataUrl: 'data:image/png;base64,aW1hZ2U=',
+        usedReferenceImage: false,
+      }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    });
+  }
+
+  it('한 번의 제출로 원본과 결정적 썸네일 경로를 모두 저장한다', async () => {
+    const response = await submitDrawing(drawingRequest(), {
+      params: Promise.resolve({ publicId: 'public-1' }),
+    });
+
+    expect(response.status).toBe(201);
+    expect(optimizeDrawingImages).toHaveBeenCalledOnce();
+    expect(storageFile.mock.calls.map(([path]) => path)).toEqual([
+      expect.stringMatching(/^sketchbooks\/book-1\/drawings\/.+\/original\.webp$/),
+      expect.stringMatching(/^sketchbooks\/book-1\/drawings\/.+\/thumbnail\.webp$/),
+    ]);
+    expect(fileSave).toHaveBeenCalledTimes(2);
+    expect(saveDrawingWithinLimit).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'book-1' }),
+      expect.objectContaining({
+        imagePath: expect.stringMatching(/\/original\.webp$/),
+        thumbnailPath: expect.stringMatching(/\/thumbnail\.webp$/),
+      }),
+    );
+  });
+
+  it('Firestore 등록이 실패하면 생성한 원본과 썸네일을 모두 정리한다', async () => {
+    saveDrawingWithinLimit.mockRejectedValueOnce(new Error('capacity changed'));
+
+    const response = await submitDrawing(drawingRequest(), {
+      params: Promise.resolve({ publicId: 'public-1' }),
+    });
+
+    expect(response.status).toBe(409);
+    expect(fileDelete).toHaveBeenCalledTimes(2);
+    expect(fileDelete).toHaveBeenNthCalledWith(1, { ignoreNotFound: true });
+    expect(fileDelete).toHaveBeenNthCalledWith(2, { ignoreNotFound: true });
   });
 });
 

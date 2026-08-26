@@ -10,6 +10,7 @@ const {
   listDrawings,
   listVisibleDrawings,
   notFound,
+  optimizeDrawingImages,
   optimizeImageForStorage,
   saveDrawingWithinLimit,
 } = vi.hoisted(() => ({
@@ -21,6 +22,7 @@ const {
   listDrawings: vi.fn(),
   listVisibleDrawings: vi.fn(),
   notFound: vi.fn(() => { throw new Error('NEXT_NOT_FOUND'); }),
+  optimizeDrawingImages: vi.fn(),
   optimizeImageForStorage: vi.fn(),
   saveDrawingWithinLimit: vi.fn(),
 }));
@@ -29,6 +31,7 @@ vi.mock('next/navigation', () => ({ notFound }));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminStorage }));
 vi.mock('@/lib/images/optimize', () => ({
   ImageOptimizationError: class ImageOptimizationError extends Error {},
+  optimizeDrawingImages,
   optimizeImageForStorage,
 }));
 vi.mock('@/lib/security/rate-limit', () => ({ enforcePublicMutationLimit }));

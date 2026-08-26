@@ -5,8 +5,8 @@ import { NextResponse } from 'next/server';
 import { submitDrawingPayloadSchema } from '@/lib/domain/schemas';
 import { createDrawingDraft } from '@/lib/drawings/create';
 import { getAdminStorage } from '@/lib/firebase/admin';
-import { getDrawingImagePath } from '@/lib/firebase/storage';
-import { ImageOptimizationError, optimizeImageForStorage } from '@/lib/images/optimize';
+import { getDrawingImagePath, getDrawingThumbnailPath } from '@/lib/firebase/storage';
+import { ImageOptimizationError, optimizeDrawingImages } from '@/lib/images/optimize';
 import { enforceAppCheck } from '@/lib/security/app-check-server';
 import { enforcePublicMutationLimit } from '@/lib/security/rate-limit';
 import { findSketchbookByPublicId, saveDrawingWithinLimit } from '@/lib/sketchbooks/repository';
@@ -20,6 +20,13 @@ function dataUrlToBuffer(imageDataUrl: string) {
   }
 
   return { buffer: Buffer.from(encoded, 'base64'), contentType };
+}
+
+async function deleteUploadedDrawingFiles(paths: string[]) {
+  const bucket = getAdminStorage().bucket();
+  await Promise.all(paths.map((path) => (
+    bucket.file(path).delete({ ignoreNotFound: true })
+  )));
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
@@ -55,13 +62,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
 
   const drawingId = randomUUID();
   const imagePath = getDrawingImagePath(sketchbook.id, drawingId);
-  let optimizedImage;
+  const thumbnailPath = getDrawingThumbnailPath(sketchbook.id, drawingId);
+  const uploadedPaths = [imagePath, thumbnailPath];
   try {
-    optimizedImage = await optimizeImageForStorage(dataUrlToBuffer(parsed.data.imageDataUrl).buffer, 'sketch');
-    await getAdminStorage().bucket().file(imagePath).save(optimizedImage.buffer, {
-      metadata: { contentType: optimizedImage.contentType, cacheControl: 'private, max-age=0' },
-    });
+    const optimizedImages = await optimizeDrawingImages(dataUrlToBuffer(parsed.data.imageDataUrl).buffer);
+    const bucket = getAdminStorage().bucket();
+    const results = await Promise.allSettled([
+      bucket.file(imagePath).save(optimizedImages.original.buffer, {
+        metadata: { contentType: optimizedImages.original.contentType, cacheControl: 'private, max-age=0' },
+      }),
+      bucket.file(thumbnailPath).save(optimizedImages.thumbnail.buffer, {
+        metadata: { contentType: optimizedImages.thumbnail.contentType, cacheControl: 'public, max-age=300' },
+      }),
+    ]);
+    const failed = results.find((result) => result.status === 'rejected');
+    if (failed?.status === 'rejected') throw failed.reason;
   } catch (error) {
+    await deleteUploadedDrawingFiles(uploadedPaths);
     const message = error instanceof Error ? error.message : '그림을 변환하지 못했습니다.';
     return NextResponse.json({ message }, { status: error instanceof ImageOptimizationError ? 400 : 500 });
   }
@@ -72,6 +89,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     sketchbookPublicId: sketchbook.publicId,
     sketchbookName: sketchbook.name,
     imagePath,
+    thumbnailPath,
     authorName: parsed.data.authorName,
     message: parsed.data.message,
     usedReferenceImage: parsed.data.usedReferenceImage,
@@ -81,7 +99,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   try {
     await saveDrawingWithinLimit(sketchbook, drawing);
   } catch (error) {
-    await getAdminStorage().bucket().file(imagePath).delete({ ignoreNotFound: true });
+    await deleteUploadedDrawingFiles(uploadedPaths);
     const message = error instanceof Error ? error.message : '그림을 저장하지 못했습니다.';
     return NextResponse.json({ message }, { status: 409 });
   }
