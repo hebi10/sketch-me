@@ -179,8 +179,11 @@ test('그림 그리기에서 우측 하단 아이콘으로 도구를 열고 확�
   await expect(toolsButton.locator('img')).toHaveAttribute('src', /drawing-controls\.webp/);
   const confirmBounds = await confirmButton.boundingBox();
   const toolsBounds = await toolsButton.boundingBox();
-  expect(confirmBounds?.x ?? 0).toBeGreaterThan(300);
-  expect(toolsBounds?.x ?? 0).toBeGreaterThan(300);
+  expect(confirmBounds).not.toBeNull();
+  expect(toolsBounds).not.toBeNull();
+  const viewportWidth = page.viewportSize()?.width ?? 0;
+  expect(viewportWidth - ((confirmBounds?.x ?? 0) + (confirmBounds?.width ?? 0))).toBeLessThanOrEqual(12);
+  expect(viewportWidth - ((toolsBounds?.x ?? 0) + (toolsBounds?.width ?? 0))).toBeLessThanOrEqual(12);
 
   await toolsButton.click();
   await expect(page.getByRole('navigation', { name: '그림 편집 단계' })).toBeVisible();

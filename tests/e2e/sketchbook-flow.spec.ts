@@ -78,7 +78,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   const friendPage = await friendContext.newPage();
   await friendPage.goto(publicPath!);
   await expect(friendPage.getByRole('heading', { name: `${uniqueName}님을 그려주세요` })).toBeVisible();
-  await friendPage.getByRole('link', { name: '✎ 그림 남기기' }).click();
+  await friendPage.getByRole('link', { name: '첫 그림 남기기' }).click();
   await friendPage.getByRole('button', { name: '그림 그리기' }).click();
   await friendPage.getByRole('button', { name: '그리기 도구 열기' }).click();
   await expect(friendPage.getByRole('button', { name: '참고사진' })).toBeEnabled();

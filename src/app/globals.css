@@ -342,6 +342,7 @@ a { color: inherit; text-decoration: none; }
   bottom: max(10px, env(safe-area-inset-bottom));
   display: grid;
   gap: 8px;
+  justify-items: end;
   position: fixed;
   right: max(10px, env(safe-area-inset-right));
   z-index: 104;
