@@ -361,8 +361,8 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         </div>
       ) : null}
       {securityOpen ? (
-          <dialog aria-labelledby="manage-security-title" className="manage-security-dialog manage-security-modal manage-system-sans" onCancel={(event) => { event.preventDefault(); if (!isSavingSecurity) setSecurityOpen(false); }} ref={securityDialogRef}>
-          <form onSubmit={updateSecurity}>
+          <dialog aria-labelledby="manage-security-title" className="manage-security-modal manage-system-sans" onCancel={(event) => { event.preventDefault(); if (!isSavingSecurity) setSecurityOpen(false); }} ref={securityDialogRef}>
+          <form className="manage-security-form" onSubmit={updateSecurity}>
             <div className="dialog-heading"><h2 id="manage-security-title">관리 비밀번호 변경</h2><button aria-label="비밀번호 변경 닫기" className="icon-button" disabled={isSavingSecurity} onClick={() => setSecurityOpen(false)} type="button">×</button></div>
             <p>새 비밀번호는 숫자 4자리예요. 비밀번호는 복구할 수 없어요.</p>
             <label className="field-label" htmlFor="current-manage-pin">현재 비밀번호</label>

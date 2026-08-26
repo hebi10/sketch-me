@@ -181,6 +181,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
 
     const dialog = screen.getByRole('dialog', { name: '관리 비밀번호 변경' });
     expect(dialog.tagName).toBe('DIALOG');
+    expect(dialog.querySelector('form')).toHaveClass('manage-security-form');
     expect(screen.getByRole('main')).toHaveAttribute('inert');
     expect(screen.getByRole('button', { name: '비밀번호 변경 닫기' })).toHaveFocus();
 
