@@ -1023,6 +1023,16 @@ main {
   margin: 0;
 }
 
+.public-empty-create {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.public-empty-create .button {
+  width: 100%;
+}
+
 .best-drawing-grid {
   display: grid;
   gap: clamp(8px, 2.5vw, 14px);

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { vi } from 'vitest';
 
 const { findSketchbookByPublicId, listVisibleDrawings } = vi.hoisted(() => ({
@@ -52,5 +52,19 @@ describe('빈 공개 스케치북', () => {
     expect(screen.getByRole('link', { name: '첫 그림 남기기' })).toHaveAttribute('href', '/s/public-1/draw');
     expect(screen.queryByRole('heading', { name: '♕ 베스트 그림' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '◷ 최근 올라온 그림' })).not.toBeInTheDocument();
+  });
+
+  it('첫 그림 CTA 다음에 방문자용 스케치북 생성 CTA를 제공한다', async () => {
+    render(await PublicSketchbookPage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    const emptyState = screen.getByRole('region', { name: '첫 그림을 남겨주세요' });
+    const drawLink = within(emptyState).getByRole('link', { name: '첫 그림 남기기' });
+    const createLink = within(emptyState).getByRole('link', { name: '내 스케치북 만들기' });
+
+    expect(createLink).toHaveAttribute('href', '/create');
+    expect(drawLink.compareDocumentPosition(createLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
