@@ -14,7 +14,6 @@ const collectionName = 'sketchbooks';
 const deletionJobCollectionName = 'sketchbookDeletionJobs';
 
 export interface SketchbookDeletionJob {
-  expiresAt: Date | null;
   publicId: string;
   sessionId: string | null;
   sessionType: 'legacy' | 'pin';
@@ -299,7 +298,6 @@ export async function findSketchbookDeletionJob(publicId: string): Promise<Sketc
   if (!document.exists || !data) return null;
 
   return {
-    expiresAt: data.expiresAt ? toDate(data.expiresAt) : null,
     publicId: String(data.publicId),
     sessionId: data.sessionId ? String(data.sessionId) : null,
     sessionType: data.sessionType === 'pin' ? 'pin' : 'legacy',
@@ -312,7 +310,6 @@ export async function createSketchbookDeletionJob(
   sketchbook: Sketchbook,
   session: LegacyManageSession | PinManageSession,
 ) {
-  let expiresAt: Date | null = null;
   let sessionId: string | null = null;
   let tokenHash: string;
 
@@ -324,7 +321,7 @@ export async function createSketchbookDeletionJob(
       .doc(session.sessionId)
       .get();
     const sessionData = sessionDocument.data();
-    expiresAt = sessionData?.expiresAt ? toDate(sessionData.expiresAt) : null;
+    const expiresAt = sessionData?.expiresAt ? toDate(sessionData.expiresAt) : null;
     tokenHash = String(sessionData?.tokenHash ?? '');
     sessionId = session.sessionId;
     if (
@@ -344,7 +341,6 @@ export async function createSketchbookDeletionJob(
 
   await getAdminFirestore().collection(deletionJobCollectionName).doc(sketchbook.publicId).create({
     createdAt: new Date(),
-    expiresAt,
     publicId: sketchbook.publicId,
     sessionId,
     sessionType: session.type,

@@ -39,7 +39,6 @@ export async function prepareSketchbookDeletion(publicId: string) {
     const isMatchingSession = deletionJob.publicId === publicId
       && deletionJob.sessionType === session.type
       && (session.type === 'legacy' || deletionJob.sessionId === session.sessionId)
-      && (!deletionJob.expiresAt || deletionJob.expiresAt > new Date())
       && isValidManageToken(session.token, deletionJob.tokenHash);
 
     return isMatchingSession

@@ -119,7 +119,6 @@ describe('getManagedSketchbook 관리 세션 선행 검증', () => {
   it('스케치북 루트와 세션이 없어도 일치하는 외부 삭제 권한으로 재시도를 인증한다', async () => {
     cookieGet.mockReturnValue({ value: 'public-1.session-1.secret-token' });
     findSketchbookDeletionJob.mockResolvedValue({
-      expiresAt: new Date(Date.now() + 60_000),
       publicId: 'public-1',
       sessionId: 'session-1',
       sessionType: 'pin',
@@ -138,7 +137,7 @@ describe('getManagedSketchbook 관리 세션 선행 검증', () => {
     expect(createSketchbookDeletionJob).not.toHaveBeenCalled();
   });
 
-  it('외부 삭제 권한이 만료되면 루트 권한으로 우회하지 않는다', async () => {
+  it('Fix round 1 문서에 지난 expiresAt가 남아 있어도 동일 자격의 후속 정리를 허용한다', async () => {
     cookieGet.mockReturnValue({ value: 'public-1.session-1.secret-token' });
     findSketchbookDeletionJob.mockResolvedValue({
       expiresAt: new Date(Date.now() - 1),
@@ -149,10 +148,60 @@ describe('getManagedSketchbook 관리 세션 선행 검증', () => {
       tokenHash: hashManageToken('secret-token'),
     });
 
+    await expect(prepareSketchbookDeletion('public-1')).resolves.toEqual({
+      id: 'book-1',
+      publicId: 'public-1',
+      source: 'deletion-job',
+    });
+
+    expect(findSketchbookByPublicId).not.toHaveBeenCalled();
+    expect(createSketchbookDeletionJob).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      job: { publicId: 'public-1', sessionId: 'session-1', sessionType: 'pin', tokenHash: hashManageToken('other-token') },
+      label: '다른 토큰',
+    },
+    {
+      job: { publicId: 'public-1', sessionId: 'session-2', sessionType: 'pin', tokenHash: hashManageToken('secret-token') },
+      label: '다른 세션 ID',
+    },
+    {
+      job: { publicId: 'public-2', sessionId: 'session-1', sessionType: 'pin', tokenHash: hashManageToken('secret-token') },
+      label: '다른 publicId',
+    },
+    {
+      job: { publicId: 'public-1', sessionId: null, sessionType: 'legacy', tokenHash: hashManageToken('secret-token') },
+      label: '다른 세션 종류',
+    },
+  ])('$label 자격은 삭제 재시도를 거절한다', async ({ job }) => {
+    cookieGet.mockReturnValue({ value: 'public-1.session-1.secret-token' });
+    findSketchbookDeletionJob.mockResolvedValue({
+      sketchbookId: 'book-1',
+      ...job,
+    });
+
     await expect(prepareSketchbookDeletion('public-1')).resolves.toBeNull();
 
     expect(findSketchbookByPublicId).not.toHaveBeenCalled();
     expect(createSketchbookDeletionJob).not.toHaveBeenCalled();
+  });
+
+  it('외부 삭제 작업 권한은 일반 관리 조회 권한으로 확장되지 않는다', async () => {
+    cookieGet.mockReturnValue({ value: 'public-1.session-1.secret-token' });
+    findSketchbookByPublicId.mockResolvedValue(null);
+    findSketchbookDeletionJob.mockResolvedValue({
+      publicId: 'public-1',
+      sessionId: 'session-1',
+      sessionType: 'pin',
+      sketchbookId: 'book-1',
+      tokenHash: hashManageToken('secret-token'),
+    });
+
+    await expect(getManagedSketchbook('public-1')).resolves.toBeNull();
+
+    expect(findSketchbookDeletionJob).not.toHaveBeenCalled();
   });
 
   it('publicId가 일치하는 legacy 후보는 기존 토큰 해시를 검증한다', async () => {

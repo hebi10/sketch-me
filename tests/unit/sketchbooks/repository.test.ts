@@ -200,7 +200,7 @@ describe('공개 그림 저장소 운영자 차단', () => {
     );
   });
 
-  it('PIN 삭제 재시도 권한을 원본 세션 만료와 함께 외부 문서 하나로 보존한다', async () => {
+  it('활성 PIN 세션을 확인한 뒤 삭제 재시도 식별자와 토큰 해시만 외부 문서 하나로 보존한다', async () => {
     const expiresAt = new Date(Date.now() + 60_000);
     const create = vi.fn();
     const sessionGet = vi.fn().mockResolvedValue({
@@ -227,7 +227,6 @@ describe('공개 그림 저장소 운영자 차단', () => {
 
     expect(create).toHaveBeenCalledWith({
       createdAt: expect.any(Date),
-      expiresAt,
       publicId: 'public-1',
       sessionId: 'session-1',
       sessionType: 'pin',
