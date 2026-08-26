@@ -18,6 +18,8 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
           createdAt,
           id: 'blocked-drawing',
           imagePath: 'sketchbooks/book-1/drawings/blocked.webp',
+          publicImageVersion: 'version-1',
+          thumbnailPath: null,
           message: null,
           moderatedAt: createdAt,
           moderationStatus: 'BLOCKED',
@@ -81,9 +83,9 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.queryByRole('img', { name: '직접 그린 내 모습' })).not.toBeInTheDocument();
   });
 
-  it('상품을 선택해 모의 결제하고 참여 한도를 갱신한다', async () => {
+  it('인원 상품을 선택해 새 가격으로 모의 결제하고 참여 한도를 갱신한다', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
-      json: async () => ({ participantLimit: 70 }),
+      json: async () => ({ entitlements: { watermarkFree: false }, participantLimit: 70 }),
       ok: true,
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -99,14 +101,16 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '저장 공간 확장하기' }));
-    const dialog = screen.getByRole('dialog', { name: '저장 공간 확장하기' });
+    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
+    const dialog = screen.getByRole('dialog', { name: '상품 선택하기' });
     expect(dialog).toBeVisible();
     expect(screen.getByRole('radio', { name: /10명 추가.*990원/ })).toBeChecked();
     expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms');
 
-    fireEvent.click(screen.getByRole('radio', { name: /50명 추가.*3,900원/ }));
-    fireEvent.click(screen.getByRole('button', { name: '3,900원 모의 결제하기' }));
+    expect(screen.getByRole('group', { name: '친구 인원 추가' })).toBeVisible();
+    expect(screen.getByRole('group', { name: '결과 이미지' })).toBeVisible();
+    fireEvent.click(screen.getByRole('radio', { name: /50명 추가.*4,490원/ }));
+    fireEvent.click(screen.getByRole('button', { name: '4,490원 모의 결제하기' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/manage/public-1/purchase', {
       body: expect.stringMatching(/"productId":"FRIENDS_50","requestId":"[^"]+"/),
@@ -116,6 +120,37 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(await screen.findByText('모의 결제가 완료되어 친구 그림 50개가 추가됐어요.')).toBeVisible();
     expect(screen.getByText((_, element) => element?.textContent === '친구 그림 5 / 70')).toBeVisible();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('워터마크 제거 결제는 인원 한도를 유지하고 적용 상태를 즉시 표시한다', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ entitlements: { watermarkFree: true }, participantLimit: 20 }),
+      ok: true,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <ManageDashboard
+        drawings={[]}
+        entitlements={{ watermarkFree: false }}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={5}
+        participantLimit={20}
+        publicId="watermark-book"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
+    fireEvent.click(screen.getByRole('radio', { name: /워터마크 제거.*990원/ }));
+    fireEvent.click(screen.getByRole('button', { name: '990원 모의 결제하기' }));
+
+    expect(await screen.findByText('워터마크 제거가 적용됐어요.')).toBeVisible();
+    expect(screen.getByText((_, element) => element?.textContent === '친구 그림 5 / 20')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
+    expect(screen.getByText('적용됨')).toBeVisible();
+    expect(screen.getByRole('radio', { name: /워터마크 제거.*적용됨/ })).toBeDisabled();
   });
 
   it('결제 연결에 실패하면 팝업을 유지하고 다시 시도할 수 있다', async () => {
@@ -132,11 +167,11 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '저장 공간 확장하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
     fireEvent.click(screen.getByRole('button', { name: '990원 모의 결제하기' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('결제 연결을 확인하고 다시 시도해 주세요.');
-    expect(screen.getByRole('dialog', { name: '저장 공간 확장하기' })).toBeVisible();
+    expect(screen.getByRole('dialog', { name: '상품 선택하기' })).toBeVisible();
     expect(screen.getByRole('button', { name: '990원 모의 결제하기' })).toBeEnabled();
   });
 
@@ -152,7 +187,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    const trigger = screen.getByRole('button', { name: '저장 공간 확장하기' });
+    const trigger = screen.getByRole('button', { name: '친구 그림 더 추가하기' });
     fireEvent.click(trigger);
 
     expect(screen.getByRole('main')).toHaveAttribute('inert');

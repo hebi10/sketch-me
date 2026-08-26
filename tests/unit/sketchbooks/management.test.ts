@@ -31,6 +31,7 @@ import { hashManageToken } from '@/lib/sketchbooks/manage-session';
 const createdAt = new Date('2026-08-25T00:00:00.000Z');
 const sketchbook: Sketchbook = {
   createdAt,
+  entitlements: { watermarkFree: false },
   id: 'book-1',
   managePinEnabledAt: createdAt,
   managePinHash: 'scrypt$salt$hash',

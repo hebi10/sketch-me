@@ -40,6 +40,7 @@ function createSketchbook(
 ): AdminSketchbookListItem {
   return {
     createdAt,
+    entitlements: { watermarkFree: false },
     id: 'book-1',
     moderationStatus: 'ACTIVE',
     moderatedAt: null,
@@ -53,7 +54,7 @@ function createSketchbook(
     status: 'PUBLIC',
     updatedAt: createdAt,
     ...overrides,
-  };
+  } as AdminSketchbookListItem;
 }
 
 function createDetail(
@@ -68,6 +69,8 @@ function createDetail(
       createdAt,
       id: 'drawing-1',
       imagePath: 'sketchbooks/book-1/drawings/drawing-1.webp',
+      publicImageVersion: 'version-1',
+      thumbnailPath: null,
       message: '기억해!',
       moderatedAt: null,
       moderationStatus: 'ACTIVE',

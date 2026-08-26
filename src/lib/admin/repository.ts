@@ -54,6 +54,9 @@ function toAdminSketchbook(
     ownerDrawingPath: data.ownerDrawingPath ? String(data.ownerDrawingPath) : null,
     referenceImagePath: data.referenceImagePath ? String(data.referenceImagePath) : null,
     referenceImageEnabled: Boolean(data.referenceImageEnabled),
+    entitlements: {
+      watermarkFree: data.entitlements?.watermarkFree === true,
+    },
     participantLimit: Number(data.participantLimit),
     participantCount: Number(data.participantCount),
     status: data.status as Sketchbook['status'],
@@ -74,6 +77,10 @@ function toAdminDrawing(
     sketchbookPublicId: String(data.sketchbookPublicId ?? ''),
     sketchbookName: String(data.sketchbookName ?? ''),
     imagePath: String(data.imagePath ?? ''),
+    thumbnailPath: data.thumbnailPath ? String(data.thumbnailPath) : null,
+    publicImageVersion: data.publicImageVersion
+      ? String(data.publicImageVersion)
+      : toDate(data.createdAt).getTime().toString(36),
     authorName: String(data.authorName ?? ''),
     message: data.message ? String(data.message) : null,
     usedReferenceImage: Boolean(data.usedReferenceImage),

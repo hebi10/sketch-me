@@ -36,6 +36,7 @@ describe('repository moderation compatibility', () => {
     });
 
     await expect(findSketchbookByPublicId('public-1')).resolves.toMatchObject({
+      entitlements: { watermarkFree: false },
       moderatedAt: null,
       moderationStatus: 'ACTIVE',
       ownerDrawingPath: null,
@@ -127,12 +128,14 @@ describe('addMockPurchase', () => {
     const transaction = {
       get: vi.fn(async (reference: { kind: string }) => reference.kind === 'purchase'
         ? { exists: purchaseExists }
-        : { data: () => ({ participantLimit }), exists: true }),
+        : { data: () => ({ entitlements: { watermarkFree: false }, participantLimit }), exists: true }),
       set: vi.fn((_reference, data: Record<string, unknown>) => {
         purchaseExists = true;
         savedPurchase = data;
       }),
-      update: vi.fn((_reference, data: { participantLimit: number }) => { participantLimit = data.participantLimit; }),
+      update: vi.fn((_reference, data: { participantLimit?: number }) => {
+        if (typeof data.participantLimit === 'number') participantLimit = data.participantLimit;
+      }),
     };
     getAdminFirestore.mockReturnValue({
       collection: vi.fn(() => ({ doc: vi.fn(() => sketchbookReference) })),
@@ -141,6 +144,7 @@ describe('addMockPurchase', () => {
     const sketchbook = {
       createdAt: new Date(),
       id: 'book-1',
+      entitlements: { watermarkFree: false },
       manageTokenHash: 'hash',
       moderatedAt: null,
       moderationStatus: 'ACTIVE' as const,
@@ -154,10 +158,16 @@ describe('addMockPurchase', () => {
       status: 'PUBLIC' as const,
       updatedAt: new Date(),
     };
-    const plan = { additionalLimit: 10 as const, amount: 990 as const, productId: 'FRIENDS_10' as const };
+    const plan = { additionalLimit: 10 as const, amount: 990 as const, kind: 'capacity' as const, label: '친구 그림 10명 추가' as const, productId: 'FRIENDS_10' as const };
 
-    await expect(addMockPurchase(sketchbook, plan, 'purchase-attempt-1234')).resolves.toBe(30);
-    await expect(addMockPurchase(sketchbook, plan, 'purchase-attempt-1234')).resolves.toBe(30);
+    await expect(addMockPurchase(sketchbook, plan, 'purchase-attempt-1234')).resolves.toEqual({
+      entitlements: { watermarkFree: false },
+      participantLimit: 30,
+    });
+    await expect(addMockPurchase(sketchbook, plan, 'purchase-attempt-1234')).resolves.toEqual({
+      entitlements: { watermarkFree: false },
+      participantLimit: 30,
+    });
 
     expect(transaction.update).toHaveBeenCalledTimes(1);
     expect(transaction.set).toHaveBeenCalledTimes(1);
@@ -167,5 +177,59 @@ describe('addMockPurchase', () => {
       sketchbookPublicId: 'public-1',
       sketchbookName: '내 이름',
     });
+  });
+
+  it('워터마크 제거 결제는 참여 한도를 바꾸지 않고 권한과 구매 기록을 함께 저장한다', async () => {
+    const purchaseReference = { kind: 'purchase' };
+    const sketchbookReference = {
+      collection: vi.fn(() => ({ doc: vi.fn(() => purchaseReference) })),
+      kind: 'sketchbook',
+    };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => reference.kind === 'purchase'
+        ? { exists: false }
+        : {
+            data: () => ({ entitlements: { watermarkFree: false }, participantLimit: 20 }),
+            exists: true,
+          }),
+      set: vi.fn(),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({ doc: vi.fn(() => sketchbookReference) })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<unknown>) => callback(transaction)),
+    });
+    const sketchbook = {
+      createdAt: new Date(),
+      entitlements: { watermarkFree: false },
+      id: 'book-1',
+      manageTokenHash: 'hash',
+      moderatedAt: null,
+      moderationStatus: 'ACTIVE' as const,
+      name: '내 이름',
+      ownerDrawingPath: null,
+      participantCount: 0,
+      participantLimit: 20,
+      publicId: 'public-1',
+      referenceImageEnabled: false,
+      referenceImagePath: null,
+      status: 'PUBLIC' as const,
+      updatedAt: new Date(),
+    };
+    const plan = { additionalLimit: 0 as const, amount: 990 as const, kind: 'watermark' as const, label: '워터마크 제거' as const, productId: 'WATERMARK_FREE' as const };
+
+    await expect(addMockPurchase(sketchbook, plan, 'watermark-attempt-1234')).resolves.toEqual({
+      entitlements: { watermarkFree: true },
+      participantLimit: 20,
+    });
+    expect(transaction.update).toHaveBeenCalledWith(sketchbookReference, expect.objectContaining({
+      entitlements: { watermarkFree: true },
+    }));
+    expect(transaction.update.mock.calls[0]?.[1]).not.toHaveProperty('participantLimit');
+    expect(transaction.set).toHaveBeenCalledWith(purchaseReference, expect.objectContaining({
+      additionalLimit: 0,
+      amount: 990,
+      productType: 'WATERMARK_FREE',
+    }));
   });
 });

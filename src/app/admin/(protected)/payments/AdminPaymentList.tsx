@@ -5,6 +5,7 @@ import type {
   AdminPage,
   AdminPurchaseListItem,
 } from '@/lib/admin/types';
+import { getPurchasePlan } from '@/lib/purchases/plans';
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
   dateStyle: 'medium',
@@ -27,6 +28,7 @@ function getNextPageHref(cursor: string) {
 function PaymentCard({ item }: { item: AdminPurchaseListItem }) {
   const titleId = useId();
   const paidAt = item.paidAt;
+  const plan = getPurchasePlan(item.productType);
 
   return (
     <article aria-labelledby={titleId} className="admin-payment-card">
@@ -51,11 +53,13 @@ function PaymentCard({ item }: { item: AdminPurchaseListItem }) {
         </div>
         <div>
           <dt>상품</dt>
-          <dd>{item.productType}</dd>
+          <dd>{plan?.label ?? item.productType}</dd>
         </div>
         <div>
-          <dt>추가 인원</dt>
-          <dd>+{item.additionalLimit.toLocaleString('ko-KR')}명</dd>
+          <dt>{plan?.kind === 'watermark' ? '혜택' : '추가 인원'}</dt>
+          <dd>{plan?.kind === 'watermark'
+            ? '결과 이미지 워터마크 제거'
+            : `+${item.additionalLimit.toLocaleString('ko-KR')}명`}</dd>
         </div>
         <div>
           <dt>금액</dt>

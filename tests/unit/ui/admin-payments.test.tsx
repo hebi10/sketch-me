@@ -27,7 +27,7 @@ function createPurchase(
 ): AdminPurchaseListItem {
   return {
     additionalLimit: 50,
-    amount: 3_900,
+    amount: 4_490,
     createdAt,
     id: 'purchase-1',
     orderId: 'mock_order_1',
@@ -66,11 +66,27 @@ describe('AdminPaymentList', () => {
     expect(within(card).getByText('모의 결제')).toBeVisible();
     expect(within(card).getByText('내 이름')).toBeVisible();
     expect(within(card).getByText('public-1')).toBeVisible();
-    expect(within(card).getByText('FRIENDS_50')).toBeVisible();
+    expect(within(card).getByText('친구 그림 50명 추가')).toBeVisible();
     expect(within(card).getByText('+50명')).toBeVisible();
-    expect(within(card).getByText('3,900원')).toBeVisible();
+    expect(within(card).getByText('4,490원')).toBeVisible();
     expect(within(card).getByText('성공')).toBeVisible();
     expect(within(card).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('워터마크 상품은 사람 수 대신 제거 권한으로 설명한다', () => {
+    render(<AdminPaymentList page={{
+      items: [createPurchase({
+        additionalLimit: 0,
+        amount: 990,
+        productType: 'WATERMARK_FREE',
+      })],
+      nextCursor: null,
+    }} />);
+
+    const card = screen.getByRole('article', { name: 'mock_order_1 결제' });
+    expect(within(card).getByText('워터마크 제거')).toBeVisible();
+    expect(within(card).getByText('결과 이미지 워터마크 제거')).toBeVisible();
+    expect(within(card).queryByText('+0명')).not.toBeInTheDocument();
   });
 
   it('커서를 인코딩한 다음 20개 링크와 빈 상태를 표시한다', () => {

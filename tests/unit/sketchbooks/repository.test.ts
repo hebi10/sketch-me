@@ -21,6 +21,7 @@ import {
 const createdAt = new Date('2026-08-25T00:00:00.000Z');
 const sketchbook = {
   createdAt,
+  entitlements: { watermarkFree: false },
   id: 'book-1',
   manageTokenHash: 'hash',
   moderatedAt: null,
@@ -41,6 +42,8 @@ const drawing = {
   createdAt,
   id: 'active-drawing',
   imagePath: 'sketchbooks/book-1/drawings/active.webp',
+  publicImageVersion: 'version-1',
+  thumbnailPath: null,
   message: null,
   moderatedAt: null,
   moderationStatus: 'ACTIVE' as const,
@@ -58,12 +61,13 @@ describe('공개 그림 저장소 운영자 차단', () => {
   });
 
   it('VISIBLE 전체 결과에서 BLOCKED 20개 뒤의 ACTIVE 그림도 누락 없이 반환한다', async () => {
+    const { publicImageVersion: _publicImageVersion, ...legacyDrawing } = drawing;
     const documents = [
       ...Array.from({ length: 20 }, (_, index) => ({
-        data: () => ({ ...drawing, id: `blocked-${index}`, moderationStatus: 'BLOCKED' }),
+        data: () => ({ ...legacyDrawing, id: `blocked-${index}`, moderationStatus: 'BLOCKED' }),
         id: `blocked-${index}`,
       })),
-      { data: () => drawing, id: drawing.id },
+      { data: () => legacyDrawing, id: drawing.id },
     ];
     const get = vi.fn().mockResolvedValue({ docs: documents });
     const query = {

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import type { Drawing, ModerationStatus, PurchaseProductId } from '@/lib/domain/types';
+import type { Drawing, ModerationStatus, PurchaseProductId, SketchbookEntitlements } from '@/lib/domain/types';
 import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
@@ -18,11 +18,13 @@ interface ManageDashboardProps {
   participantCount: number;
   participantLimit: number;
   drawings: Drawing[];
+  entitlements?: SketchbookEntitlements;
 }
 
-export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawingPath = null, participantCount, participantLimit, drawings }: ManageDashboardProps) {
+export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false } }: ManageDashboardProps) {
   const router = useRouter();
   const [limit, setLimit] = useState(participantLimit);
+  const [entitlements, setEntitlements] = useState(initialEntitlements);
   const [message, setMessage] = useState<string | null>(null);
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -187,13 +189,17 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId: plan.productId, requestId: purchaseRequestIdRef.current }),
       });
-      const result = await response.json().catch(() => ({})) as { participantLimit?: number; message?: string };
-      if (!response.ok || typeof result.participantLimit !== 'number') {
+      const result = await response.json().catch(() => ({})) as { entitlements?: SketchbookEntitlements; participantLimit?: number; message?: string };
+      if (!response.ok || typeof result.participantLimit !== 'number' || !result.entitlements) {
         setPurchaseError(result.message ?? '결제를 처리하지 못했습니다.');
         return;
       }
       setLimit(result.participantLimit);
-      setMessage(`모의 결제가 완료되어 친구 그림 ${plan.additionalLimit}개가 추가됐어요.`);
+      setEntitlements(result.entitlements);
+      setMessage(plan.kind === 'watermark'
+        ? '워터마크 제거가 적용됐어요.'
+        : `모의 결제가 완료되어 친구 그림 ${plan.additionalLimit}개가 추가됐어요.`);
+      setSelectedProductId('FRIENDS_10');
       setPurchaseOpen(false);
     } catch {
       setPurchaseError('결제 연결을 확인하고 다시 시도해 주세요.');
@@ -280,7 +286,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         ) : null}
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
         <progress max={limit} value={participantCount} />
-        <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">저장 공간 확장하기</button>
+        <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">친구 그림 더 추가하기</button>
       </section>
       {message ? <p className="submission-success" role="status">{message}</p> : null}
       <div className="manage-actions">
@@ -339,19 +345,33 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         <div className="purchase-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isPurchasing) setPurchaseOpen(false); }}>
           <dialog aria-labelledby="purchase-dialog-title" className="purchase-dialog" onCancel={(event) => { event.preventDefault(); if (!isPurchasing) setPurchaseOpen(false); }} ref={purchaseDialogRef}>
             <div className="purchase-dialog-heading">
-              <div><p className="eyebrow">모의 결제</p><h2 id="purchase-dialog-title">저장 공간 확장하기</h2></div>
+              <div><p className="eyebrow">모의 결제</p><h2 id="purchase-dialog-title">상품 선택하기</h2></div>
               <button aria-label="결제창 닫기" className="purchase-dialog-close" disabled={isPurchasing} onClick={() => setPurchaseOpen(false)} type="button">×</button>
             </div>
-            <p className="purchase-dialog-copy">필요한 만큼 친구 그림을 더 받을 수 있어요.</p>
-            <fieldset className="purchase-plan-list">
-              <legend className="sr-only">추가할 친구 그림 수 선택</legend>
-              {purchasePlans.map((plan) => (
+            <p className="purchase-dialog-copy">친구 그림을 더 받거나 결과 이미지의 워터마크를 제거할 수 있어요.</p>
+            <div className="purchase-plan-list">
+            <fieldset className="purchase-plan-group">
+              <legend>친구 인원 추가</legend>
+              {purchasePlans.filter((plan) => plan.kind === 'capacity').map((plan) => (
                 <label className="purchase-plan" key={plan.productId}>
                   <input checked={selectedProductId === plan.productId} disabled={isPurchasing} name="purchase-plan" onChange={() => setSelectedProductId(plan.productId)} type="radio" value={plan.productId} />
-                  <span><strong>{plan.additionalLimit}명 추가</strong><small>{plan.amount.toLocaleString('ko-KR')}원</small></span>
+                  <span><strong>{plan.label}</strong><small>{plan.amount.toLocaleString('ko-KR')}원</small></span>
                 </label>
               ))}
             </fieldset>
+            <fieldset className="purchase-plan-group">
+              <legend>결과 이미지</legend>
+              {purchasePlans.filter((plan) => plan.kind === 'watermark').map((plan) => {
+                const applied = entitlements.watermarkFree;
+                return (
+                  <label className="purchase-plan" key={plan.productId}>
+                    <input checked={selectedProductId === plan.productId} disabled={isPurchasing || applied} name="purchase-plan" onChange={() => setSelectedProductId(plan.productId)} type="radio" value={plan.productId} />
+                    <span><strong>{plan.label}</strong><small>{applied ? '적용됨' : `${plan.amount.toLocaleString('ko-KR')}원`}</small></span>
+                  </label>
+                );
+              })}
+            </fieldset>
+            </div>
             {purchaseError ? <p className="purchase-error" role="alert">{purchaseError}</p> : null}
             <button className="button button--primary purchase-submit" disabled={isPurchasing} onClick={purchase} type="button">
               {isPurchasing ? '모의 결제 처리 중...' : `${getPurchasePlan(selectedProductId)?.amount.toLocaleString('ko-KR')}원 모의 결제하기`}

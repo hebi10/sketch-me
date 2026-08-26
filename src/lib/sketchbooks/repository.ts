@@ -277,10 +277,26 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
       transaction.get(purchaseReference),
     ]);
     if (!document.exists) throw new Error('스캐치북을 찾을 수 없습니다.');
-    const currentLimit = Number(document.data()?.participantLimit);
-    if (existingPurchase.exists) return currentLimit;
-    const participantLimit = currentLimit + plan.additionalLimit;
-    transaction.update(reference, { participantLimit, updatedAt: new Date() });
+    const currentData = document.data() ?? {};
+    const currentLimit = Number(currentData.participantLimit);
+    const currentEntitlementsData = currentData.entitlements && typeof currentData.entitlements === 'object'
+      ? currentData.entitlements as Record<string, unknown>
+      : {};
+    const currentEntitlements = { watermarkFree: currentEntitlementsData.watermarkFree === true };
+    if (existingPurchase.exists) {
+      return { entitlements: currentEntitlements, participantLimit: currentLimit };
+    }
+    const participantLimit = plan.kind === 'capacity'
+      ? currentLimit + plan.additionalLimit
+      : currentLimit;
+    const entitlements = plan.kind === 'watermark'
+      ? { ...currentEntitlements, watermarkFree: true }
+      : currentEntitlements;
+    transaction.update(reference, {
+      ...(plan.kind === 'capacity' ? { participantLimit } : {}),
+      ...(plan.kind === 'watermark' ? { entitlements } : {}),
+      updatedAt: new Date(),
+    });
     transaction.set(purchaseReference, {
       sketchbookId: sketchbook.id,
       sketchbookPublicId: sketchbook.publicId,
@@ -294,7 +310,7 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
       paidAt: new Date(),
       createdAt: new Date(),
     });
-    return participantLimit;
+    return { entitlements, participantLimit };
   });
 }
 

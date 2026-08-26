@@ -32,6 +32,7 @@ import type { Sketchbook } from '@/lib/domain/types';
 const createdAt = new Date('2026-08-25T00:00:00.000Z');
 const blockedSketchbook: Sketchbook = {
   createdAt,
+  entitlements: { watermarkFree: false },
   id: 'book-1',
   managePinEnabledAt: createdAt,
   managePinHash: 'scrypt$salt$hash',

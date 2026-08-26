@@ -15,6 +15,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   if (!/^[a-zA-Z0-9_-]{8,100}$/.test(requestId)) {
     return NextResponse.json({ message: '결제 요청을 다시 시작해 주세요.' }, { status: 400 });
   }
-  const participantLimit = await addMockPurchase(sketchbook, plan, requestId);
-  return NextResponse.json({ participantLimit });
+  const result = await addMockPurchase(sketchbook, plan, requestId);
+  return NextResponse.json(result);
 }

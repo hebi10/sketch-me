@@ -44,6 +44,8 @@ const drawing: Drawing = {
   createdAt,
   id: 'draw-1',
   imagePath: 'sketchbooks/book-1/drawings/draw-1/original.webp',
+  publicImageVersion: 'version-1',
+  thumbnailPath: 'sketchbooks/book-1/drawings/draw-1/thumbnail.webp',
   message: null,
   moderatedAt: null,
   moderationStatus: 'ACTIVE',

@@ -11,6 +11,7 @@ vi.mock('@/lib/sketchbooks/repository', () => ({ addMockPurchase }));
 import { POST } from '@/app/api/manage/[publicId]/purchase/route';
 
 const sketchbook = {
+  entitlements: { watermarkFree: false },
   id: 'book-1',
   participantLimit: 20,
 };
@@ -19,7 +20,10 @@ describe('POST /api/manage/:publicId/purchase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getManagedSketchbook.mockResolvedValue(sketchbook);
-    addMockPurchase.mockResolvedValue(70);
+    addMockPurchase.mockResolvedValue({
+      entitlements: { watermarkFree: false },
+      participantLimit: 70,
+    });
   });
 
   it('허용된 상품을 서버 가격으로 결제하고 갱신된 한도를 반환한다', async () => {
@@ -32,12 +36,45 @@ describe('POST /api/manage/:publicId/purchase', () => {
     const response = await POST(request, { params: Promise.resolve({ publicId: 'public-1' }) });
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ participantLimit: 70 });
-    expect(addMockPurchase).toHaveBeenCalledWith(sketchbook, {
+    await expect(response.json()).resolves.toEqual({
+      entitlements: { watermarkFree: false },
+      participantLimit: 70,
+    });
+    expect(addMockPurchase).toHaveBeenCalledWith(sketchbook, expect.objectContaining({
       additionalLimit: 50,
-      amount: 3900,
+      amount: 4490,
+      kind: 'capacity',
       productId: 'FRIENDS_50',
-    }, 'purchase-attempt-1234');
+    }), 'purchase-attempt-1234');
+  });
+
+  it('워터마크 제거 상품은 서버의 990원 권한 상품으로만 처리한다', async () => {
+    addMockPurchase.mockResolvedValueOnce({
+      entitlements: { watermarkFree: true },
+      participantLimit: 20,
+    });
+    const request = new Request('http://localhost/api/manage/public-1/purchase', {
+      body: JSON.stringify({
+        amount: 1,
+        productId: 'WATERMARK_FREE',
+        requestId: 'watermark-attempt-1234',
+      }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ publicId: 'public-1' }) });
+
+    await expect(response.json()).resolves.toEqual({
+      entitlements: { watermarkFree: true },
+      participantLimit: 20,
+    });
+    expect(addMockPurchase).toHaveBeenCalledWith(sketchbook, expect.objectContaining({
+      additionalLimit: 0,
+      amount: 990,
+      kind: 'watermark',
+      productId: 'WATERMARK_FREE',
+    }), 'watermark-attempt-1234');
   });
 
   it('등록되지 않은 상품은 결제하지 않는다', async () => {

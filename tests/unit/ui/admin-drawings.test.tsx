@@ -37,6 +37,8 @@ function createDrawing(
     createdAt,
     id: 'draw-1',
     imagePath: 'sketchbooks/book-1/drawings/draw-1/original.webp',
+    publicImageVersion: 'version-1',
+    thumbnailPath: 'sketchbooks/book-1/drawings/draw-1/thumbnail.webp',
     message: '기억해!',
     moderatedAt: null,
     moderationStatus: 'ACTIVE',
@@ -47,7 +49,7 @@ function createDrawing(
     updatedAt: createdAt,
     usedReferenceImage: false,
     ...overrides,
-  };
+  } as AdminDrawingListItem;
 }
 
 function createDeferred<T>() {
