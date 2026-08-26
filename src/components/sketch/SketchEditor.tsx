@@ -41,6 +41,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const referencePointers = useRef(new Map<number, { x: number; y: number }>());
     const [tab, setTab] = useState<EditorTab>('draw');
     const [color, setColor] = useState<string>(sketchColors[0].value);
+    const [customColor, setCustomColor] = useState<string | null>(null);
     const [lineWidth, setLineWidth] = useState(5);
     const [penOpacity, setPenOpacity] = useState(100);
     const [eraser, setEraser] = useState(false);
@@ -202,6 +203,14 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       drawingContext.stroke();
     }
 
+    function selectCustomColor(event: React.ChangeEvent<HTMLInputElement>) {
+      const nextColor = event.target.value.toLowerCase();
+      setCustomColor(nextColor);
+      setColor(nextColor);
+      setEraser(false);
+      setTab('draw');
+    }
+
     function pointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
       if (tab !== 'draw') return;
       const point = canvasPoint(event);
@@ -358,7 +367,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
               <div className="reference-controls"><p>한 손가락으로 이동하고 두 손가락으로 확대·축소하세요.</p><button aria-pressed={referenceVisible} className="tool-button reference-visibility-toggle" onClick={() => setReferenceVisible((current) => !current)} type="button">참고 사진 {referenceVisible ? '숨기기' : '보기'}</button><label className="range-control"><span>사진 투명도</span><strong>{referenceOpacity}%</strong><input aria-label="사진 투명도" max="100" min="10" onChange={(event) => setReferenceOpacity(Number(event.target.value))} step="5" type="range" value={referenceOpacity} /></label><label className="range-control"><span>확대</span><strong>{Math.round(referenceScale * 100)}%</strong><input aria-label="확대" max="3" min="0.6" onChange={(event) => setReferenceScale(Number(event.target.value))} step="0.1" type="range" value={referenceScale} /></label><button className="tool-button" onClick={() => { setReferenceOffset({ x: 0, y: 0 }); setReferenceScale(1); }} type="button">위치 초기화</button></div>
             ) : (
               <><div className="tool-row"><button className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button className="tool-button" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button">되돌리기</button><button className="tool-button" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button">다시 실행</button><button className="tool-button" onClick={clear} type="button">전체 삭제</button></div>
-              <div className="tool-row">{sketchColors.map((nextColor) => <button aria-label={`${nextColor.label} 색상`} aria-pressed={color === nextColor.value && !eraser} className={`color-swatch ${color === nextColor.value && !eraser ? 'is-active' : ''}`} key={nextColor.value} onClick={() => { setColor(nextColor.value); setEraser(false); setTab('draw'); }} style={{ backgroundColor: nextColor.value }} type="button" />)}</div>
+              <div className="tool-row color-palette">{sketchColors.map((nextColor) => <button aria-label={`${nextColor.label} 색상`} aria-pressed={color === nextColor.value && !eraser} className={`color-swatch ${color === nextColor.value && !eraser ? 'is-active' : ''}`} key={nextColor.value} onClick={() => { setColor(nextColor.value); setEraser(false); setTab('draw'); }} style={{ backgroundColor: nextColor.value }} type="button" />)}<label className={`color-swatch custom-color-swatch ${customColor === color && !eraser ? 'is-active' : ''}`} style={{ backgroundColor: customColor ?? 'var(--canvas)' }}><span aria-hidden="true">+</span><input aria-label={customColor ? `사용자 지정 색상 ${customColor}` : '사용자 지정 색상 선택'} onChange={selectCustomColor} type="color" value={customColor ?? sketchColors[0].value} /></label></div>
               <div className="drawing-range-controls"><label className="range-control"><span>펜 투명도</span><strong>{penOpacity}%</strong><input aria-label="펜 투명도" max="100" min="10" onChange={(event) => setPenOpacity(Number(event.target.value))} step="5" type="range" value={penOpacity} /></label><label className="range-control"><span>굵기</span><strong>{lineWidth}</strong><input aria-label="굵기" max="18" min="2" onChange={(event) => setLineWidth(Number(event.target.value))} type="range" value={lineWidth} /></label></div></>
             )}
           </div>
