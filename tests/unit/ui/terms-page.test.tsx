@@ -24,6 +24,7 @@ describe('TermsPage', () => {
   it('현재 인원 추가 가격과 워터마크 제거 상품을 정확히 안내한다', () => {
     render(<TermsPage />);
 
+    expect(screen.getByText('스케치북 하나당 친구 그림 10개까지 무료로 받을 수 있습니다.')).toBeVisible();
     expect(screen.getByText('친구 그림 10명 추가 · 990원')).toBeVisible();
     expect(screen.getByText('친구 그림 50명 추가 · 4,490원')).toBeVisible();
     expect(screen.getByText('친구 그림 100명 추가 · 8,490원')).toBeVisible();

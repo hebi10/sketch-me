@@ -21,7 +21,7 @@ export default function TermsPage() {
           <p className="eyebrow">서비스 정책</p>
           <h1>서비스 이용 및 결제 안내</h1>
           <p>스캐치북을 안심하고 이용할 수 있도록 무료 이용 범위와 결제·서비스 종료 기준을 안내합니다.</p>
-          <p className="legal-effective-date">시행일: 2026년 8월 26일</p>
+          <p className="legal-effective-date">시행일: 2026년 8월 27일</p>
         </header>
 
         <nav aria-label="서비스 정책 목차" className="legal-toc">
@@ -35,7 +35,7 @@ export default function TermsPage() {
           <h2>1. 서비스 이용</h2>
           <p>스캐치북은 공개 링크를 받은 친구가 그림을 남기고, 스케치북 소유자가 그 결과를 관리하는 참여형 서비스입니다.</p>
           <ul>
-            <li>스케치북 하나당 친구 그림 20개까지 무료로 받을 수 있습니다.</li>
+            <li>스케치북 하나당 친구 그림 10개까지 무료로 받을 수 있습니다.</li>
             <li>공개 링크를 아는 사람은 별도 로그인 없이 친구 페이지를 열 수 있으므로 링크 관리에 주의해 주세요.</li>
             <li>소유자는 관리 화면에서 그림을 숨기거나 삭제하고 BEST 그림을 선택할 수 있습니다.</li>
           </ul>

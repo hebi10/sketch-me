@@ -23,6 +23,12 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     vi.unstubAllGlobals();
   });
 
+  it('신규 스케치북의 무료 그림 한도를 10개로 안내한다', async () => {
+    render(<CreateSketchbookForm />);
+
+    expect(await screen.findByText('친구 그림 10개까지 무료로 받아볼 수 있어요.')).toBeVisible();
+  });
+
   it('2MB가 넘는 참고 사진을 브라우저에서 WebP로 압축해 선택한다', async () => {
     const drawImage = vi.fn();
     vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ close: vi.fn(), height: 3000, width: 4000 })));

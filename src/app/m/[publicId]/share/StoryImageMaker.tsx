@@ -4,11 +4,14 @@ import { useState } from 'react';
 
 import {
   STORY_BEST_TITLE_Y,
+  STORY_CTA_Y,
   STORY_HEIGHT,
+  STORY_PUBLIC_URL_Y,
   STORY_SHARED_HEADING,
   STORY_SHARED_HEADING_Y,
   STORY_WIDTH,
   storySlots,
+  storyWatermark,
   type StorySlot,
 } from '@/lib/share/story-layout';
 import { storyStyle } from '@/lib/share/story-style';
@@ -112,25 +115,27 @@ export function StoryImageMaker({ backgroundImage, drawings, name, publicUrl, wa
       if (!watermarkFree) {
         const watermark = await loadImage('/brand/sketchbook-watermark.webp');
         context.save();
-        context.globalAlpha = 0.5;
-        context.drawImage(watermark, 758, 205, 58, 58);
+        context.globalAlpha = storyWatermark.opacity;
+        const iconX = storyWatermark.x + 12;
+        const iconY = storyWatermark.y + (storyWatermark.height - storyWatermark.iconSize) / 2;
+        context.drawImage(watermark, iconX, iconY, storyWatermark.iconSize, storyWatermark.iconSize);
         context.fillStyle = storyStyle.ink;
-        context.font = `600 25px ${storyStyle.fontFamily}`;
+        context.font = `600 38px ${storyStyle.fontFamily}`;
         context.textAlign = 'left';
-        context.fillText('스캐치북', 826, 243);
+        context.fillText('스캐치북', iconX + storyWatermark.iconSize + 12, storyWatermark.y + 70);
         context.restore();
         context.textAlign = 'center';
       }
 
       const absolutePublicUrl = new URL(publicUrl, window.location.origin).href;
       context.fillStyle = storyStyle.accent;
-      context.fillRect(210, 1280, 660, 84);
+      context.fillRect(210, STORY_CTA_Y, 660, 84);
       context.fillStyle = '#ffffff';
       context.font = `600 32px ${storyStyle.fontFamily}`;
-      context.fillText('나도 스케치북에 그림 남기기', 540, 1334);
+      context.fillText('나도 스케치북에 그림 남기기', 540, STORY_CTA_Y + 54);
       context.fillStyle = storyStyle.muted;
       context.font = `22px ${storyStyle.fontFamily}`;
-      context.fillText(absolutePublicUrl, 540, 1408);
+      context.fillText(absolutePublicUrl, 540, STORY_PUBLIC_URL_Y);
 
       const link = document.createElement('a');
       link.download = `${name}-sketchbook-story.png`;

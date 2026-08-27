@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { SketchEditor, type SketchEditorHandle } from '@/components/sketch/SketchEditor';
 import { ClientImageCompressionError, compressReferenceImage } from '@/lib/images/client-compress';
 import { getPublicMutationHeaders } from '@/lib/security/app-check-client';
+import { FREE_PARTICIPANT_LIMIT } from '@/lib/sketchbooks/capacity';
 
 interface CreateResult {
   manageUrl: string;
@@ -173,7 +174,7 @@ export function CreateSketchbookForm() {
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
       <button className="button button--primary create-submit" disabled={isSubmitting || isCompressingReference} type="submit">{isSubmitting ? '스캐치북 만드는 중...' : '내 스캐치북 만들기'}</button>
-      <p className="field-hint">친구 그림 20개까지 무료로 받아볼 수 있어요.</p>
+      <p className="field-hint">친구 그림 {FREE_PARTICIPANT_LIMIT}개까지 무료로 받아볼 수 있어요.</p>
     </form>
   );
 }

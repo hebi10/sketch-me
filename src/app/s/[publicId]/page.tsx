@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { findSketchbookByPublicId, listVisibleDrawings } from '@/lib/sketchbooks/repository';
-import { isSketchbookFull } from '@/lib/sketchbooks/capacity';
+import { FREE_PARTICIPANT_LIMIT, isSketchbookFull } from '@/lib/sketchbooks/capacity';
 import { formatTimeAgo } from '@/lib/time/time-ago';
 import { galleryImageLoading } from '@/lib/images/loading';
 import { ModerationBlockedNotice } from './ModerationBlockedNotice';
@@ -110,7 +110,7 @@ export default async function PublicSketchbookPage({
               ))}
             </div>
             {isFull ? <span aria-disabled="true" className="button button--disabled board-draw-button">친구 그림 접수 마감</span> : <Link className="button button--primary board-draw-button" href={`/s/${publicId}/draw`}>✎ 그림 남기기</Link>}
-            <div className="board-progress"><span>친구 그림 {sketchbook.participantLimit}개까지 무료</span><strong>{sketchbook.participantCount} / {sketchbook.participantLimit}</strong></div>
+            <div className="board-progress"><span>기본 {FREE_PARTICIPANT_LIMIT}개 무료</span><strong>{sketchbook.participantCount} / {sketchbook.participantLimit}</strong></div>
           </section>
 
           <section className="public-feed-section" aria-labelledby="best-drawings-heading">

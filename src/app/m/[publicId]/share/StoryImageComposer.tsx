@@ -5,7 +5,14 @@ import { useState } from 'react';
 
 import { StoryImageMaker, type StoryDrawing } from './StoryImageMaker';
 import { WatermarkPurchaseButton } from './WatermarkPurchaseButton';
-import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
+import {
+  STORY_CTA_Y,
+  STORY_HEIGHT,
+  STORY_SHARED_HEADING,
+  STORY_WIDTH,
+  storySlots,
+  storyWatermark,
+} from '@/lib/share/story-layout';
 import { getStoryTheme, storyThemes } from '@/lib/share/story-themes';
 import { storyStyle } from '@/lib/share/story-style';
 
@@ -53,22 +60,40 @@ export function StoryImageComposer({ drawings, initialWatermarkFree, name, publi
         <p className="story-preview__heading">{STORY_SHARED_HEADING}</p>
         <h1>BEST 4</h1>
         <div className="story-best-grid">
-          {[1, 2, 3, 4].map((rank) => {
-            const drawing = drawings.find((item) => item.rank === rank);
+          {storySlots.map((slot) => {
+            const drawing = drawings.find((item) => item.rank === slot.rank);
             return (
-              <figure className={`story-best-slot story-best-slot--${rank}`} key={rank}>
-                <b>BEST {rank}</b>
-                {drawing ? <Image alt={`BEST ${rank} 그림`} fill sizes={rank === 1 ? '420px' : '140px'} src={drawing.imageUrl} unoptimized /> : <span>아직 선정 전</span>}
+              <figure
+                className={`story-best-slot story-best-slot--${slot.rank}`}
+                key={slot.rank}
+                style={{
+                  height: `${(slot.height / STORY_HEIGHT) * 100}%`,
+                  left: `${(slot.x / STORY_WIDTH) * 100}%`,
+                  top: `${(slot.y / STORY_HEIGHT) * 100}%`,
+                  width: `${(slot.width / STORY_WIDTH) * 100}%`,
+                }}
+              >
+                <b>BEST {slot.rank}</b>
+                {drawing ? <Image alt={`BEST ${slot.rank} 그림`} fill sizes={slot.rank === 1 ? '440px' : '160px'} src={drawing.imageUrl} unoptimized /> : <span>아직 선정 전</span>}
               </figure>
             );
           })}
         </div>
-        <div className="story-preview-cta">
+        <div className="story-preview-cta" style={{ top: `${(STORY_CTA_Y / STORY_HEIGHT) * 100}%` }}>
           <strong>나도 스케치북에 그림 남기기</strong>
           <span>{publicUrl}</span>
         </div>
         {!watermarkFree ? (
-          <div className="story-watermark">
+          <div
+            className="story-watermark"
+            style={{
+              height: `${(storyWatermark.height / STORY_HEIGHT) * 100}%`,
+              left: `${(storyWatermark.x / STORY_WIDTH) * 100}%`,
+              opacity: storyWatermark.opacity,
+              top: `${(storyWatermark.y / STORY_HEIGHT) * 100}%`,
+              width: `${(storyWatermark.width / STORY_WIDTH) * 100}%`,
+            }}
+          >
             <Image alt="스캐치북 워터마크" height={48} src="/brand/sketchbook-watermark.webp" unoptimized width={48} />
             <span>스캐치북</span>
           </div>

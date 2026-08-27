@@ -23,7 +23,7 @@ describe('createSketchbookDraft', () => {
       managePinHint: '생일 네 자리',
       managePinEnabledAt: new Date('2026-08-24T00:00:00.000Z'),
       manageTokenHash: 'hashed-token',
-      participantLimit: 20,
+      participantLimit: 10,
       participantCount: 0,
       entitlements: { watermarkFree: false },
       referenceImagePath: null,

@@ -237,20 +237,16 @@ a { color: inherit; text-decoration: none; }
 }
 .story-best-grid { inset: 0; pointer-events: none; position: absolute; }
 .story-best-slot { align-items: center; background: var(--canvas); border: 1px solid var(--line); display: flex; justify-content: center; margin: 0; min-width: 0; overflow: hidden; position: absolute; }
-.story-best-slot--1 { height: 45.833%; left: 19.444%; top: 21.361%; width: 61.111%; }
-.story-best-slot--2, .story-best-slot--3, .story-best-slot--4 { height: 17.361%; top: 69.361%; width: 23.148%; }
-.story-best-slot--2 { left: 11.944%; }
-.story-best-slot--3 { left: 38.426%; }
-.story-best-slot--4 { left: 64.907%; }
 .story-best-slot b { background: var(--accent); color: var(--canvas); font-size: .75rem; left: 0; padding: 5px 7px; position: absolute; top: 0; z-index: 2; }
+.story-best-slot--1 b { font-size: .82rem; padding: 6px 8px; }
 .story-best-slot img { object-fit: contain; }
 .story-best-slot span { color: var(--muted); font-size: .75rem; }
-.story-preview-cta { display: grid; gap: 4px; left: 19.444%; position: absolute; right: 19.444%; top: 88.889%; }
+.story-preview-cta { display: grid; gap: 4px; left: 19.444%; position: absolute; right: 19.444%; }
 .story-preview-cta strong { align-items: center; background: var(--accent); color: var(--canvas); display: flex; font-size: clamp(.65rem, 2.8vw, .9rem); justify-content: center; min-height: clamp(34px, 6vw, 48px); padding: 5px; }
 .story-preview-cta span { color: var(--muted); font-size: clamp(.55rem, 2.2vw, .72rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.story-watermark { align-items: center; display: flex; gap: 4px; opacity: .5; position: absolute; right: 13%; top: 14.2%; }
-.story-watermark img { height: clamp(22px, 6.4vw, 42px); object-fit: contain; width: clamp(22px, 6.4vw, 42px); }
-.story-watermark span { color: var(--ink); font-size: var(--font-size-caption); font-weight: 700; }
+.story-watermark { align-items: center; display: flex; gap: 3%; justify-content: center; pointer-events: none; position: absolute; white-space: nowrap; z-index: 3; }
+.story-watermark img { height: auto; object-fit: contain; width: 29.63%; }
+.story-watermark span { color: var(--ink); font-size: clamp(.78rem, 3.6vw, 1.35rem); font-weight: 700; }
 .story-output-meta { color: var(--muted); font-size: .8rem; margin: -4px 0 14px; text-align: center; }
 .watermark-purchase { border: 1px solid var(--line); display: grid; gap: 10px; margin-bottom: 12px; padding: 14px; }
 .watermark-purchase strong { display: block; font-size: 1rem; font-weight: 700; line-height: 1.45; }

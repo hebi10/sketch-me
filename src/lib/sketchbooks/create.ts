@@ -1,4 +1,5 @@
 import type { Sketchbook } from '@/lib/domain/types';
+import { FREE_PARTICIPANT_LIMIT } from './capacity';
 
 interface CreateSketchbookDraftParams {
   id: string;
@@ -35,7 +36,7 @@ export function createSketchbookDraft({
     referenceImagePath,
     referenceImageEnabled: Boolean(referenceImagePath),
     entitlements: { watermarkFree: false },
-    participantLimit: 20,
+    participantLimit: FREE_PARTICIPANT_LIMIT,
     participantCount: 0,
     status: 'PUBLIC',
     moderationStatus: 'ACTIVE',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { STORY_HEIGHT, STORY_WIDTH, storySlots } from '@/lib/share/story-layout';
+import { STORY_HEIGHT, STORY_WIDTH, storySlots, storyWatermark } from '@/lib/share/story-layout';
 
 function overlaps(a: (typeof storySlots)[number], b: (typeof storySlots)[number]) {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
@@ -32,10 +32,19 @@ describe('story image layout', () => {
 
   it('matches the preview positions used for the downloadable image', () => {
     expect(storySlots).toEqual([
-      { rank: 1, x: 210, y: 308, width: 660, height: 660 },
-      { rank: 2, x: 129, y: 999, width: 250, height: 250 },
-      { rank: 3, x: 415, y: 999, width: 250, height: 250 },
-      { rank: 4, x: 701, y: 999, width: 250, height: 250 },
+      { rank: 1, x: 195, y: 275, width: 690, height: 690 },
+      { rank: 2, x: 107, y: 1015, width: 270, height: 270 },
+      { rank: 3, x: 405, y: 1015, width: 270, height: 270 },
+      { rank: 4, x: 703, y: 1015, width: 270, height: 270 },
     ]);
+  });
+
+  it('places the centered watermark across BEST 1 and the lower BEST row', () => {
+    const [bestOne, ...lowerSlots] = storySlots;
+    const watermarkBottom = storyWatermark.y + storyWatermark.height;
+
+    expect(storyWatermark.x + storyWatermark.width / 2).toBe(STORY_WIDTH / 2);
+    expect(storyWatermark.y).toBeLessThan(bestOne.y + bestOne.height);
+    lowerSlots.forEach((slot) => expect(watermarkBottom).toBeGreaterThan(slot.y));
   });
 });
