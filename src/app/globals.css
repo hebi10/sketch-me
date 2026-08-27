@@ -178,6 +178,28 @@ a { color: inherit; text-decoration: none; }
 .range-control strong { color: var(--muted); font-size: .82rem; font-weight: 700; text-align: right; }
 .drawing-range-controls .range-control input,
 .reference-controls .range-control input { accent-color: var(--accent); grid-column: 1 / -1; width: 100%; }
+.face-builder-controls { display: grid; gap: 12px; }
+.face-category-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.face-category-tabs button { background: var(--canvas); border: 1px solid var(--line); color: var(--muted); min-height: 44px; padding: 6px 2px; }
+.face-category-tabs button + button { border-left: 0; }
+.face-category-tabs button[aria-selected="true"] { color: var(--accent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.face-part-grid { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; }
+.face-part-grid li { display: grid; gap: 4px; min-width: 0; }
+.face-part-option { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); display: grid; font-size: .78rem; gap: 5px; min-height: 132px; padding: 5px; width: 100%; }
+.face-part-option:disabled { cursor: not-allowed; opacity: .52; }
+.face-part-option[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.face-part-preview { aspect-ratio: 1; display: block; overflow: hidden; position: relative; width: 100%; }
+.face-part-preview img { height: 100%; inset: 0; object-fit: contain; position: absolute; width: 100%; }
+.face-part-status { color: var(--muted); font-size: .72rem; }
+.face-part-retry { background: var(--canvas); border: 1px solid var(--line); color: var(--danger); min-height: 44px; }
+.crosshair-toggle { align-items: center; border: 1px solid var(--line); display: flex; gap: 10px; min-height: 44px; padding: 8px 10px; }
+.crosshair-toggle input { accent-color: var(--accent); height: 20px; width: 20px; }
+.face-builder-actions { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.face-builder-actions .tool-button { min-height: 44px; }
+.face-builder-actions .button { grid-column: 1 / -1; }
+@media (min-width: 480px) {
+  .face-part-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .drawing-submit-form { display: grid; gap: 8px; margin-top: 24px; }
 .drawing-submit-form input, .drawing-submit-form textarea { background: var(--canvas); border: 1px solid var(--line); color: var(--ink); padding: 10px 12px; }
 .drawing-submit-form input { min-height: 48px; }
