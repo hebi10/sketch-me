@@ -31,6 +31,7 @@ type EditorTab = 'draw' | 'guide' | 'edit';
 type LoupePlacement = 'above' | 'below';
 
 const loupeSize = 104;
+const loupeHorizontalOffset = 64;
 
 export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
   function SketchEditor({ ariaLabel, initialDrawingDataUrl = null, onDrawingChange, referenceImageUrl }, ref) {
@@ -210,8 +211,10 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       const sourceSize = Math.min(width, (loupeSize / 2) * (width / bounds.width));
       const sourceX = Math.min(width - sourceSize, Math.max(0, point.x - sourceSize / 2));
       const sourceY = Math.min(height - sourceSize, Math.max(0, point.y - sourceSize / 2));
-      const edgePadding = ((loupeSize / 2) + 4) * (width / bounds.width);
-      const displayX = Math.min(width - edgePadding, Math.max(edgePadding, point.x));
+      const canvasPixelsPerCssPixel = width / bounds.width;
+      const edgePadding = ((loupeSize / 2) + 4) * canvasPixelsPerCssPixel;
+      const preferredDisplayX = point.x - loupeHorizontalOffset * canvasPixelsPerCssPixel;
+      const displayX = Math.min(width - edgePadding, Math.max(edgePadding, preferredDisplayX));
       const nextPlacement: LoupePlacement = point.y / height < (loupeSize + 36) / bounds.height
         ? 'below'
         : 'above';

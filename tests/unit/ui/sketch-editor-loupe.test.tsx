@@ -24,7 +24,7 @@ function createCanvasContext() {
 }
 
 describe('SketchEditor 그리기 돋보기', () => {
-  it('그리는 동안 현재 지점을 확대하고 손을 떼면 숨긴다', () => {
+  it('그리는 동안 손가락 왼쪽의 현재 지점을 확대하고 손을 떼면 숨긴다', () => {
     const drawingContext = createCanvasContext();
     const loupeContext = createCanvasContext();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function getContext(this: HTMLCanvasElement) {
@@ -56,6 +56,7 @@ describe('SketchEditor 그리기 돋보기', () => {
 
     expect(loupe).toHaveAttribute('data-active', 'true');
     expect(loupe).toHaveAttribute('data-placement', 'above');
+    expect(Number.parseFloat(loupe.style.left)).toBeLessThan(50);
     expect(loupeContext.drawImage).toHaveBeenCalledWith(
       canvas,
       expect.any(Number),
