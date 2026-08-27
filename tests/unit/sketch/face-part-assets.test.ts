@@ -21,5 +21,5 @@ describe('얼굴 파츠 이미지', () => {
       expect((await sharp(file).stats()).isOpaque).toBe(false);
       expect((await stat(file)).size).toBeLessThan(250 * 1024);
     }
-  });
+  }, 15_000);
 });

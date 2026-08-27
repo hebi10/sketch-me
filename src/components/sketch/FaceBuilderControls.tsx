@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 
 import {
+  FACE_PART_CATEGORIES,
   FACE_PARTS,
   selectFacePart,
   selectedFacePartSources,
@@ -19,7 +20,7 @@ const categoryLabels: Record<FacePartCategory, string> = {
   mouth: '입',
 };
 
-const categories = Object.keys(categoryLabels) as FacePartCategory[];
+const categories = FACE_PART_CATEGORIES;
 
 interface FaceBuilderControlsProps {
   crosshairVisible: boolean;

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 
 import { SketchEditor } from '@/components/sketch/SketchEditor';
@@ -44,7 +44,7 @@ describe('SketchEditor 전체 화면 모드', () => {
     expect(screen.queryByRole('dialog', { name: '전체 화면 그리기' })).not.toBeInTheDocument();
   });
 
-  it('전체 화면에서 그린 뒤 확인하면 읽기 전용 미리보기로 돌아간다', () => {
+  it('전체 화면에서 그린 뒤 확인하면 읽기 전용 미리보기로 돌아간다', async () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage: vi.fn(),
       fillRect: vi.fn(),
@@ -64,7 +64,7 @@ describe('SketchEditor 전체 화면 모드', () => {
     expect(screen.getByRole('button', { name: '그리기 도구 닫기' })).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: '확인' }));
-    expect(screen.queryByRole('dialog', { name: '전체 화면 그리기' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: '전체 화면 그리기' })).not.toBeInTheDocument());
     expect(screen.queryByRole('button', { name: '그림 그리기' })).not.toBeInTheDocument();
     expect(screen.getByRole('img', { name: '그린 그림 미리보기' })).toBeVisible();
     expect(screen.getByRole('button', { name: '외부 버튼' })).not.toHaveAttribute('inert');
