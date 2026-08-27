@@ -160,24 +160,41 @@ test('그리기 캔버스는 모바일에서도 정사각형이다', async ({ pa
   expect((bounds?.width ?? 0) / (bounds?.height ?? 1)).toBeCloseTo(1, 2);
 });
 
-test('320px 모바일에서 얼굴 가이드와 중앙선을 조작해 얼굴만 저장한다', async ({ page }) => {
+test('320px 모바일에서 가이드 중앙선을 조작한다', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 780 });
   await page.goto('/create');
   await page.getByRole('button', { name: '그림 그리기' }).click();
   await page.getByRole('button', { name: '그리기 도구 열기' }).click();
   await page.getByRole('button', { name: '가이드' }).click();
 
-  await expect(page.getByRole('tab', { name: '사진 참고' })).toHaveAttribute('aria-disabled', 'true');
-  await page.getByRole('tab', { name: '얼굴 만들기' }).click();
+  await expect(page.getByText('참고 사진 없이 중앙선만 사용할 수 있어요.')).toBeVisible();
+  await expect(page.getByText('얼굴 만들기')).toHaveCount(0);
   await expect(page.getByTestId('canvas-crosshair')).toBeVisible();
-  await page.getByRole('button', { name: '갸름한 얼굴' }).click();
-  await expect(page.locator('.face-guide-part')).toHaveCount(1);
 
   await page.getByRole('checkbox', { name: '중앙선 보기' }).uncheck();
   await expect(page.getByTestId('canvas-crosshair')).toHaveCount(0);
   await page.getByRole('checkbox', { name: '중앙선 보기' }).check();
-  await page.getByRole('button', { name: '확인' }).click();
-  await expect(page.getByRole('img', { name: '그린 그림 미리보기' })).toBeVisible();
+});
+
+test('설정 패널을 열면 캔버스가 가려지지 않고 위쪽 정사각형 미리보기로 줄어든다', async ({ page }) => {
+  for (const viewport of [{ width: 320, height: 780 }, { width: 390, height: 844 }, { width: 650, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/create');
+    await page.getByRole('button', { name: '그림 그리기' }).click();
+
+    const stage = page.locator('.sketch-stage');
+    const closedBounds = await stage.boundingBox();
+    await page.getByRole('button', { name: '그리기 도구 열기' }).click();
+    await page.getByRole('button', { name: '가이드' }).click();
+
+    const openBounds = await stage.boundingBox();
+    const panelBounds = await page.locator('.editor-control-panel').boundingBox();
+    expect(openBounds).not.toBeNull();
+    expect(panelBounds).not.toBeNull();
+    expect((openBounds?.width ?? 0) / (openBounds?.height ?? 1)).toBeCloseTo(1, 2);
+    expect(openBounds?.width ?? Infinity).toBeLessThan(closedBounds?.width ?? 0);
+    expect((openBounds?.y ?? 0) + (openBounds?.height ?? 0)).toBeLessThanOrEqual((panelBounds?.y ?? 0) + 1);
+  }
 });
 
 test('그림 그리기에서 우측 하단 아이콘으로 도구를 열고 확인한다', async ({ page }) => {
@@ -207,10 +224,14 @@ test('그림 그리기에서 우측 하단 아이콘으로 도구를 열고 확�
 
   await toolsButton.click();
   await expect(page.getByRole('navigation', { name: '그림 편집 단계' })).toBeVisible();
-  await page.mouse.move((canvasBounds?.x ?? 0) + 80, (canvasBounds?.y ?? 0) + 80);
+  const previewBounds = await canvas.boundingBox();
+  expect(previewBounds).not.toBeNull();
+  await page.mouse.move((previewBounds?.x ?? 0) + 80, (previewBounds?.y ?? 0) + 80);
   await page.mouse.down();
-  await page.mouse.move((canvasBounds?.x ?? 0) + 140, (canvasBounds?.y ?? 0) + 140);
+  await expect(page.getByTestId('drawing-loupe')).toHaveAttribute('data-active', 'true');
+  await page.mouse.move((previewBounds?.x ?? 0) + 140, (previewBounds?.y ?? 0) + 140);
   await page.mouse.up();
+  await expect(page.getByTestId('drawing-loupe')).toHaveAttribute('data-active', 'false');
   await confirmButton.click();
   await expect(fullscreen).toHaveCount(0);
 });

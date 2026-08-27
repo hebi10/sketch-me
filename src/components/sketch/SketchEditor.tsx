@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 import {
   createCanvasHistory,
@@ -10,18 +10,7 @@ import {
   undoSnapshot,
   type CanvasHistory,
 } from './canvas-history';
-import { createCompositeDrawing, hasDrawingContent } from './canvas-composition';
 import { sketchColors } from './colors';
-import { FaceBuilderControls } from './FaceBuilderControls';
-import {
-  EMPTY_FACE_SELECTION,
-  FACE_PARTS,
-  randomFaceSelection,
-  selectFacePart,
-  selectedFacePartSources,
-  type FacePartCategory,
-  type FaceSelection,
-} from './face-parts';
 
 const width = 720;
 const height = 720;
@@ -39,11 +28,15 @@ interface SketchEditorProps {
 }
 
 type EditorTab = 'draw' | 'guide' | 'edit';
-type GuideMode = 'photo' | 'face';
+type LoupePlacement = 'above' | 'below';
+
+const loupeSize = 104;
 
 export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
   function SketchEditor({ ariaLabel, initialDrawingDataUrl = null, onDrawingChange, referenceImageUrl }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const loupeCanvasRef = useRef<HTMLCanvasElement>(null);
+    const loupeRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<HTMLElement>(null);
     const fullscreenEntryRef = useRef<HTMLButtonElement>(null);
     const fullscreenRestoreFocusRef = useRef(false);
@@ -52,12 +45,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const lastPointRef = useRef<{ x: number; y: number } | null>(null);
     const referencePointers = useRef(new Map<number, { x: number; y: number }>());
     const [tab, setTab] = useState<EditorTab>('draw');
-    const [guideMode, setGuideMode] = useState<GuideMode>(referenceImageUrl ? 'photo' : 'face');
-    const [faceSelection, setFaceSelection] = useState<FaceSelection>({ ...EMPTY_FACE_SELECTION });
     const [crosshairVisible, setCrosshairVisible] = useState(true);
-    const [loadingFaceSources, setLoadingFaceSources] = useState<Set<string>>(new Set());
-    const [failedFaceSources, setFailedFaceSources] = useState<Set<string>>(new Set());
-    const [faceAssetAttempts, setFaceAssetAttempts] = useState<Record<string, number>>({});
     const [color, setColor] = useState<string>(sketchColors[0].value);
     const [customColor, setCustomColor] = useState<string | null>(null);
     const [lineWidth, setLineWidth] = useState(5);
@@ -70,11 +58,11 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [referenceVisible, setReferenceVisible] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [controlsOpen, setControlsOpen] = useState(false);
+    const [loupeActive, setLoupeActive] = useState(false);
+    const [loupePlacement, setLoupePlacement] = useState<LoupePlacement>('above');
     const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
     const [drawingError, setDrawingError] = useState<string | null>(null);
     const [drawingImportStatus, setDrawingImportStatus] = useState<string | null>(null);
-    const [isComposing, setIsComposing] = useState(false);
-    const facePartSources = useMemo(() => selectedFacePartSources(faceSelection), [faceSelection]);
 
     const context = useCallback(() => {
       return canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -99,17 +87,21 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
 
     const currentDrawingHasContent = useCallback(() => {
       const canvas = canvasRef.current;
-      return canvas ? hasDrawingContent(canvas, facePartSources) : false;
-    }, [facePartSources]);
+      const drawingContext = canvas?.getContext('2d', { willReadFrequently: true });
+      if (!canvas || !drawingContext) return false;
+      const pixels = drawingContext.getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let index = 3; index < pixels.length; index += 4) {
+        if (pixels[index] > 0) return true;
+      }
+      return false;
+    }, []);
 
     const requestExit = useCallback(() => {
       if (currentDrawingHasContent() && !window.confirm('그림을 그만두면 현재 작업이 사라집니다. 나가시겠어요?')) return;
       const drawingContext = context();
       drawingContext?.clearRect(0, 0, width, height);
       setHistory((current) => current ? createCanvasHistory(current.snapshots[0]) : current);
-      setFaceSelection({ ...EMPTY_FACE_SELECTION });
-      setLoadingFaceSources(new Set());
-      setFailedFaceSources(new Set());
+      setLoupeActive(false);
       setControlsOpen(false);
       setDrawingError(null);
       setDrawingImportStatus(null);
@@ -207,6 +199,40 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       drawingContext.stroke();
     }
 
+    function updateLoupe(point: { x: number; y: number }) {
+      const canvas = canvasRef.current;
+      const loupe = loupeRef.current;
+      const loupeContext = loupeCanvasRef.current?.getContext('2d');
+      if (!canvas || !loupe || !loupeContext) return;
+
+      const bounds = canvas.getBoundingClientRect();
+      if (!bounds.width || !bounds.height) return;
+      const sourceSize = Math.min(width, (loupeSize / 2) * (width / bounds.width));
+      const sourceX = Math.min(width - sourceSize, Math.max(0, point.x - sourceSize / 2));
+      const sourceY = Math.min(height - sourceSize, Math.max(0, point.y - sourceSize / 2));
+      const edgePadding = ((loupeSize / 2) + 4) * (width / bounds.width);
+      const displayX = Math.min(width - edgePadding, Math.max(edgePadding, point.x));
+      const nextPlacement: LoupePlacement = point.y / height < (loupeSize + 36) / bounds.height
+        ? 'below'
+        : 'above';
+
+      loupe.style.left = `${(displayX / width) * 100}%`;
+      loupe.style.top = `${(point.y / height) * 100}%`;
+      setLoupePlacement(nextPlacement);
+      loupeContext.clearRect(0, 0, loupeSize, loupeSize);
+      loupeContext.drawImage(
+        canvas,
+        sourceX,
+        sourceY,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        loupeSize,
+        loupeSize,
+      );
+    }
+
     function selectCustomColor(event: React.ChangeEvent<HTMLInputElement>) {
       const nextColor = event.target.value.toLowerCase();
       setCustomColor(nextColor);
@@ -223,6 +249,8 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       drawingRef.current = true;
       lastPointRef.current = point;
       drawLine(point, { x: point.x + 0.1, y: point.y + 0.1 });
+      updateLoupe(point);
+      setLoupeActive(true);
     }
 
     function pointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -231,12 +259,14 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       if (!point || !lastPointRef.current) return;
       drawLine(lastPointRef.current, point);
       lastPointRef.current = point;
+      updateLoupe(point);
     }
 
     function pointerEnd() {
       if (!drawingRef.current) return;
       drawingRef.current = false;
       lastPointRef.current = null;
+      setLoupeActive(false);
       snapshot();
     }
 
@@ -303,14 +333,14 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }
 
     function referencePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-      if (tab !== 'guide' || guideMode !== 'photo') return;
+      if (tab !== 'guide' || !referenceImageUrl) return;
       event.currentTarget.setPointerCapture(event.pointerId);
       referencePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     }
 
     function referencePointerMove(event: React.PointerEvent<HTMLDivElement>) {
       const previous = referencePointers.current.get(event.pointerId);
-      if (!previous || tab !== 'guide' || guideMode !== 'photo') return;
+      if (!previous || tab !== 'guide' || !referenceImageUrl) return;
       const before = [...referencePointers.current.values()];
       referencePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
       const after = [...referencePointers.current.values()];
@@ -334,72 +364,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       setIsFullscreen(true);
     }
 
-    function updateFaceLoading(nextSources: string[], newSources: string[]) {
-      setLoadingFaceSources((current) => new Set([
-        ...[...current].filter((source) => nextSources.includes(source)),
-        ...newSources,
-      ]));
-      setFailedFaceSources((current) => new Set(
-        [...current].filter((source) => nextSources.includes(source) && !newSources.includes(source)),
-      ));
-    }
-
-    function chooseFacePart(category: FacePartCategory, id: string) {
-      const nextSelection = selectFacePart(faceSelection, category, id);
-      const source = FACE_PARTS[category].find((option) => option.id === id)?.src;
-      const nextSources = selectedFacePartSources(nextSelection);
-      setFaceSelection(nextSelection);
-      updateFaceLoading(nextSources, source && faceSelection[category] !== id ? [source] : []);
-      setDrawingError(null);
-    }
-
-    function randomizeFace() {
-      const nextSelection = randomFaceSelection();
-      const nextSources = selectedFacePartSources(nextSelection);
-      setFaceSelection(nextSelection);
-      updateFaceLoading(nextSources, nextSources);
-      setDrawingError(null);
-    }
-
-    function clearFace() {
-      setFaceSelection({ ...EMPTY_FACE_SELECTION });
-      setLoadingFaceSources(new Set());
-      setFailedFaceSources(new Set());
-      setDrawingError(null);
-    }
-
-    function faceAssetLoaded(source: string) {
-      setLoadingFaceSources((current) => {
-        const next = new Set(current);
-        next.delete(source);
-        return next;
-      });
-      setFailedFaceSources((current) => {
-        const next = new Set(current);
-        next.delete(source);
-        return next;
-      });
-    }
-
-    function faceAssetFailed(source: string) {
-      setLoadingFaceSources((current) => {
-        const next = new Set(current);
-        next.delete(source);
-        return next;
-      });
-      setFailedFaceSources((current) => new Set(current).add(source));
-    }
-
-    function retryFaceAsset(source: string) {
-      setFailedFaceSources((current) => {
-        const next = new Set(current);
-        next.delete(source);
-        return next;
-      });
-      setLoadingFaceSources((current) => new Set(current).add(source));
-      setFaceAssetAttempts((current) => ({ ...current, [source]: (current[source] ?? 0) + 1 }));
-    }
-
     function finishDrawing(output: string) {
       setConfirmedDrawing(output);
       onDrawingChange?.(output);
@@ -409,70 +373,43 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       setIsFullscreen(false);
     }
 
-    async function confirmDrawing() {
+    function confirmDrawing() {
       const canvas = canvasRef.current;
-      if (!canvas || !hasDrawingContent(canvas, facePartSources)) {
+      if (!canvas || !currentDrawingHasContent()) {
         setDrawingError('그림을 한 번 이상 그린 뒤 확인해 주세요.');
         return;
       }
-      if (facePartSources.length === 0) {
-        const output = document.createElement('canvas');
-        output.width = width;
-        output.height = height;
-        const outputContext = output.getContext('2d');
-        if (!outputContext) {
-          setDrawingError('그림을 저장하지 못했어요. 다시 시도해 주세요.');
-          return;
-        }
-        outputContext.fillStyle = '#ffffff';
-        outputContext.fillRect(0, 0, width, height);
-        outputContext.drawImage(canvas, 0, 0);
-        finishDrawing(output.toDataURL('image/webp', 0.76));
+      const output = document.createElement('canvas');
+      output.width = width;
+      output.height = height;
+      const outputContext = output.getContext('2d');
+      if (!outputContext) {
+        setDrawingError('그림을 저장하지 못했어요. 다시 시도해 주세요.');
         return;
       }
-      if (facePartSources.some((source) => failedFaceSources.has(source))) {
-        setDrawingError('얼굴 가이드를 불러오지 못했어요. 가이드에서 다시 시도해 주세요.');
-        return;
-      }
-      try {
-        setIsComposing(true);
-        const output = await createCompositeDrawing({ drawingCanvas: canvas, facePartSources });
-        finishDrawing(output);
-      } catch {
-        setDrawingError('얼굴 가이드를 합성하지 못했어요. 다시 시도해 주세요.');
-      } finally {
-        setIsComposing(false);
-      }
+      outputContext.fillStyle = '#ffffff';
+      outputContext.fillRect(0, 0, width, height);
+      outputContext.drawImage(canvas, 0, 0);
+      finishDrawing(output.toDataURL('image/webp', 0.76));
     }
 
     return (
-      <section aria-label={isFullscreen ? '전체 화면 그리기' : undefined} aria-modal={isFullscreen || undefined} className={`sketch-editor ${isFullscreen ? 'sketch-editor--fullscreen' : ''}`} ref={editorRef} role={isFullscreen ? 'dialog' : undefined}>
+      <section aria-label={isFullscreen ? '전체 화면 그리기' : undefined} aria-modal={isFullscreen || undefined} className={`sketch-editor ${isFullscreen ? 'sketch-editor--fullscreen' : ''} ${isFullscreen && controlsOpen ? 'sketch-editor--controls-open' : ''}`} ref={editorRef} role={isFullscreen ? 'dialog' : undefined}>
         {!isFullscreen && !confirmedDrawing ? <button className="button button--primary drawing-entry-button" onClick={openDrawing} ref={fullscreenEntryRef} type="button">그림 그리기</button> : null}
         {!isFullscreen && confirmedDrawing ? <figure className="drawing-preview"><Image alt="그린 그림 미리보기" height={height} src={confirmedDrawing} unoptimized width={width} /></figure> : null}
-        <div className={`sketch-stage sketch-stage--${tab} ${tab === 'guide' && guideMode === 'photo' ? 'sketch-stage--reference' : ''}`} hidden={!isFullscreen} onPointerCancel={referencePointerEnd} onPointerDown={referencePointerDown} onPointerMove={referencePointerMove} onPointerUp={referencePointerEnd}>
-          {referenceImageUrl ? (
-            <div className="reference-layer" hidden={!referenceVisible} style={{ opacity: referenceOpacity / 100, transform: `translate(${referenceOffset.x}px, ${referenceOffset.y}px) scale(${referenceScale})` }}>
-              <Image alt="그림 참고 사진" fill sizes="(max-width: 640px) 100vw, 600px" src={referenceImageUrl} unoptimized />
+        <div className="sketch-stage-slot" hidden={!isFullscreen}>
+          <div className={`sketch-stage sketch-stage--${tab} ${tab === 'guide' && referenceImageUrl ? 'sketch-stage--reference' : ''}`} onPointerCancel={referencePointerEnd} onPointerDown={referencePointerDown} onPointerMove={referencePointerMove} onPointerUp={referencePointerEnd}>
+            {referenceImageUrl ? (
+              <div className="reference-layer" hidden={!referenceVisible} style={{ opacity: referenceOpacity / 100, transform: `translate(${referenceOffset.x}px, ${referenceOffset.y}px) scale(${referenceScale})` }}>
+                <Image alt="그림 참고 사진" fill sizes="(max-width: 640px) 100vw, 600px" src={referenceImageUrl} unoptimized />
+              </div>
+            ) : null}
+            <canvas aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
+            {crosshairVisible ? <div aria-hidden="true" className="canvas-crosshair" data-testid="canvas-crosshair" /> : null}
+            <div aria-hidden="true" className={`drawing-loupe drawing-loupe--${loupePlacement} ${loupeActive ? 'is-visible' : ''}`} data-active={loupeActive} data-placement={loupePlacement} data-testid="drawing-loupe" ref={loupeRef}>
+              <canvas data-loupe="true" height={loupeSize} ref={loupeCanvasRef} width={loupeSize} />
             </div>
-          ) : null}
-          <div aria-hidden="true" className="face-guide-layer">
-            {facePartSources.map((source) => (
-              <Image
-                alt=""
-                className="face-guide-part"
-                height={height}
-                key={`${source}:${faceAssetAttempts[source] ?? 0}`}
-                loading="eager"
-                onError={() => faceAssetFailed(source)}
-                onLoad={() => faceAssetLoaded(source)}
-                src={source}
-                unoptimized
-                width={width}
-              />
-            ))}
           </div>
-          <canvas aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
-          {crosshairVisible ? <div aria-hidden="true" className="canvas-crosshair" data-testid="canvas-crosshair" /> : null}
         </div>
         <div className="editor-control-panel" hidden={!isFullscreen || !controlsOpen}>
           <nav aria-label="그림 편집 단계" className="editor-tabs">
@@ -483,36 +420,12 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
           <div className="draw-tools">
             {tab === 'guide' ? (
               <div className="guide-controls">
-                <div aria-label="그리기 가이드 종류" className="guide-mode-tabs" role="tablist">
-                  <button
-                    aria-disabled={!referenceImageUrl}
-                    aria-selected={guideMode === 'photo'}
-                    onClick={() => { if (referenceImageUrl) setGuideMode('photo'); }}
-                    role="tab"
-                    type="button"
-                  >
-                    사진 참고
-                  </button>
-                  <button aria-selected={guideMode === 'face'} onClick={() => setGuideMode('face')} role="tab" type="button">
-                    얼굴 만들기
-                  </button>
-                </div>
-                {guideMode === 'photo' && referenceImageUrl ? (
+                {referenceImageUrl ? (
                   <div className="reference-controls"><p>한 손가락으로 이동하고 두 손가락으로 확대·축소하세요.</p><button aria-pressed={referenceVisible} className="tool-button reference-visibility-toggle" onClick={() => setReferenceVisible((current) => !current)} type="button">참고 사진 {referenceVisible ? '숨기기' : '보기'}</button><label className="range-control"><span>사진 투명도</span><strong>{referenceOpacity}%</strong><input aria-label="사진 투명도" max="100" min="10" onChange={(event) => setReferenceOpacity(Number(event.target.value))} step="5" type="range" value={referenceOpacity} /></label><label className="range-control"><span>확대</span><strong>{Math.round(referenceScale * 100)}%</strong><input aria-label="확대" max="3" min="0.6" onChange={(event) => setReferenceScale(Number(event.target.value))} step="0.1" type="range" value={referenceScale} /></label><button className="tool-button" onClick={() => { setReferenceOffset({ x: 0, y: 0 }); setReferenceScale(1); }} type="button">위치 초기화</button></div>
                 ) : (
-                  <FaceBuilderControls
-                    crosshairVisible={crosshairVisible}
-                    failedSources={failedFaceSources}
-                    loadingSources={loadingFaceSources}
-                    onClear={clearFace}
-                    onCrosshairChange={setCrosshairVisible}
-                    onRandomize={randomizeFace}
-                    onRetry={retryFaceAsset}
-                    onSelect={chooseFacePart}
-                    onStartDrawing={() => setTab('draw')}
-                    selection={faceSelection}
-                  />
+                  <p className="guide-empty-copy">참고 사진 없이 중앙선만 사용할 수 있어요.</p>
                 )}
+                <label className="crosshair-toggle"><input aria-label="중앙선 보기" checked={crosshairVisible} onChange={(event) => setCrosshairVisible(event.target.checked)} type="checkbox" /><span>중앙선 보기</span></label>
               </div>
             ) : (
               <><div className="tool-row drawing-action-row"><button className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button aria-label="되돌리기" className="tool-button tool-button--icon" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-undo.webp" width={26} /></button><button aria-label="다시 실행" className="tool-button tool-button--icon" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-redo.webp" width={26} /></button><button className="tool-button tool-button--clear" onClick={clear} type="button">전체 삭제</button></div>
@@ -523,7 +436,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
         </div>
         {isFullscreen ? (
           <><div className="fullscreen-controls">
-              <button aria-label="확인" className="fullscreen-confirm" disabled={isComposing} onClick={confirmDrawing} ref={fullscreenConfirmRef} type="button"><Image alt="" height={30} src="/icons/fullscreen-confirm.webp" width={30} /></button>
+              <button aria-label="확인" className="fullscreen-confirm" onClick={confirmDrawing} ref={fullscreenConfirmRef} type="button"><Image alt="" height={30} src="/icons/fullscreen-confirm.webp" width={30} /></button>
               <button aria-label="그리기 나가기" className="fullscreen-exit" onClick={requestExit} type="button"><Image alt="" height={30} src="/icons/fullscreen-back.webp" width={30} /></button>
               <button aria-expanded={controlsOpen} aria-label={controlsOpen ? '그리기 도구 닫기' : '그리기 도구 열기'} onClick={() => setControlsOpen((current) => !current)} type="button"><Image alt="" height={30} src="/icons/drawing-controls.webp" width={30} /></button>
               <label className="fullscreen-import" htmlFor="drawing-import"><Image alt="" height={30} src="/icons/drawing-import.webp" width={30} /><input accept="image/jpeg,image/png,image/webp" aria-label="완성된 그림 불러오기" id="drawing-import" onChange={importDrawing} type="file" /></label>

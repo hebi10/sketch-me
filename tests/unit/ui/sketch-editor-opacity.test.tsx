@@ -81,7 +81,6 @@ describe('SketchEditor 투명도 조절', () => {
     openDrawingTools();
 
     fireEvent.click(screen.getByRole('button', { name: '가이드' }));
-    fireEvent.click(screen.getByRole('tab', { name: '사진 참고' }));
     const opacity = screen.getByRole('slider', { name: /사진 투명도/ });
     fireEvent.change(opacity, { target: { value: '35' } });
 
@@ -95,7 +94,6 @@ describe('SketchEditor 투명도 조절', () => {
     openDrawingTools();
 
     fireEvent.click(screen.getByRole('button', { name: '가이드' }));
-    fireEvent.click(screen.getByRole('tab', { name: '사진 참고' }));
     const scale = screen.getByRole('slider', { name: '확대' });
     fireEvent.change(scale, { target: { value: '1.5' } });
 
@@ -108,7 +106,6 @@ describe('SketchEditor 투명도 조절', () => {
     openDrawingTools();
 
     fireEvent.click(screen.getByRole('button', { name: '가이드' }));
-    fireEvent.click(screen.getByRole('tab', { name: '사진 참고' }));
     fireEvent.change(screen.getByRole('slider', { name: /사진 투명도/ }), { target: { value: '35' } });
 
     const referenceLayer = screen.getByAltText('그림 참고 사진').parentElement;
