@@ -462,6 +462,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
                 className="face-guide-part"
                 height={height}
                 key={`${source}:${faceAssetAttempts[source] ?? 0}`}
+                loading="eager"
                 onError={() => faceAssetFailed(source)}
                 onLoad={() => faceAssetLoaded(source)}
                 src={source}

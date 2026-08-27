@@ -82,7 +82,11 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await friendPage.getByRole('link', { name: '첫 그림 남기기' }).click();
   await friendPage.getByRole('button', { name: '그림 그리기' }).click();
   await friendPage.getByRole('button', { name: '그리기 도구 열기' }).click();
-  await expect(friendPage.getByRole('button', { name: '참고사진' })).toBeEnabled();
+  await expect(friendPage.getByRole('button', { name: '가이드' })).toBeEnabled();
+  await friendPage.getByRole('button', { name: '가이드' }).click();
+  await expect(friendPage.getByRole('tab', { name: '사진 참고' })).toHaveAttribute('aria-disabled', 'false');
+  await expect(friendPage.getByRole('tab', { name: '얼굴 만들기' })).toBeEnabled();
+  await friendPage.getByRole('button', { name: '그리기' }).click();
   await drawOnCanvas(friendPage);
   await friendPage.getByRole('button', { name: '확인' }).click();
   await expect(friendPage.getByRole('img', { name: '그린 그림 미리보기' })).toBeVisible();

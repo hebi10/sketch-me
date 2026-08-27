@@ -160,6 +160,26 @@ test('그리기 캔버스는 모바일에서도 정사각형이다', async ({ pa
   expect((bounds?.width ?? 0) / (bounds?.height ?? 1)).toBeCloseTo(1, 2);
 });
 
+test('320px 모바일에서 얼굴 가이드와 중앙선을 조작해 얼굴만 저장한다', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await page.goto('/create');
+  await page.getByRole('button', { name: '그림 그리기' }).click();
+  await page.getByRole('button', { name: '그리기 도구 열기' }).click();
+  await page.getByRole('button', { name: '가이드' }).click();
+
+  await expect(page.getByRole('tab', { name: '사진 참고' })).toHaveAttribute('aria-disabled', 'true');
+  await page.getByRole('tab', { name: '얼굴 만들기' }).click();
+  await expect(page.getByTestId('canvas-crosshair')).toBeVisible();
+  await page.getByRole('button', { name: '갸름한 얼굴' }).click();
+  await expect(page.locator('.face-guide-part')).toHaveCount(1);
+
+  await page.getByRole('checkbox', { name: '중앙선 보기' }).uncheck();
+  await expect(page.getByTestId('canvas-crosshair')).toHaveCount(0);
+  await page.getByRole('checkbox', { name: '중앙선 보기' }).check();
+  await page.getByRole('button', { name: '확인' }).click();
+  await expect(page.getByRole('img', { name: '그린 그림 미리보기' })).toBeVisible();
+});
+
 test('그림 그리기에서 우측 하단 아이콘으로 도구를 열고 확인한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/create');
