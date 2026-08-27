@@ -84,7 +84,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.queryByRole('status', { name: '그림 불러오는 중' })).not.toBeInTheDocument();
   });
 
-  it('관리 메뉴를 접근성 이름이 있는 이미지 아이콘으로 표시한다', () => {
+  it('관리 메뉴를 이미지 아이콘과 짧은 한글 문구로 표시한다', () => {
     render(
       <ManageDashboard
         drawings={[]}
@@ -98,16 +98,16 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     const menu = screen.getByRole('navigation', { name: '메뉴 항목' });
 
     const items = [
-      ['친구 페이지 보기', '/icons/menu-public-page.webp'],
-      ['스토리 이미지 만들기', '/icons/menu-story-image.webp'],
-      ['친구에게 공유하기', '/icons/menu-share.webp'],
-      ['관리 비밀번호 변경', '/icons/menu-security.webp'],
-      ['로그아웃', '/icons/menu-logout.webp'],
+      ['친구 페이지 보기', '친구홈', '/icons/menu-public-page.webp'],
+      ['스토리 이미지 만들기', '스토리', '/icons/menu-story-image.webp'],
+      ['친구에게 공유하기', '공유', '/icons/menu-share.webp'],
+      ['관리 비밀번호 변경', '비밀번호', '/icons/menu-security.webp'],
+      ['로그아웃', '로그아웃', '/icons/menu-logout.webp'],
     ] as const;
 
-    items.forEach(([name, src]) => {
+    items.forEach(([name, shortLabel, src]) => {
       const control = within(menu).getByRole(name === '친구 페이지 보기' || name === '스토리 이미지 만들기' ? 'link' : 'button', { name });
-      expect(control.textContent).toBe('');
+      expect(control).toHaveTextContent(shortLabel);
       expect(decodeURIComponent(control.querySelector('img')?.getAttribute('src') ?? '')).toContain(src);
     });
   });

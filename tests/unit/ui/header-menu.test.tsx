@@ -23,19 +23,19 @@ describe('HeaderMenu', () => {
 });
 
 describe('랜딩 페이지 빠른 메뉴', () => {
-  it('세 메뉴를 한글 문구 대신 접근성 이름이 있는 이미지 아이콘으로 표시한다', () => {
+  it('세 메뉴를 이미지 아이콘과 짧은 한글 문구로 표시한다', () => {
     render(<LandingPage />);
     const menu = screen.getByRole('navigation', { name: '빠른 메뉴 항목' });
 
     const items = [
-      ['스케치북 만들기', '/icons/menu-create.webp'],
-      ['개인정보 처리방침', '/icons/menu-privacy.webp'],
-      ['서비스 이용 및 결제 안내', '/icons/menu-terms.webp'],
+      ['스케치북 만들기', '제작', '/icons/menu-create.webp'],
+      ['개인정보 처리방침', '개인정보', '/icons/menu-privacy.webp'],
+      ['서비스 이용 및 결제 안내', '이용안내', '/icons/menu-terms.webp'],
     ] as const;
 
-    items.forEach(([name, src]) => {
+    items.forEach(([name, shortLabel, src]) => {
       const link = within(menu).getByRole('link', { name });
-      expect(link.textContent).toBe('');
+      expect(link).toHaveTextContent(shortLabel);
       expect(decodeURIComponent(link.querySelector('img')?.getAttribute('src') ?? '')).toContain(src);
     });
   });

@@ -12,12 +12,15 @@ export default function LandingPage() {
         <HeaderMenu iconGrid label="빠른 메뉴">
           <Link aria-label="스케치북 만들기" className="header-menu-icon-item" href="/create" title="스케치북 만들기">
             <Image alt="" aria-hidden height={160} src="/icons/menu-create.webp" width={160} />
+            <span className="header-menu-icon-label">제작</span>
           </Link>
           <Link aria-label="개인정보 처리방침" className="header-menu-icon-item" href="/privacy" title="개인정보 처리방침">
             <Image alt="" aria-hidden height={160} src="/icons/menu-privacy.webp" width={160} />
+            <span className="header-menu-icon-label">개인정보</span>
           </Link>
           <Link aria-label="서비스 이용 및 결제 안내" className="header-menu-icon-item" href="/terms" title="서비스 이용 및 결제 안내">
             <Image alt="" aria-hidden height={160} src="/icons/menu-terms.webp" width={160} />
+            <span className="header-menu-icon-label">이용안내</span>
           </Link>
         </HeaderMenu>
       </header>

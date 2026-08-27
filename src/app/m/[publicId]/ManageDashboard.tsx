@@ -295,16 +295,20 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         <HeaderMenu iconGrid>
           <Link aria-label="친구 페이지 보기" className="header-menu-icon-item" href={`/s/${publicId}`} title="친구 페이지 보기">
             <Image alt="" aria-hidden height={160} src="/icons/menu-public-page.webp" width={160} />
+            <span className="header-menu-icon-label">친구홈</span>
           </Link>
           <Link aria-label="스토리 이미지 만들기" className="header-menu-icon-item" href={`/m/${publicId}/share`} title="스토리 이미지 만들기">
             <Image alt="" aria-hidden height={160} src="/icons/menu-story-image.webp" width={160} />
+            <span className="header-menu-icon-label">스토리</span>
           </Link>
           <ShareSketchbookButton menuItem name={name} publicId={publicId} />
           <button aria-label="관리 비밀번호 변경" className="header-menu-icon-item" onClick={openSecurityDialog} ref={securityTriggerRef} title="관리 비밀번호 변경" type="button">
             <Image alt="" aria-hidden height={160} src="/icons/menu-security.webp" width={160} />
+            <span className="header-menu-icon-label">비밀번호</span>
           </button>
           <button aria-label="로그아웃" className="header-menu-icon-item" onClick={logout} title="로그아웃" type="button">
             <Image alt="" aria-hidden height={160} src="/icons/menu-logout.webp" width={160} />
+            <span className="header-menu-icon-label">로그아웃</span>
           </button>
         </HeaderMenu>
       </header>

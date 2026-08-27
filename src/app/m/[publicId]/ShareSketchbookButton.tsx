@@ -36,6 +36,7 @@ export function ShareSketchbookButton({ publicId, name, menuItem = false }: { pu
     return (
       <button aria-label="친구에게 공유하기" className="header-menu-icon-item" onClick={share} title="친구에게 공유하기" type="button">
         <Image alt="" aria-hidden height={160} src="/icons/menu-share.webp" width={160} />
+        <span className="header-menu-icon-label">공유</span>
       </button>
     );
   }
