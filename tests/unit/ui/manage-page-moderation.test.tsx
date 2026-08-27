@@ -61,7 +61,8 @@ describe('BLOCKED 스케치북 관리 페이지', () => {
   it('인증된 소유자에게 이유를 노출하지 않는 운영자 제한·숨김 안내와 보호된 원본을 보여준다', async () => {
     render(await ManagePage({ params: Promise.resolve({ publicId: 'public-1' }) }));
 
-    const notice = screen.getByRole('status');
+    const notice = screen.getByText('운영자 제한').closest('[role="status"]');
+    expect(notice).not.toBeNull();
     expect(notice).toHaveTextContent('운영자 제한');
     expect(notice).toHaveTextContent('친구 페이지에서 숨김');
     expect(notice).not.toHaveTextContent(/admin|UID|사유/i);

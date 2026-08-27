@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image, { type ImageProps } from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -19,6 +19,36 @@ interface ManageDashboardProps {
   participantLimit: number;
   drawings: Drawing[];
   entitlements?: SketchbookEntitlements;
+}
+
+function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) {
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const imageClassName = [className, 'managed-image', `managed-image--${status}`].filter(Boolean).join(' ');
+
+  return (
+    <>
+      {status === 'loading' ? (
+        <span aria-label="그림 불러오는 중" className="managed-image-state" role="status">
+          <span aria-hidden className="managed-image-loading-line" />
+          <span>그림 불러오는 중…</span>
+        </span>
+      ) : null}
+      {status === 'error' ? <span className="managed-image-state" role="alert">그림을 불러오지 못했어요.</span> : null}
+      <Image
+        {...props}
+        alt={alt}
+        className={imageClassName}
+        onError={(event) => {
+          setStatus('error');
+          onError?.(event);
+        }}
+        onLoad={(event) => {
+          setStatus('loaded');
+          onLoad?.(event);
+        }}
+      />
+    </>
+  );
 }
 
 export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false } }: ManageDashboardProps) {
@@ -289,7 +319,9 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         {ownerDrawingPath ? (
           <figure className="owner-original-card">
             <figcaption><span>직접 그린 내 모습</span><b>원본</b></figcaption>
-            <Image alt="직접 그린 내 모습" height={600} loading="eager" src={`/api/manage/${publicId}/owner/image`} unoptimized width={600} />
+            <div className="managed-image-frame owner-original-image">
+              <ManageImage alt="직접 그린 내 모습" height={600} loading="eager" src={`/api/manage/${publicId}/owner/image`} unoptimized width={600} />
+            </div>
           </figure>
         ) : null}
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
@@ -306,9 +338,9 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         <div className="friend-drawing-grid">
           {items.length ? items.map((drawing, index) => (
             <article className="friend-drawing-card manage-drawing-card" key={drawing.id}>
-              <div className="manage-drawing-image">
+              <div className="manage-drawing-image managed-image-frame">
                 {drawing.bestRank ? <span className="best-badge">BEST {drawing.bestRank}</span> : null}
-                <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={index === 0 ? 'eager' : 'lazy'} src={`/api/manage/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} />
+                <ManageImage alt={`${drawing.authorName}님의 그림`} height={255} loading={index === 0 ? 'eager' : 'lazy'} src={`/api/manage/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} />
               </div>
               <p>{drawing.authorName}</p>
               {drawing.message ? <span>{drawing.message}</span> : null}

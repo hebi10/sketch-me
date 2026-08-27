@@ -1255,6 +1255,70 @@ main {
   width: 100%;
 }
 
+.managed-image-frame {
+  aspect-ratio: 1;
+  background: var(--canvas);
+  display: grid;
+  overflow: hidden;
+  position: relative;
+}
+
+.managed-image-frame > .managed-image,
+.managed-image-frame > .managed-image-state {
+  grid-area: 1 / 1;
+}
+
+.managed-image-frame > .managed-image {
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+  width: 100%;
+}
+
+.managed-image-frame > .managed-image--loaded {
+  opacity: 1;
+}
+
+.managed-image-state {
+  align-items: center;
+  align-self: stretch;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-label);
+  gap: 9px;
+  justify-content: center;
+  justify-self: stretch;
+  padding: 12px;
+  text-align: center;
+}
+
+.managed-image-loading-line {
+  animation: managed-image-loading 1.1s linear infinite;
+  background: linear-gradient(90deg, var(--line) 0 34%, var(--accent) 45% 55%, var(--line) 66% 100%);
+  background-size: 200% 100%;
+  display: block;
+  height: 2px;
+  width: 44px;
+}
+
+@keyframes managed-image-loading {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .managed-image-frame > .managed-image {
+    transition: none;
+  }
+
+  .managed-image-loading-line {
+    animation: none;
+    background: var(--accent);
+  }
+}
+
 .manage-actions {
   grid-template-columns: minmax(0, 1fr);
 }

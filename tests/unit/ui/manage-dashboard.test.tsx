@@ -8,6 +8,82 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('ManageDashboard 친구 그림 추가 결제', () => {
+  it('원본과 친구 그림이 준비될 때까지 개별 로딩 상태를 표시한다', async () => {
+    const createdAt = new Date('2026-08-25T00:00:00.000Z');
+    render(
+      <ManageDashboard
+        drawings={[{
+          authorName: '친구',
+          bestRank: null,
+          createdAt,
+          id: 'loading-drawing',
+          imagePath: 'sketchbooks/book-1/drawings/loading.webp',
+          publicImageVersion: 'version-1',
+          thumbnailPath: null,
+          message: null,
+          moderatedAt: null,
+          moderationStatus: 'ACTIVE',
+          sketchbookId: 'book-1',
+          sketchbookName: '내 이름',
+          sketchbookPublicId: 'public-loading',
+          status: 'VISIBLE',
+          updatedAt: createdAt,
+          usedReferenceImage: false,
+        }]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        ownerDrawingPath="sketchbooks/book-1/owner/original.webp"
+        participantCount={1}
+        participantLimit={20}
+        publicId="public-loading"
+      />,
+    );
+
+    expect(screen.getAllByRole('status', { name: '그림 불러오는 중' })).toHaveLength(2);
+
+    fireEvent.load(screen.getByRole('img', { name: '직접 그린 내 모습' }));
+    await waitFor(() => expect(screen.getAllByRole('status', { name: '그림 불러오는 중' })).toHaveLength(1));
+
+    fireEvent.load(screen.getByRole('img', { name: '친구님의 그림' }));
+    await waitFor(() => expect(screen.queryByRole('status', { name: '그림 불러오는 중' })).not.toBeInTheDocument());
+  });
+
+  it('친구 그림을 불러오지 못하면 로딩 표시 대신 오류를 안내한다', () => {
+    const createdAt = new Date('2026-08-25T00:00:00.000Z');
+    render(
+      <ManageDashboard
+        drawings={[{
+          authorName: '친구',
+          bestRank: null,
+          createdAt,
+          id: 'failed-drawing',
+          imagePath: 'sketchbooks/book-1/drawings/failed.webp',
+          publicImageVersion: 'version-1',
+          thumbnailPath: null,
+          message: null,
+          moderatedAt: null,
+          moderationStatus: 'ACTIVE',
+          sketchbookId: 'book-1',
+          sketchbookName: '내 이름',
+          sketchbookPublicId: 'public-failed',
+          status: 'VISIBLE',
+          updatedAt: createdAt,
+          usedReferenceImage: false,
+        }]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={1}
+        participantLimit={20}
+        publicId="public-failed"
+      />,
+    );
+
+    fireEvent.error(screen.getByRole('img', { name: '친구님의 그림' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('그림을 불러오지 못했어요.');
+    expect(screen.queryByRole('status', { name: '그림 불러오는 중' })).not.toBeInTheDocument();
+  });
+
   it('관리 메뉴를 접근성 이름이 있는 이미지 아이콘으로 표시한다', () => {
     render(
       <ManageDashboard
