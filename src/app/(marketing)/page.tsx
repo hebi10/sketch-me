@@ -2,20 +2,24 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { BrandWordmark } from '@/components/ui/BrandWordmark';
+import { HeaderMenu } from '@/components/ui/HeaderMenu';
 
 export default function LandingPage() {
   return (
     <main className="marketing-shell">
       <header className="marketing-header">
         <BrandWordmark />
-        <details className="header-menu">
-          <summary aria-label="메뉴 열기">☰</summary>
-          <nav aria-label="빠른 메뉴">
-            <Link href="/create">스케치북 만들기</Link>
-            <Link href="/privacy">개인정보 처리방침</Link>
-            <Link href="/terms">서비스 이용 및 결제 안내</Link>
-          </nav>
-        </details>
+        <HeaderMenu iconGrid label="빠른 메뉴">
+          <Link aria-label="스케치북 만들기" className="header-menu-icon-item" href="/create" title="스케치북 만들기">
+            <Image alt="" aria-hidden height={160} src="/icons/menu-create.webp" width={160} />
+          </Link>
+          <Link aria-label="개인정보 처리방침" className="header-menu-icon-item" href="/privacy" title="개인정보 처리방침">
+            <Image alt="" aria-hidden height={160} src="/icons/menu-privacy.webp" width={160} />
+          </Link>
+          <Link aria-label="서비스 이용 및 결제 안내" className="header-menu-icon-item" href="/terms" title="서비스 이용 및 결제 안내">
+            <Image alt="" aria-hidden height={160} src="/icons/menu-terms.webp" width={160} />
+          </Link>
+        </HeaderMenu>
       </header>
 
       <section className="landing-hero" aria-labelledby="landing-title">

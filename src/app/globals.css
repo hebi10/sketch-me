@@ -683,8 +683,31 @@ main {
   padding: 8px 10px;
 }
 
-.header-menu nav a + a {
+.header-menu nav:not(.header-menu__icon-grid) a + a {
   border-top: 1px solid var(--line);
+}
+
+.header-menu nav.header-menu__icon-grid {
+  gap: 4px;
+  grid-template-columns: repeat(3, 52px);
+  min-width: 0;
+  padding: 8px;
+}
+
+.header-menu__icon-grid .header-menu-icon-item {
+  align-items: center;
+  border: 0;
+  display: flex;
+  justify-content: center;
+  min-height: 52px;
+  padding: 8px;
+  width: 52px;
+}
+
+.header-menu__icon-grid .header-menu-icon-item img {
+  height: 34px;
+  object-fit: contain;
+  width: 34px;
 }
 
 .marketing-header .wordmark,
@@ -1343,10 +1366,10 @@ main {
   width: 100%;
 }
 
-.header-menu nav a + a,
-.header-menu nav a + button,
-.header-menu nav button + a,
-.header-menu nav button + button {
+.header-menu nav:not(.header-menu__icon-grid) a + a,
+.header-menu nav:not(.header-menu__icon-grid) a + button,
+.header-menu nav:not(.header-menu__icon-grid) button + a,
+.header-menu nav:not(.header-menu__icon-grid) button + button {
   border-top: 1px solid var(--line);
 }
 

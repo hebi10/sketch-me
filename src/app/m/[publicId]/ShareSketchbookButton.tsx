@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 export function ShareSketchbookButton({ publicId, name, menuItem = false }: { publicId: string; name: string; menuItem?: boolean }) {
   const [status, setStatus] = useState<string | null>(null);
@@ -32,7 +33,11 @@ export function ShareSketchbookButton({ publicId, name, menuItem = false }: { pu
   }
 
   if (menuItem) {
-    return <button onClick={share} type="button">친구에게 공유하기</button>;
+    return (
+      <button aria-label="친구에게 공유하기" className="header-menu-icon-item" onClick={share} title="친구에게 공유하기" type="button">
+        <Image alt="" aria-hidden height={160} src="/icons/menu-share.webp" width={160} />
+      </button>
+    );
   }
 
   return (

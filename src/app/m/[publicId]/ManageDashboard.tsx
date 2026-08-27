@@ -262,12 +262,20 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
       <header className="public-header">
         <Link aria-label="스캐치북 홈" className="header-icon-link" href="/">←</Link>
         <span className="header-title">내 스캐치북</span>
-        <HeaderMenu>
-          <Link href={`/s/${publicId}`}>친구 페이지 보기</Link>
-          <Link href={`/m/${publicId}/share`}>스토리 이미지 만들기</Link>
+        <HeaderMenu iconGrid>
+          <Link aria-label="친구 페이지 보기" className="header-menu-icon-item" href={`/s/${publicId}`} title="친구 페이지 보기">
+            <Image alt="" aria-hidden height={160} src="/icons/menu-public-page.webp" width={160} />
+          </Link>
+          <Link aria-label="스토리 이미지 만들기" className="header-menu-icon-item" href={`/m/${publicId}/share`} title="스토리 이미지 만들기">
+            <Image alt="" aria-hidden height={160} src="/icons/menu-story-image.webp" width={160} />
+          </Link>
           <ShareSketchbookButton menuItem name={name} publicId={publicId} />
-          <button onClick={openSecurityDialog} ref={securityTriggerRef} type="button">관리 비밀번호 변경</button>
-          <button onClick={logout} type="button">로그아웃</button>
+          <button aria-label="관리 비밀번호 변경" className="header-menu-icon-item" onClick={openSecurityDialog} ref={securityTriggerRef} title="관리 비밀번호 변경" type="button">
+            <Image alt="" aria-hidden height={160} src="/icons/menu-security.webp" width={160} />
+          </button>
+          <button aria-label="로그아웃" className="header-menu-icon-item" onClick={logout} title="로그아웃" type="button">
+            <Image alt="" aria-hidden height={160} src="/icons/menu-logout.webp" width={160} />
+          </button>
         </HeaderMenu>
       </header>
       <section className="manage-heading"><p className="eyebrow">{name}님의 스케치북</p><h1>친구들이 그린 나</h1></section>

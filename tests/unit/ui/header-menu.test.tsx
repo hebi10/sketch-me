@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
+import LandingPage from '@/app/(marketing)/page';
 
 describe('HeaderMenu', () => {
   it('텍스트 메뉴를 표시하고 항목 선택 후 닫는다', () => {
@@ -18,5 +19,24 @@ describe('HeaderMenu', () => {
     expect(screen.getByRole('link', { name: '내 스케치북 관리' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '로그아웃' }));
     expect(menu.closest('details')).not.toHaveAttribute('open');
+  });
+});
+
+describe('랜딩 페이지 빠른 메뉴', () => {
+  it('세 메뉴를 한글 문구 대신 접근성 이름이 있는 이미지 아이콘으로 표시한다', () => {
+    render(<LandingPage />);
+    const menu = screen.getByRole('navigation', { name: '빠른 메뉴 항목' });
+
+    const items = [
+      ['스케치북 만들기', '/icons/menu-create.webp'],
+      ['개인정보 처리방침', '/icons/menu-privacy.webp'],
+      ['서비스 이용 및 결제 안내', '/icons/menu-terms.webp'],
+    ] as const;
+
+    items.forEach(([name, src]) => {
+      const link = within(menu).getByRole('link', { name });
+      expect(link.textContent).toBe('');
+      expect(decodeURIComponent(link.querySelector('img')?.getAttribute('src') ?? '')).toContain(src);
+    });
   });
 });

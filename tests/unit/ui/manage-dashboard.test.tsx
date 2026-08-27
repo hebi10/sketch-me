@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { vi } from 'vitest';
 
 import { ManageDashboard } from '@/app/m/[publicId]/ManageDashboard';
@@ -8,6 +8,34 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('ManageDashboard 친구 그림 추가 결제', () => {
+  it('관리 메뉴를 접근성 이름이 있는 이미지 아이콘으로 표시한다', () => {
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={0}
+        participantLimit={20}
+        publicId="public-menu"
+      />,
+    );
+    const menu = screen.getByRole('navigation', { name: '메뉴 항목' });
+
+    const items = [
+      ['친구 페이지 보기', '/icons/menu-public-page.webp'],
+      ['스토리 이미지 만들기', '/icons/menu-story-image.webp'],
+      ['친구에게 공유하기', '/icons/menu-share.webp'],
+      ['관리 비밀번호 변경', '/icons/menu-security.webp'],
+      ['로그아웃', '/icons/menu-logout.webp'],
+    ] as const;
+
+    items.forEach(([name, src]) => {
+      const control = within(menu).getByRole(name === '친구 페이지 보기' || name === '스토리 이미지 만들기' ? 'link' : 'button', { name });
+      expect(control.textContent).toBe('');
+      expect(decodeURIComponent(control.querySelector('img')?.getAttribute('src') ?? '')).toContain(src);
+    });
+  });
+
   it('운영자 숨김 그림은 삭제만 허용하고 공개와 BEST 조작을 비활성화한다', () => {
     const createdAt = new Date('2026-08-25T00:00:00.000Z');
     render(
