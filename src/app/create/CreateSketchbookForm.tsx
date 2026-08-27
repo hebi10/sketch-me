@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { SketchEditor, type SketchEditorHandle } from '@/components/sketch/SketchEditor';
+import { ClientImageCompressionError, compressReferenceImage } from '@/lib/images/client-compress';
 import { getPublicMutationHeaders } from '@/lib/security/app-check-client';
 
 interface CreateResult {
@@ -32,6 +33,7 @@ export function CreateSketchbookForm() {
   const [ownerImageDataUrl, setOwnerImageDataUrl] = useState<string | null>(null);
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCompressingReference, setIsCompressingReference] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [created, setCreated] = useState<CreateResult | null>(null);
 
@@ -74,24 +76,27 @@ export function CreateSketchbookForm() {
     }
   }, [hasLoadedDraft, managePin, managePinHint, name, ownerImageDataUrl]);
 
-  function selectReference(event: React.ChangeEvent<HTMLInputElement>) {
+  async function selectReference(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    event.currentTarget.value = '';
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
       setError('JPG, PNG, WEBP 참고 사진만 선택할 수 있어요.');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setError('참고 사진은 2MB 이하로 선택해 주세요.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setReferenceImageDataUrl(typeof reader.result === 'string' ? reader.result : null);
+    setError(null);
+    setIsCompressingReference(true);
+    try {
+      const compressed = await compressReferenceImage(file);
+      setReferenceImageDataUrl(compressed);
       setError(null);
-    };
-    reader.onerror = () => setError('참고 사진을 읽지 못했습니다. 다른 사진을 선택해 주세요.');
-    reader.readAsDataURL(file);
+    } catch (compressionError) {
+      setError(compressionError instanceof ClientImageCompressionError
+        ? compressionError.message
+        : '사진을 압축하지 못했습니다. 다른 사진을 선택해 주세요.');
+    } finally {
+      setIsCompressingReference(false);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -155,9 +160,10 @@ export function CreateSketchbookForm() {
 
       <section className="reference-picker" aria-labelledby="reference-title">
         <div><h2 id="reference-title">참고 사진</h2><p>선택 사항이에요. 친구가 그릴 때만 참고할 수 있어요.</p></div>
-        <label className="button button--secondary" htmlFor="reference-image">{referenceImageDataUrl ? '다른 사진 선택' : '사진 선택하기'}</label>
-        <input accept="image/jpeg,image/png,image/webp" id="reference-image" onChange={selectReference} type="file" />
-        {referenceImageDataUrl ? <button className="button button--text" onClick={() => setReferenceImageDataUrl(null)} type="button">참고 사진 제거</button> : null}
+        <label aria-disabled={isCompressingReference} className="button button--secondary" htmlFor="reference-image">{isCompressingReference ? '사진 압축 중...' : referenceImageDataUrl ? '다른 사진 선택' : '사진 선택하기'}</label>
+        <input accept="image/jpeg,image/png,image/webp" disabled={isCompressingReference} id="reference-image" onChange={selectReference} type="file" />
+        {isCompressingReference ? <p className="field-hint" role="status">사진 압축 중...</p> : null}
+        {referenceImageDataUrl ? <button className="button button--text" disabled={isCompressingReference} onClick={() => setReferenceImageDataUrl(null)} type="button">참고 사진 제거</button> : null}
       </section>
 
       <section aria-labelledby="owner-sketch-title">
@@ -166,7 +172,7 @@ export function CreateSketchbookForm() {
       </section>
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
-      <button className="button button--primary create-submit" disabled={isSubmitting} type="submit">{isSubmitting ? '스캐치북 만드는 중...' : '내 스캐치북 만들기'}</button>
+      <button className="button button--primary create-submit" disabled={isSubmitting || isCompressingReference} type="submit">{isSubmitting ? '스캐치북 만드는 중...' : '내 스캐치북 만들기'}</button>
       <p className="field-hint">친구 그림 20개까지 무료로 받아볼 수 있어요.</p>
     </form>
   );
