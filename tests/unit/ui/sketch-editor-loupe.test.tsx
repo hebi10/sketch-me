@@ -55,6 +55,7 @@ describe('SketchEditor 그리기 돋보기', () => {
 
     const loupe = screen.getByTestId('drawing-loupe');
     expect(loupe).toHaveAttribute('data-active', 'false');
+    expect(loupe.querySelector('.drawing-loupe-tip')).toBeInTheDocument();
 
     fireEvent(canvas, new MouseEvent('pointerdown', { bubbles: true, clientX: 180, clientY: 180 }));
 

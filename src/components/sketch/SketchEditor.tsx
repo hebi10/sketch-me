@@ -416,6 +416,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
             {crosshairVisible ? <div aria-hidden="true" className="canvas-crosshair" data-testid="canvas-crosshair" /> : null}
             <div aria-hidden="true" className={`drawing-loupe drawing-loupe--${loupePlacement} ${loupeActive ? 'is-visible' : ''}`} data-active={loupeActive} data-placement={loupePlacement} data-testid="drawing-loupe" ref={loupeRef} style={loupeBrushStyle}>
               <canvas data-loupe="true" height={loupeSize} ref={loupeCanvasRef} width={loupeSize} />
+              <span className="drawing-loupe-tip" />
             </div>
           </div>
         </div>
