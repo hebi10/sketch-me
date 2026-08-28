@@ -34,6 +34,10 @@ describe('SketchEditor 그리기 돋보기', () => {
 
     render(<SketchEditor ariaLabel="그리기 캔버스" />);
     fireEvent.click(screen.getByRole('button', { name: '그림 그리기' }));
+    fireEvent.click(screen.getByRole('button', { name: '그리기 도구 열기' }));
+    fireEvent.click(screen.getByRole('button', { name: '파랑 색상' }));
+    fireEvent.change(screen.getByLabelText('펜 투명도'), { target: { value: '55' } });
+    fireEvent.change(screen.getByLabelText('굵기'), { target: { value: '12' } });
 
     const canvas = screen.getByLabelText('그리기 캔버스');
     Object.defineProperty(canvas, 'setPointerCapture', { value: vi.fn() });
@@ -57,6 +61,11 @@ describe('SketchEditor 그리기 돋보기', () => {
     expect(loupe).toHaveAttribute('data-active', 'true');
     expect(loupe).toHaveAttribute('data-placement', 'above');
     expect(Number.parseFloat(loupe.style.left)).toBeLessThan(50);
+    expect(loupe).toHaveStyle({
+      '--loupe-brush-color': '#506f8f',
+      '--loupe-brush-opacity': '55%',
+      '--loupe-brush-size': '12px',
+    });
     expect(loupeContext.drawImage).toHaveBeenCalledWith(
       canvas,
       expect.any(Number),

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
 
 import {
   createCanvasHistory,
@@ -64,6 +64,11 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
     const [drawingError, setDrawingError] = useState<string | null>(null);
     const [drawingImportStatus, setDrawingImportStatus] = useState<string | null>(null);
+    const loupeBrushStyle = {
+      '--loupe-brush-color': eraser ? '#ffffff' : color,
+      '--loupe-brush-opacity': eraser ? '100%' : `${penOpacity}%`,
+      '--loupe-brush-size': `${eraser ? lineWidth * 3 : lineWidth}px`,
+    } as CSSProperties;
 
     const context = useCallback(() => {
       return canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -409,7 +414,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
             ) : null}
             <canvas aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
             {crosshairVisible ? <div aria-hidden="true" className="canvas-crosshair" data-testid="canvas-crosshair" /> : null}
-            <div aria-hidden="true" className={`drawing-loupe drawing-loupe--${loupePlacement} ${loupeActive ? 'is-visible' : ''}`} data-active={loupeActive} data-placement={loupePlacement} data-testid="drawing-loupe" ref={loupeRef}>
+            <div aria-hidden="true" className={`drawing-loupe drawing-loupe--${loupePlacement} ${loupeActive ? 'is-visible' : ''}`} data-active={loupeActive} data-placement={loupePlacement} data-testid="drawing-loupe" ref={loupeRef} style={loupeBrushStyle}>
               <canvas data-loupe="true" height={loupeSize} ref={loupeCanvasRef} width={loupeSize} />
             </div>
           </div>
