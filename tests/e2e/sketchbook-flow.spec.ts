@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 
 import { expect, test } from '@playwright/test';
 import sharp from 'sharp';
@@ -53,10 +52,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await ownerPage.goto('/create');
   await ownerPage.getByLabel('이름 또는 애칭').fill(uniqueName);
   await ownerPage.getByLabel('관리 비밀번호').fill('1234');
-  await ownerPage.locator('#reference-image').setInputFiles(path.resolve('public/brand/landing-sketch-collage.webp'));
-  await expect(ownerPage.getByRole('button', { name: '다른 사진 선택' })).toBeVisible();
   await ownerPage.getByRole('button', { name: '그림 그리기' }).click();
-  await expect(ownerPage.getByAltText('그림 참고 사진')).toBeVisible();
   await drawOnCanvas(ownerPage);
   await ownerPage.getByRole('button', { name: '확인' }).click();
   await ownerPage.getByRole('button', { name: '내 스캐치북 만들기' }).click();
@@ -70,7 +66,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await ownerPage.getByRole('radio', { name: /50명 추가.*4,490원/ }).check();
   await ownerPage.getByRole('button', { name: '4,490원 모의 결제하기' }).click();
   await expect(ownerPage.getByText('모의 결제가 완료되어 친구 그림 50개가 추가됐어요.')).toBeVisible();
-  await expect(ownerPage.locator('.manage-summary p')).toContainText(/친구 그림\s*0\s*\/\s*70/);
+  await expect(ownerPage.locator('.manage-summary p')).toContainText(/친구 그림\s*0\s*\/\s*60/);
   const managePath = new URL(ownerPage.url()).pathname;
   const managementPublicId = managePath.split('/')[2];
   const publicPath = `/s/${managementPublicId}`;
@@ -84,7 +80,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await friendPage.getByRole('button', { name: '그리기 도구 열기' }).click();
   await expect(friendPage.getByRole('button', { name: '가이드' })).toBeEnabled();
   await friendPage.getByRole('button', { name: '가이드' }).click();
-  await expect(friendPage.getByRole('button', { name: '참고 사진 숨기기' })).toBeVisible();
+  await expect(friendPage.getByText('중앙선을 켜고 얼굴 비율을 확인해 보세요.')).toBeVisible();
   await expect(friendPage.getByRole('checkbox', { name: '중앙선 보기' })).toBeChecked();
   await friendPage.getByRole('button', { name: '그리기', exact: true }).click();
   await drawOnCanvas(friendPage);

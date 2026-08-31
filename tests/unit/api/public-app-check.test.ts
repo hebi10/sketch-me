@@ -127,7 +127,6 @@ describe('공개 mutation Route Handler App Check 순서', () => {
       body: JSON.stringify({
         authorName: '친구',
         imageDataUrl: 'data:image/png;base64,aW1hZ2U=',
-        usedReferenceImage: false,
       }),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
@@ -174,7 +173,6 @@ describe('친구 그림 원본·썸네일 동시 저장', () => {
       body: JSON.stringify({
         authorName: '친구',
         imageDataUrl: 'data:image/png;base64,aW1hZ2U=',
-        usedReferenceImage: false,
       }),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',

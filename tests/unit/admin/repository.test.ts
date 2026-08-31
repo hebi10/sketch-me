@@ -255,7 +255,6 @@ function createDrawingDocument(
       sketchbookId: 'book-1',
       status: 'VISIBLE',
       updatedAt: new Date('2026-08-25T01:00:00.000Z'),
-      usedReferenceImage: false,
       ...metadata,
     }),
     id,
@@ -429,6 +428,8 @@ describe('admin repository pagination and search', () => {
       publicId: 'public-1',
     });
     expect(result.items[0]).not.toHaveProperty('manageTokenHash');
+    expect(result.items[0]).not.toHaveProperty('referenceImageEnabled');
+    expect(result.items[0]).not.toHaveProperty('referenceImagePath');
   });
 
   it('공개 ID 검색 결과가 있으면 이름 쿼리를 실행하지 않는다', async () => {

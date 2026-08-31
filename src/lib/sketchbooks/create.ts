@@ -9,7 +9,6 @@ interface CreateSketchbookDraftParams {
   managePinHash?: string | null;
   managePinHint?: string | null;
   ownerDrawingPath?: string | null;
-  referenceImagePath?: string | null;
   createdAt: Date;
 }
 
@@ -21,7 +20,6 @@ export function createSketchbookDraft({
   managePinHash = null,
   managePinHint = null,
   ownerDrawingPath = null,
-  referenceImagePath = null,
   createdAt,
 }: CreateSketchbookDraftParams): Sketchbook {
   return {
@@ -33,8 +31,6 @@ export function createSketchbookDraft({
     managePinHint: managePinHint?.trim() || null,
     managePinEnabledAt: managePinHash ? createdAt : null,
     ownerDrawingPath,
-    referenceImagePath,
-    referenceImageEnabled: Boolean(referenceImagePath),
     entitlements: { watermarkFree: false },
     participantLimit: FREE_PARTICIPANT_LIMIT,
     participantCount: 0,

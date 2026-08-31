@@ -8,11 +8,10 @@ import { getPublicMutationHeaders } from '@/lib/security/app-check-client';
 
 interface SketchCanvasProps {
   publicId: string;
-  referenceImageUrl?: string | null;
   sketchbookName: string;
 }
 
-export function SketchCanvas({ publicId, referenceImageUrl, sketchbookName }: SketchCanvasProps) {
+export function SketchCanvas({ publicId, sketchbookName }: SketchCanvasProps) {
   const editorRef = useRef<SketchEditorHandle>(null);
   const [authorName, setAuthorName] = useState('');
   const [message, setMessage] = useState('');
@@ -40,7 +39,7 @@ export function SketchCanvas({ publicId, referenceImageUrl, sketchbookName }: Sk
       const response = await fetch(`/api/sketchbooks/${publicId}/drawings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...appCheckHeaders },
-        body: JSON.stringify({ authorName, message, imageDataUrl, usedReferenceImage: Boolean(referenceImageUrl) }),
+        body: JSON.stringify({ authorName, message, imageDataUrl }),
       });
       const result = (await response.json()) as { message?: string };
       if (!response.ok) throw new Error(result.message ?? '그림을 남기지 못했습니다.');
@@ -59,7 +58,7 @@ export function SketchCanvas({ publicId, referenceImageUrl, sketchbookName }: Sk
         <p>{sketchbookName}님을 그려주세요</p>
         <a className="draw-complete-link" href="#drawing-submit">완료</a>
       </header>
-      <SketchEditor ariaLabel={`${sketchbookName}님을 위한 그림 캔버스`} ref={editorRef} referenceImageUrl={referenceImageUrl} />
+      <SketchEditor ariaLabel={`${sketchbookName}님을 위한 그림 캔버스`} ref={editorRef} />
       <form className="drawing-submit-form" id="drawing-submit" onSubmit={submit}>
         <label className="field-label" htmlFor="author-name">내 이름</label>
         <input autoComplete="name" id="author-name" maxLength={24} onChange={(event) => setAuthorName(event.target.value)} required value={authorName} />

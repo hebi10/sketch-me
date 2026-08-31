@@ -37,30 +37,17 @@ describe('SketchEditor 가이드', () => {
     );
   });
 
-  it('참고 사진이 없어도 중앙선을 켜고 끌 수 있고 얼굴 조합 UI는 표시하지 않는다', () => {
+  it('가이드에서는 중앙선만 켜고 끌 수 있다', () => {
     render(<SketchEditor ariaLabel="그리기 캔버스" />);
     openGuide();
 
     expect(screen.queryByText('얼굴 만들기')).not.toBeInTheDocument();
+    expect(screen.getByText('중앙선을 켜고 얼굴 비율을 확인해 보세요.')).toBeVisible();
+    expect(screen.queryByText(/참고 사진/)).not.toBeInTheDocument();
     expect(screen.getByTestId('canvas-crosshair')).toBeVisible();
 
     fireEvent.click(screen.getByRole('checkbox', { name: '중앙선 보기' }));
     expect(screen.queryByTestId('canvas-crosshair')).not.toBeInTheDocument();
   });
 
-  it('참고 사진이 있으면 별도 모드 선택 없이 사진 조절 기능을 바로 표시한다', () => {
-    render(
-      <SketchEditor
-        ariaLabel="그리기 캔버스"
-        referenceImageUrl="data:image/webp;base64,reference"
-      />,
-    );
-    openGuide();
-
-    expect(screen.queryByRole('tab', { name: '사진 참고' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '참고 사진 숨기기' })).toBeVisible();
-    expect(screen.getByRole('slider', { name: '사진 투명도' })).toBeVisible();
-    expect(screen.getByRole('slider', { name: '확대' })).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: '중앙선 보기' })).toBeChecked();
-  });
 });

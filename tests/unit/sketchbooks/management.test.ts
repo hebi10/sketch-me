@@ -44,8 +44,6 @@ const sketchbook: Sketchbook = {
   participantCount: 0,
   participantLimit: 20,
   publicId: 'public-1',
-  referenceImageEnabled: false,
-  referenceImagePath: null,
   status: 'PUBLIC',
   updatedAt: createdAt,
 };

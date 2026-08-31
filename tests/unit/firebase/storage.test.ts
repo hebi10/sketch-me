@@ -49,7 +49,7 @@ describe('drawing Storage path', () => {
     'sketchbooks/other-book/drawings/draw-1/original.webp',
     'sketchbooks/book-1/drawings/other-drawing/original.webp',
     'sketchbooks/book-1/owner/original.webp',
-    'sketchbooks/book-1/reference/source.webp',
+    'sketchbooks/book-1/share-images/story.webp',
     'sketchbooks/book-1/drawings/draw-1.webp',
     'sketchbooks/book-1/drawings/draw-1/../original.webp',
     'sketchbooks/book-1/drawings/draw-1/%2E%2E/owner/original.webp',
@@ -81,7 +81,7 @@ describe('owner Storage path', () => {
     'sketchbooks/book-1/owner/not-original.png',
     'sketchbooks/book-1/owner/original.jpeg',
     'sketchbooks/book-1/drawings/original.png',
-    'sketchbooks/book-1/owner/%2e%2e%2freference/source.png',
+    'sketchbooks/book-1/owner/%2e%2e%2fshare-images/story.png',
   ])('다른 PNG나 대상·traversal 경로는 거부한다: %s', (path) => {
     expect(isOwnerDrawingPathFor(path, 'book-1')).toBe(false);
   });

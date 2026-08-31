@@ -14,7 +14,6 @@ const validDrawingPayload = {
   authorName: '차단 확인 친구',
   imageDataUrl: 'data:image/webp;base64,UklGRgQAAABXRUJQ',
   message: '',
-  usedReferenceImage: false,
 };
 
 test.beforeEach(async () => {

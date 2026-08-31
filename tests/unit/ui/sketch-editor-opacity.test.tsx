@@ -76,48 +76,4 @@ describe('SketchEditor 투명도 조절', () => {
     expect(context.globalAlpha).toBe(1);
   });
 
-  it('참고사진 투명도를 드래그 값에 맞춰 적용한다', () => {
-    render(<SketchEditor ariaLabel="그리기 캔버스" referenceImageUrl="/reference.webp" />);
-    openDrawingTools();
-
-    fireEvent.click(screen.getByRole('button', { name: '가이드' }));
-    const opacity = screen.getByRole('slider', { name: /사진 투명도/ });
-    fireEvent.change(opacity, { target: { value: '35' } });
-
-    expect(opacity).toHaveValue('35');
-    expect(screen.getByText('35%')).toBeVisible();
-    expect(screen.getByAltText('그림 참고 사진').parentElement).toHaveStyle({ opacity: '0.35' });
-  });
-
-  it('참고사진 확대를 투명도와 같은 범위 컨트롤로 표시한다', () => {
-    render(<SketchEditor ariaLabel="그리기 캔버스" referenceImageUrl="/reference.webp" />);
-    openDrawingTools();
-
-    fireEvent.click(screen.getByRole('button', { name: '가이드' }));
-    const scale = screen.getByRole('slider', { name: '확대' });
-    fireEvent.change(scale, { target: { value: '1.5' } });
-
-    expect(scale).toHaveValue('1.5');
-    expect(screen.getByText('150%')).toBeVisible();
-  });
-
-  it('참고사진을 숨겼다가 기존 설정 그대로 다시 표시한다', () => {
-    render(<SketchEditor ariaLabel="그리기 캔버스" referenceImageUrl="/reference.webp" />);
-    openDrawingTools();
-
-    fireEvent.click(screen.getByRole('button', { name: '가이드' }));
-    fireEvent.change(screen.getByRole('slider', { name: /사진 투명도/ }), { target: { value: '35' } });
-
-    const referenceLayer = screen.getByAltText('그림 참고 사진').parentElement;
-    const hideButton = screen.getByRole('button', { name: '참고 사진 숨기기' });
-    expect(hideButton).toHaveAttribute('aria-pressed', 'true');
-
-    fireEvent.click(hideButton);
-    expect(referenceLayer).not.toBeVisible();
-    expect(screen.getByRole('button', { name: '참고 사진 보기' })).toHaveAttribute('aria-pressed', 'false');
-
-    fireEvent.click(screen.getByRole('button', { name: '참고 사진 보기' }));
-    expect(referenceLayer).toBeVisible();
-    expect(referenceLayer).toHaveStyle({ opacity: '0.35' });
-  });
 });

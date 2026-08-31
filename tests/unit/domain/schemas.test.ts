@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createSketchbookInputSchema, submitDrawingInputSchema } from '@/lib/domain/schemas';
+import {
+  createSketchbookInputSchema,
+  submitDrawingInputSchema,
+  submitDrawingPayloadSchema,
+} from '@/lib/domain/schemas';
 
 describe('sketchbook input schemas', () => {
   const ownerImageDataUrl = `data:image/png;base64,${Buffer.from('image').toString('base64')}`;
@@ -9,7 +13,6 @@ describe('sketchbook input schemas', () => {
       submitDrawingInputSchema.parse({
         authorName: ' ',
         imagePath: 'sketchbooks/abc/drawings/drawing.png',
-        usedReferenceImage: false,
       }),
     ).toThrow();
   });
@@ -27,5 +30,21 @@ describe('sketchbook input schemas', () => {
     expect(createSketchbookInputSchema.safeParse({ name: '해비', managePin: '12ab' }).success).toBe(false);
     expect(createSketchbookInputSchema.safeParse({ name: '해비' }).success).toBe(false);
     expect(createSketchbookInputSchema.safeParse({ name: '해비', managePin: '1234', managePinHint: '가'.repeat(41) }).success).toBe(false);
+  });
+
+  it('legacy reference-photo fields are discarded from create and drawing payloads', () => {
+    const created = createSketchbookInputSchema.parse({
+      managePin: '1234',
+      name: '해비',
+      referenceImageDataUrl: 'data:image/png;base64,bGVnYWN5',
+    });
+    const submitted = submitDrawingPayloadSchema.parse({
+      authorName: '친구',
+      imageDataUrl: ownerImageDataUrl,
+      usedReferenceImage: true,
+    });
+
+    expect(created).not.toHaveProperty('referenceImageDataUrl');
+    expect(submitted).not.toHaveProperty('usedReferenceImage');
   });
 });

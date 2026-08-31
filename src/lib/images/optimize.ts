@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 
-export type ImageStorageProfile = 'sketch' | 'reference' | 'thumbnail';
+export type ImageStorageProfile = 'sketch' | 'thumbnail';
 
 export interface OptimizedImage {
   buffer: Buffer;
@@ -14,13 +14,6 @@ const profiles = {
     quality: 76,
     fallbackQuality: 58,
     maxBytes: 350_000,
-  },
-  reference: {
-    width: 1280,
-    height: 1280,
-    quality: 72,
-    fallbackQuality: 52,
-    maxBytes: 600_000,
   },
   thumbnail: {
     width: 320,
@@ -40,19 +33,12 @@ async function encodeWebp(
   scale = 1,
 ) {
   const settings = profiles[profile];
-  const resizeOptions = profile !== 'reference'
-    ? {
-        width: Math.round(settings.width * scale),
-        height: Math.round(settings.height * scale),
-        fit: 'contain' as const,
-        background: { r: 255, g: 255, b: 255, alpha: 1 },
-      }
-    : {
-        width: Math.round(settings.width * scale),
-        height: Math.round(settings.height * scale),
-        fit: 'inside' as const,
-        withoutEnlargement: true,
-      };
+  const resizeOptions = {
+    width: Math.round(settings.width * scale),
+    height: Math.round(settings.height * scale),
+    fit: 'contain' as const,
+    background: { r: 255, g: 255, b: 255, alpha: 1 },
+  };
 
   return sharp(input, { failOn: 'error', limitInputPixels: 16_000_000 })
     .rotate()
@@ -67,7 +53,7 @@ export async function optimizeImageForStorage(input: Buffer, profile: ImageStora
   try {
     let buffer = await encodeWebp(input, profile, settings.quality);
     if (buffer.byteLength > settings.maxBytes) {
-      buffer = await encodeWebp(input, profile, settings.fallbackQuality, profile === 'reference' ? 0.85 : 1);
+      buffer = await encodeWebp(input, profile, settings.fallbackQuality);
     }
     if (buffer.byteLength > settings.maxBytes) {
       throw new ImageOptimizationError(

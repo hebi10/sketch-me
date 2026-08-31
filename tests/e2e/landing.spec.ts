@@ -8,7 +8,13 @@ test('랜딩에서 스캐치북 생성으로 이동한다', async ({ page }) => 
     'src',
     /landing-sketch-collage-v2\.png/,
   );
-  await page.getByRole('link', { name: '내 스캐치북 만들기' }).click();
+  const image = page.getByRole('img', { name: '친구들이 손으로 그린 네 장의 초상화 카드' });
+  const cta = page.getByRole('link', { name: '내 스캐치북 만들기' });
+  const [imageBox, ctaBox] = await Promise.all([image.boundingBox(), cta.boundingBox()]);
+  expect(imageBox).not.toBeNull();
+  expect(ctaBox).not.toBeNull();
+  expect(ctaBox!.y - (imageBox!.y + imageBox!.height)).toBeGreaterThanOrEqual(16);
+  await cta.click();
 
   await expect(page).toHaveURL(/\/create$/);
   await expect(page.getByRole('heading', { name: '내 스캐치북 만들기' })).toBeVisible();

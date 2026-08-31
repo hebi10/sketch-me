@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 import { createSketchbookInputSchema } from '@/lib/domain/schemas';
 import { getAdminStorage } from '@/lib/firebase/admin';
-import { getOwnerDrawingPath, getReferenceImagePath } from '@/lib/firebase/storage';
+import { getOwnerDrawingPath } from '@/lib/firebase/storage';
 import { ImageOptimizationError, optimizeImageForStorage } from '@/lib/images/optimize';
 import { enforceAppCheck } from '@/lib/security/app-check-server';
 import { enforcePublicMutationLimit } from '@/lib/security/rate-limit';
@@ -54,7 +54,6 @@ export async function POST(request: Request) {
   const managePinHash = await hashManagePin(parsed.data.managePin);
   const sketchbookId = randomUUID();
   const ownerDrawingPath = parsed.data.ownerImageDataUrl ? getOwnerDrawingPath(sketchbookId) : null;
-  const referenceImagePath = parsed.data.referenceImageDataUrl ? getReferenceImagePath(sketchbookId) : null;
   const sketchbook = createSketchbookDraft({
     id: sketchbookId,
     publicId: createPublicId(),
@@ -63,7 +62,6 @@ export async function POST(request: Request) {
     managePinHash,
     managePinHint: parsed.data.managePinHint,
     ownerDrawingPath,
-    referenceImagePath,
     createdAt: new Date(),
   });
 
@@ -74,11 +72,6 @@ export async function POST(request: Request) {
       const ownerImage = await optimizeImageForStorage(decodeImageDataUrl(parsed.data.ownerImageDataUrl).buffer, 'sketch');
       await bucket.file(ownerDrawingPath).save(ownerImage.buffer, { metadata: { contentType: ownerImage.contentType, cacheControl: 'private, max-age=0' } });
       uploadedPaths.push(ownerDrawingPath);
-    }
-    if (referenceImagePath && parsed.data.referenceImageDataUrl) {
-      const referenceImage = await optimizeImageForStorage(decodeImageDataUrl(parsed.data.referenceImageDataUrl).buffer, 'reference');
-      await bucket.file(referenceImagePath).save(referenceImage.buffer, { metadata: { contentType: referenceImage.contentType, cacheControl: 'private, max-age=0' } });
-      uploadedPaths.push(referenceImagePath);
     }
     await saveSketchbook(sketchbook);
   } catch (error) {

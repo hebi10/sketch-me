@@ -18,10 +18,10 @@ describe('Next image optimizer 공개 이미지 경계', () => {
     '/api/sketchbooks/public-1/drawings/drawing-1/image',
     '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
     'http://localhost/api/sketchbooks/public-1/owner/image',
-    'https://example.com/api/sketchbooks/public-1/reference/image?download=1',
+    'https://example.com/api/sketchbooks/public-1/owner/image?download=1',
     '%2Fapi%2Fsketchbooks%2Fpublic-1%2Fdrawings%2Fdrawing-1%2Fimage',
     '%252Fapi%252Fsketchbooks%252Fpublic-1%252Fowner%252Fimage',
-    '/brand/../api/sketchbooks/public-1/reference/image',
+    '/brand/../api/sketchbooks/public-1/owner/image',
   ])('상대·절대·인코딩된 공개 API 원본 %s을 Storage 전에 no-store 404로 차단한다', (source) => {
     const response = proxy(optimizerRequest(source));
 

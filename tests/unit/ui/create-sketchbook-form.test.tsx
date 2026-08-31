@@ -29,54 +29,14 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     expect(await screen.findByText('친구 그림 10개까지 무료로 받아볼 수 있어요.')).toBeVisible();
   });
 
-  it('2MB가 넘는 참고 사진을 브라우저에서 WebP로 압축해 선택한다', async () => {
-    const drawImage = vi.fn();
-    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ close: vi.fn(), height: 3000, width: 4000 })));
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
-    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback, type) => {
-      callback(new Blob(['compressed-reference'], { type }));
-    });
+  it('스케치북 생성 흐름에서 참고 사진 입력을 표시하지 않는다', async () => {
     render(<CreateSketchbookForm />);
-    const input = screen.getByLabelText('사진 선택하기');
-    const largePhoto = new File([new Uint8Array(5 * 1024 * 1024)], 'phone-photo.jpg', { type: 'image/jpeg' });
 
-    fireEvent.change(input, { target: { files: [largePhoto] } });
+    await waitFor(() => expect(sessionStorage.getItem(draftKey)).not.toBeNull());
 
-    await waitFor(() => expect(screen.getByText('다른 사진 선택')).toBeVisible());
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  });
-
-  it('참고 사진을 압축하는 동안 선택과 제출을 잠근다', async () => {
-    let finishDecode: ((bitmap: { close: () => void; height: number; width: number }) => void) | undefined;
-    vi.stubGlobal('createImageBitmap', vi.fn(() => new Promise((resolve) => { finishDecode = resolve; })));
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
-    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback, type) => {
-      callback(new Blob(['compressed-reference'], { type }));
-    });
-    render(<CreateSketchbookForm />);
-    const input = screen.getByLabelText('사진 선택하기');
-
-    fireEvent.change(input, { target: { files: [new File(['photo'], 'photo.jpg', { type: 'image/jpeg' })] } });
-
-    expect(await screen.findByRole('status')).toHaveTextContent('사진 압축 중...');
-    expect(input).toBeDisabled();
-    expect(screen.getByRole('button', { name: '내 스캐치북 만들기' })).toBeDisabled();
-
-    finishDecode?.({ close: vi.fn(), height: 900, width: 1200 });
-    await waitFor(() => expect(screen.getByText('다른 사진 선택')).toBeVisible());
-  });
-
-  it('참고 사진을 WebP로 변환하지 못하면 다시 선택할 수 있게 안내한다', async () => {
-    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ close: vi.fn(), height: 900, width: 1200 })));
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
-    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => callback(null));
-    render(<CreateSketchbookForm />);
-    const input = screen.getByLabelText('사진 선택하기');
-
-    fireEvent.change(input, { target: { files: [new File(['photo'], 'photo.jpg', { type: 'image/jpeg' })] } });
-
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('사진을 압축하지 못했습니다. 다른 사진을 선택해 주세요.'));
-    expect(input).toBeEnabled();
+    expect(screen.queryByRole('heading', { name: '참고 사진' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('사진 선택하기')).not.toBeInTheDocument();
+    expect(screen.getByText('그리지 않아도 스캐치북을 만들 수 있어요.')).toBeVisible();
   });
 
   it('세션 초안의 이름, PIN, 힌트를 복원한다', async () => {

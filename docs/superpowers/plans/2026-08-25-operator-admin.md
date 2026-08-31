@@ -1,5 +1,7 @@
 # 스캐치북 운영자 관리자 Implementation Plan
 
+> 상태: 2026-08-31 참고 사진 기능 제거 결정으로 관련 필드·API·표시 요구사항은 폐기되었습니다. 현재 구현 기준은 `PRODUCT.md`와 최신 코드를 따릅니다.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 해비님의 Google 계정 한 개만 접근할 수 있는 모바일 운영자 관리 화면을 추가하고, 스케치북·그림을 안전하게 비활성화하거나 숨기며 전체 현황과 모의 결제를 조회할 수 있게 한다.

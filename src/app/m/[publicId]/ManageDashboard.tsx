@@ -362,7 +362,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
       </section>
       <section className="delete-sketchbook" aria-labelledby="delete-sketchbook-title">
         <h2 id="delete-sketchbook-title">스케치북 삭제</h2>
-        <p>참고 사진과 친구 그림을 포함한 모든 데이터가 영구 삭제되며 되돌릴 수 없어요.</p>
+        <p>생성자 그림과 친구 그림을 포함한 모든 데이터가 영구 삭제되며 되돌릴 수 없어요.</p>
         {deleteArmed ? (
           <div className="delete-confirm-actions">
             <button className="button button--danger" disabled={isDeleting} onClick={deleteSketchbook} type="button">

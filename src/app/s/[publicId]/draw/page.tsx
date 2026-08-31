@@ -48,7 +48,6 @@ export default async function DrawFriendPage({ params }: { params: Promise<{ pub
   return (
     <SketchCanvas
       publicId={sketchbook.publicId}
-      referenceImageUrl={sketchbook.referenceImageEnabled ? `/api/sketchbooks/${publicId}/reference/image` : null}
       sketchbookName={sketchbook.name}
     />
   );

@@ -167,7 +167,7 @@ test('320px 모바일에서 가이드 중앙선을 조작한다', async ({ page 
   await page.getByRole('button', { name: '그리기 도구 열기' }).click();
   await page.getByRole('button', { name: '가이드' }).click();
 
-  await expect(page.getByText('참고 사진 없이 중앙선만 사용할 수 있어요.')).toBeVisible();
+  await expect(page.getByText('중앙선을 켜고 얼굴 비율을 확인해 보세요.')).toBeVisible();
   await expect(page.getByText('얼굴 만들기')).toHaveCount(0);
   await expect(page.getByTestId('canvas-crosshair')).toBeVisible();
 

@@ -1,5 +1,7 @@
 # 스캐치북 모바일 핵심 완성 Implementation Plan
 
+> 상태: 2026-08-31 참고 사진 기능 제거 결정으로 관련 단계와 인터페이스는 폐기되었습니다. 현재 구현 기준은 `PRODUCT.md`와 최신 코드를 따릅니다.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 생성자와 친구가 모바일에서 스케치북을 만들고, 참고 사진을 보며 그림을 제출하고, 관리·BEST·스토리 PNG까지 완료할 수 있게 한다.

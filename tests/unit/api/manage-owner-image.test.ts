@@ -46,8 +46,6 @@ const blockedSketchbook: Sketchbook = {
   participantCount: 0,
   participantLimit: 20,
   publicId: 'public-1',
-  referenceImageEnabled: false,
-  referenceImagePath: null,
   status: 'PUBLIC',
   updatedAt: createdAt,
 };
@@ -115,9 +113,9 @@ describe('관리 세션 보호 소유자 이미지 API', () => {
 
   it.each([
     'sketchbooks/other-book/owner/original.webp',
-    'sketchbooks/book-1/reference/source.webp',
-    'sketchbooks/book-1/owner/../reference/source.webp',
-    'sketchbooks/book-1/owner/%2e%2e%2freference/source.webp',
+    'sketchbooks/book-1/share-images/story.webp',
+    'sketchbooks/book-1/owner/../share-images/story.webp',
+    'sketchbooks/book-1/owner/%2e%2e%2fshare-images/story.webp',
   ])('다른 대상이나 traversal 가능성이 있는 경로는 Storage 접근 전에 404로 거부한다: %s', async (ownerDrawingPath) => {
     findSketchbookByPublicId.mockResolvedValue({ ...blockedSketchbook, ownerDrawingPath });
 

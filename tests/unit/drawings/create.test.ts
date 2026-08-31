@@ -13,7 +13,6 @@ describe('createDrawingDraft', () => {
       thumbnailPath: 'sketchbooks/book_123/drawings/drawing_123/thumbnail.webp',
       authorName: '  수연 ',
       message: '  늘 응원해! ',
-      usedReferenceImage: false,
       createdAt: new Date('2026-08-24T00:00:00.000Z'),
     });
 
@@ -30,5 +29,6 @@ describe('createDrawingDraft', () => {
       publicImageVersion: expect.stringMatching(/^[0-9a-f-]{36}$/),
       status: 'VISIBLE',
     });
+    expect(drawing).not.toHaveProperty('usedReferenceImage');
   });
 });

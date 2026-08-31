@@ -28,7 +28,6 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
           sketchbookPublicId: 'public-loading',
           status: 'VISIBLE',
           updatedAt: createdAt,
-          usedReferenceImage: false,
         }]}
         moderationStatus="ACTIVE"
         name="내 이름"
@@ -68,7 +67,6 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
           sketchbookPublicId: 'public-failed',
           status: 'VISIBLE',
           updatedAt: createdAt,
-          usedReferenceImage: false,
         }]}
         moderationStatus="ACTIVE"
         name="내 이름"
@@ -132,7 +130,6 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
           sketchbookPublicId: 'public-1',
           status: 'VISIBLE',
           updatedAt: createdAt,
-          usedReferenceImage: false,
         }]}
         moderationStatus="ACTIVE"
         name="내 이름"

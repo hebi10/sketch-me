@@ -49,8 +49,6 @@ function createSketchbook(
     participantCount: 13,
     participantLimit: 70,
     publicId: 'public-1',
-    referenceImageEnabled: true,
-    referenceImagePath: 'sketchbooks/book-1/reference.webp',
     status: 'PUBLIC',
     updatedAt: createdAt,
     ...overrides,
@@ -79,7 +77,6 @@ function createDetail(
       sketchbookPublicId: 'public-1',
       status: 'VISIBLE',
       updatedAt: createdAt,
-      usedReferenceImage: true,
     }],
     ...overrides,
   };
@@ -275,7 +272,6 @@ describe('AdminSketchbookDetailPage 데이터 경계', () => {
     expect(screen.getByRole('heading', { name: '내 이름' })).toBeVisible();
     expect(screen.getByText('13 / 70')).toBeVisible();
     expect(screen.getByText('생성자 그림 있음')).toBeVisible();
-    expect(screen.getByText('참고 사진 사용 중')).toBeVisible();
     expect(screen.getByText('친구')).toBeVisible();
     expect(screen.getByText('2건')).toBeVisible();
     expect(screen.getByText('4,890원')).toBeVisible();

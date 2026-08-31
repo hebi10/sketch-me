@@ -18,8 +18,6 @@ export interface Sketchbook {
   managePinHint?: string | null;
   managePinEnabledAt?: Date | null;
   ownerDrawingPath: string | null;
-  referenceImagePath: string | null;
-  referenceImageEnabled: boolean;
   entitlements: SketchbookEntitlements;
   participantLimit: number;
   participantCount: number;
@@ -40,7 +38,6 @@ export interface Drawing {
   publicImageVersion: string;
   authorName: string;
   message: string | null;
-  usedReferenceImage: boolean;
   bestRank: 1 | 2 | 3 | 4 | null;
   status: DrawingStatus;
   moderationStatus: ModerationStatus;

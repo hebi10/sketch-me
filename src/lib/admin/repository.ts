@@ -52,8 +52,6 @@ function toAdminSketchbook(
     publicId: String(data.publicId ?? ''),
     name: String(data.name ?? ''),
     ownerDrawingPath: data.ownerDrawingPath ? String(data.ownerDrawingPath) : null,
-    referenceImagePath: data.referenceImagePath ? String(data.referenceImagePath) : null,
-    referenceImageEnabled: Boolean(data.referenceImageEnabled),
     entitlements: {
       watermarkFree: data.entitlements?.watermarkFree === true,
     },
@@ -83,7 +81,6 @@ function toAdminDrawing(
       : toDate(data.createdAt).getTime().toString(36),
     authorName: String(data.authorName ?? ''),
     message: data.message ? String(data.message) : null,
-    usedReferenceImage: Boolean(data.usedReferenceImage),
     bestRank: (data.bestRank as Drawing['bestRank']) ?? null,
     status: data.status as Drawing['status'],
     moderationStatus: data.moderationStatus === 'BLOCKED' ? 'BLOCKED' : 'ACTIVE',

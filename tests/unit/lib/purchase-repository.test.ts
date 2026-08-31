@@ -21,8 +21,6 @@ describe('repository moderation compatibility', () => {
         participantCount: 0,
         participantLimit: 20,
         publicId: 'public-1',
-        referenceImageEnabled: false,
-        referenceImagePath: null,
         status: 'PUBLIC',
         updatedAt: new Date('2026-08-24T00:00:00.000Z'),
       }),
@@ -56,7 +54,6 @@ describe('repository moderation compatibility', () => {
         sketchbookPublicId: 'public-1',
         status: 'VISIBLE',
         updatedAt: new Date('2026-08-24T00:00:00.000Z'),
-        usedReferenceImage: false,
       }),
       id: 'drawing-1',
     };
@@ -90,7 +87,6 @@ describe('repository moderation compatibility', () => {
         sketchbookId: 'book-1',
         status: 'VISIBLE',
         updatedAt: new Date('2026-08-24T00:00:00.000Z'),
-        usedReferenceImage: false,
       }),
       id: 'drawing-legacy',
     };
@@ -153,8 +149,6 @@ describe('addMockPurchase', () => {
       participantCount: 0,
       participantLimit: 20,
       publicId: 'public-1',
-      referenceImageEnabled: false,
-      referenceImagePath: null,
       status: 'PUBLIC' as const,
       updatedAt: new Date(),
     };
@@ -211,8 +205,6 @@ describe('addMockPurchase', () => {
       participantCount: 0,
       participantLimit: 20,
       publicId: 'public-1',
-      referenceImageEnabled: false,
-      referenceImagePath: null,
       status: 'PUBLIC' as const,
       updatedAt: new Date(),
     };

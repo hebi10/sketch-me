@@ -54,7 +54,6 @@ const drawing: Drawing = {
   sketchbookPublicId: 'public-1',
   status: 'VISIBLE',
   updatedAt: createdAt,
-  usedReferenceImage: false,
 };
 
 beforeEach(() => {
@@ -171,7 +170,7 @@ describe('관리자 그림 이미지 API', () => {
     'sketchbooks/other-book/drawings/draw-1/original.webp',
     'sketchbooks/book-1/drawings/other-drawing/original.webp',
     'sketchbooks/book-1/owner/original.webp',
-    'sketchbooks/book-1/reference/source.webp',
+    'sketchbooks/book-1/share-images/story.webp',
     'sketchbooks/book-1/drawings/draw-1.webp',
     'sketchbooks/book-1/drawings/draw-1/../original.webp',
     'sketchbooks/book-1/drawings/draw-1/%2e%2e/owner/original.webp',

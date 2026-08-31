@@ -92,7 +92,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     thumbnailPath,
     authorName: parsed.data.authorName,
     message: parsed.data.message,
-    usedReferenceImage: parsed.data.usedReferenceImage,
     createdAt: new Date(),
   });
 

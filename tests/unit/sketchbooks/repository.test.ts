@@ -31,8 +31,6 @@ const sketchbook = {
   participantCount: 0,
   participantLimit: 20,
   publicId: 'public-1',
-  referenceImageEnabled: false,
-  referenceImagePath: null,
   status: 'PUBLIC' as const,
   updatedAt: createdAt,
 };
@@ -52,7 +50,6 @@ const drawing = {
   sketchbookPublicId: 'public-1',
   status: 'VISIBLE' as const,
   updatedAt: createdAt,
-  usedReferenceImage: false,
 };
 
 describe('공개 그림 저장소 운영자 차단', () => {
@@ -61,7 +58,7 @@ describe('공개 그림 저장소 운영자 차단', () => {
   });
 
   it('VISIBLE 전체 결과에서 BLOCKED 20개 뒤의 ACTIVE 그림도 누락 없이 반환한다', async () => {
-    const legacyDrawing = { ...drawing, publicImageVersion: undefined };
+    const legacyDrawing = { ...drawing, publicImageVersion: undefined, usedReferenceImage: true };
     const documents = [
       ...Array.from({ length: 20 }, (_, index) => ({
         data: () => ({ ...legacyDrawing, id: `blocked-${index}`, moderationStatus: 'BLOCKED' }),
@@ -82,7 +79,9 @@ describe('공개 그림 저장소 운영자 차단', () => {
       })),
     });
 
-    await expect(listVisibleDrawings('book-1')).resolves.toEqual([
+    const visibleDrawings = await listVisibleDrawings('book-1');
+
+    expect(visibleDrawings).toEqual([
       expect.objectContaining({
         id: 'active-drawing',
         moderationStatus: 'ACTIVE',
@@ -90,6 +89,7 @@ describe('공개 그림 저장소 운영자 차단', () => {
         thumbnailPath: null,
       }),
     ]);
+    expect(visibleDrawings[0]).not.toHaveProperty('usedReferenceImage');
     expect(where).toHaveBeenCalledWith('status', '==', 'VISIBLE');
     expect(query.limit).not.toHaveBeenCalled();
   });

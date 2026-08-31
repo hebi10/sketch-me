@@ -47,7 +47,6 @@ vi.mock('@/lib/sketchbooks/repository', () => ({
 import { POST as submitDrawing } from '@/app/api/sketchbooks/[publicId]/drawings/route';
 import { GET as getDrawingImage } from '@/app/api/sketchbooks/[publicId]/drawings/[drawingId]/image/route';
 import { GET as getOwnerImage } from '@/app/api/sketchbooks/[publicId]/owner/image/route';
-import { GET as getReferenceImage } from '@/app/api/sketchbooks/[publicId]/reference/image/route';
 import SharePage from '@/app/m/[publicId]/share/page';
 import PublicSketchbookPage, { generateMetadata } from '@/app/s/[publicId]/page';
 import DrawFriendPage, { generateMetadata as generateDrawMetadata } from '@/app/s/[publicId]/draw/page';
@@ -65,8 +64,6 @@ const sketchbook = {
   participantLimit: 20,
   publicId: 'public-1',
   entitlements: { watermarkFree: false },
-  referenceImageEnabled: true,
-  referenceImagePath: 'sketchbooks/book-1/reference.webp',
   status: 'PUBLIC' as const,
   updatedAt: createdAt,
 };
@@ -86,7 +83,6 @@ const drawing = {
   sketchbookPublicId: 'public-1',
   status: 'VISIBLE' as const,
   updatedAt: createdAt,
-  usedReferenceImage: false,
 };
 const sketchbookContext = { params: Promise.resolve({ publicId: 'public-1' }) };
 const drawingContext = {
@@ -207,7 +203,6 @@ describe('공개 경로 운영자 차단', () => {
       body: JSON.stringify({
         authorName: '친구',
         imageDataUrl: `data:image/png;base64,${Buffer.from('image').toString('base64')}`,
-        usedReferenceImage: false,
       }),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
@@ -223,7 +218,6 @@ describe('공개 경로 운영자 차단', () => {
 
   it.each([
     { getImage: getOwnerImage, label: '소유자 그림', context: sketchbookContext },
-    { getImage: getReferenceImage, label: '참고 사진', context: sketchbookContext },
     { getImage: getDrawingImage, label: '친구 그림', context: drawingContext },
   ])('차단된 스케치북의 $label 이미지는 Storage를 읽지 않고 no-store 404를 반환한다', async ({ getImage, context }) => {
     findSketchbookByPublicId.mockResolvedValue({ ...sketchbook, moderationStatus: 'BLOCKED' });
@@ -248,7 +242,6 @@ describe('공개 경로 운영자 차단', () => {
 
   it.each([
     { getImage: getOwnerImage, label: '소유자 그림', context: sketchbookContext },
-    { getImage: getReferenceImage, label: '참고 사진', context: sketchbookContext },
     { getImage: getDrawingImage, label: '친구 그림', context: drawingContext },
   ])('$label 이미지 성공 응답은 브라우저 밖에 캐시되지 않는다', async ({ getImage, context }) => {
     const response = await getImage(new Request('http://localhost/image'), context as never);

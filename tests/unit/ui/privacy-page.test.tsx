@@ -15,6 +15,7 @@ describe('PrivacyPage', () => {
     expect(screen.getByText(/Cloud Firestore.*대한민국 서울/)).toBeVisible();
     expect(screen.getByText(/Cloud Storage.*미국 버지니아/)).toBeVisible();
     expect(screen.getByText(/Firebase App Hosting.*대만/)).toBeVisible();
+    expect(screen.queryByText(/참고 사진/)).not.toBeInTheDocument();
   });
 
   it('제3자 제공 여부와 권리 행사 연락처를 안내한다', () => {

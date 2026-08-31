@@ -47,7 +47,6 @@ function createDrawing(
     sketchbookPublicId: 'public-1',
     status: 'VISIBLE',
     updatedAt: createdAt,
-    usedReferenceImage: false,
     ...overrides,
   } as AdminDrawingListItem;
 }

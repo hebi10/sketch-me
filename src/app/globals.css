@@ -107,11 +107,8 @@ a { color: inherit; text-decoration: none; }
 .field-hint { color: var(--muted); font-size: 0.82rem; margin: 0; }
 .form-error { color: var(--danger); font-size: 0.88rem; margin: 0; }
 .create-flow { display: grid; gap: 28px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-.reference-picker { align-items: start; border-block: 1px solid var(--line); display: grid; gap: 10px; padding-block: 18px; }
-.reference-picker h2, .section-heading h2 { font-size: 1.05rem; margin: 0; }
-.reference-picker p, .section-heading p { color: var(--muted); font-size: .84rem; line-height: 1.5; margin: 5px 0 0; }
-.reference-picker input[type="file"] { height: 1px; opacity: 0; position: absolute; width: 1px; }
-.reference-picker .button { width: 100%; }
+.section-heading h2 { font-size: 1.05rem; margin: 0; }
+.section-heading p { color: var(--muted); font-size: .84rem; line-height: 1.5; margin: 5px 0 0; }
 .section-heading { margin-bottom: 12px; }
 .create-submit { width: 100%; }
 .create-complete { display: grid; gap: 14px; padding: 48px 0; }
@@ -138,8 +135,6 @@ a { color: inherit; text-decoration: none; }
 .draw-header { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
 .draw-header p { font-size: 1rem; margin: 0; }
 .sketch-stage { aspect-ratio: 1; background: var(--canvas); border: 1px solid var(--line); overflow: hidden; position: relative; touch-action: none; }
-.reference-layer { inset: 0; pointer-events: none; position: absolute; transform-origin: center; z-index: 0; }
-.reference-layer img { object-fit: contain; }
 .drawing-canvas { background: transparent; display: block; height: 100%; position: relative; touch-action: none; width: 100%; z-index: 2; }
 .canvas-crosshair { inset: 0; pointer-events: none; position: absolute; z-index: 3; }
 .canvas-crosshair::before,
@@ -156,7 +151,6 @@ a { color: inherit; text-decoration: none; }
 .drawing-loupe--below { transform: translate(-50%, 24px) scale(.86); transform-origin: center top; }
 .drawing-loupe--below.is-visible { transform: translate(-50%, 24px) scale(1); }
 .drawing-loupe canvas { display: block; height: 100%; position: relative; width: 100%; z-index: 0; }
-.sketch-stage--reference .drawing-canvas { pointer-events: none; }
 .editor-tabs { background: var(--canvas); border: 1px solid var(--line); border-top: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
 .editor-tabs button { background: transparent; border: 0; border-bottom: 3px solid transparent; color: var(--muted); min-height: 48px; }
 .editor-tabs button[aria-pressed="true"] { border-bottom-color: var(--accent); color: var(--ink); }
@@ -180,21 +174,13 @@ a { color: inherit; text-decoration: none; }
 .custom-color-swatch:focus-within { outline: 3px solid color-mix(in srgb, var(--accent) 38%, white); outline-offset: 2px; }
 .line-width { align-items: center; color: var(--muted); display: flex; font-size: 0.82rem; gap: 6px; margin-left: auto; }
 .line-width input { accent-color: var(--accent); max-width: 110px; }
-.reference-controls { display: grid; gap: 10px; }
-.reference-controls p { color: var(--muted); font-size: .82rem; line-height: 1.5; margin: 0; }
-.reference-visibility-toggle { min-height: 44px; width: 100%; }
-.reference-visibility-toggle[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
-.reference-controls label { align-items: center; display: grid; font-size: .82rem; gap: 8px; grid-template-columns: auto 1fr; min-height: 44px; }
-.reference-controls input { accent-color: var(--accent); width: 100%; }
 .guide-controls { display: grid; gap: 12px; }
 .guide-empty-copy { color: var(--muted); font-size: var(--font-size-label); line-height: 1.5; margin: 0; text-align: center; }
 .drawing-range-controls { display: grid; gap: 8px; margin-top: 12px; }
-.drawing-range-controls .range-control,
-.reference-controls .range-control { align-items: center; color: var(--muted); display: grid; font-size: .82rem; gap: 4px 8px; grid-template-columns: 1fr auto; min-height: 56px; }
+.drawing-range-controls .range-control { align-items: center; color: var(--muted); display: grid; font-size: .82rem; gap: 4px 8px; grid-template-columns: 1fr auto; min-height: 56px; }
 .range-control span { color: var(--ink); }
 .range-control strong { color: var(--muted); font-size: .82rem; font-weight: 700; text-align: right; }
-.drawing-range-controls .range-control input,
-.reference-controls .range-control input { accent-color: var(--accent); grid-column: 1 / -1; width: 100%; }
+.drawing-range-controls .range-control input { accent-color: var(--accent); grid-column: 1 / -1; width: 100%; }
 .crosshair-toggle { align-items: center; border: 1px solid var(--line); display: flex; gap: 10px; min-height: 44px; padding: 8px 10px; }
 .crosshair-toggle input { accent-color: var(--accent); height: 20px; width: 20px; }
 .drawing-submit-form { display: grid; gap: 8px; margin-top: 24px; }
@@ -793,7 +779,7 @@ main {
 .landing-action {
   display: grid;
   gap: 10px;
-  margin-top: -2px;
+  margin-top: 16px;
   text-align: center;
 }
 
@@ -833,7 +819,7 @@ main {
   }
 
   .landing-action {
-    margin-top: 6px;
+    margin-top: 16px;
   }
 
   .marketing-footer {
@@ -886,17 +872,12 @@ main {
   font-weight: 700;
 }
 
-.reference-picker,
 .manage-summary,
 .friend-board,
 .recent-drawing-card {
   background: var(--canvas);
   border: 1px solid var(--line);
   border-radius: 8px;
-}
-
-.reference-picker {
-  padding: 16px;
 }
 
 .sketch-stage {

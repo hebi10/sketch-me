@@ -6,10 +6,6 @@ export function assertSupportedImageType(contentType: string) {
   }
 }
 
-export function getReferenceImagePath(sketchbookId: string) {
-  return `sketchbooks/${sketchbookId}/reference/source.webp`;
-}
-
 export function getOwnerDrawingPath(sketchbookId: string) {
   return `sketchbooks/${sketchbookId}/owner/original.webp`;
 }

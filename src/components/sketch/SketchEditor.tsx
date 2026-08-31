@@ -24,7 +24,6 @@ interface SketchEditorProps {
   ariaLabel: string;
   initialDrawingDataUrl?: string | null;
   onDrawingChange?: (dataUrl: string | null) => void;
-  referenceImageUrl?: string | null;
 }
 
 type EditorTab = 'draw' | 'guide' | 'edit';
@@ -34,7 +33,7 @@ const loupeSize = 104;
 const loupeHorizontalOffset = 64;
 
 export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
-  function SketchEditor({ ariaLabel, initialDrawingDataUrl = null, onDrawingChange, referenceImageUrl }, ref) {
+  function SketchEditor({ ariaLabel, initialDrawingDataUrl = null, onDrawingChange }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const loupeCanvasRef = useRef<HTMLCanvasElement>(null);
     const loupeRef = useRef<HTMLDivElement>(null);
@@ -44,7 +43,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const fullscreenConfirmRef = useRef<HTMLButtonElement>(null);
     const drawingRef = useRef(false);
     const lastPointRef = useRef<{ x: number; y: number } | null>(null);
-    const referencePointers = useRef(new Map<number, { x: number; y: number }>());
     const [tab, setTab] = useState<EditorTab>('draw');
     const [crosshairVisible, setCrosshairVisible] = useState(true);
     const [color, setColor] = useState<string>(sketchColors[0].value);
@@ -53,10 +51,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [penOpacity, setPenOpacity] = useState(100);
     const [eraser, setEraser] = useState(false);
     const [history, setHistory] = useState<CanvasHistory | null>(null);
-    const [referenceScale, setReferenceScale] = useState(1);
-    const [referenceOpacity, setReferenceOpacity] = useState(100);
-    const [referenceOffset, setReferenceOffset] = useState({ x: 0, y: 0 });
-    const [referenceVisible, setReferenceVisible] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [controlsOpen, setControlsOpen] = useState(false);
     const [loupeActive, setLoupeActive] = useState(false);
@@ -340,31 +334,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       event.target.value = '';
     }
 
-    function referencePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-      if (tab !== 'guide' || !referenceImageUrl) return;
-      event.currentTarget.setPointerCapture(event.pointerId);
-      referencePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    }
-
-    function referencePointerMove(event: React.PointerEvent<HTMLDivElement>) {
-      const previous = referencePointers.current.get(event.pointerId);
-      if (!previous || tab !== 'guide' || !referenceImageUrl) return;
-      const before = [...referencePointers.current.values()];
-      referencePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      const after = [...referencePointers.current.values()];
-      if (before.length === 1) {
-        setReferenceOffset((current) => ({ x: current.x + event.clientX - previous.x, y: current.y + event.clientY - previous.y }));
-      } else if (before.length >= 2) {
-        const oldDistance = Math.hypot(before[0].x - before[1].x, before[0].y - before[1].y);
-        const newDistance = Math.hypot(after[0].x - after[1].x, after[0].y - after[1].y);
-        if (oldDistance > 0) setReferenceScale((current) => Math.min(3, Math.max(0.6, current * (newDistance / oldDistance))));
-      }
-    }
-
-    function referencePointerEnd(event: React.PointerEvent<HTMLDivElement>) {
-      referencePointers.current.delete(event.pointerId);
-    }
-
     function openDrawing() {
       setControlsOpen(false);
       setDrawingError(null);
@@ -406,12 +375,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
         {!isFullscreen && !confirmedDrawing ? <button className="button button--primary drawing-entry-button" onClick={openDrawing} ref={fullscreenEntryRef} type="button">그림 그리기</button> : null}
         {!isFullscreen && confirmedDrawing ? <figure className="drawing-preview"><Image alt="그린 그림 미리보기" height={height} src={confirmedDrawing} unoptimized width={width} /></figure> : null}
         <div className="sketch-stage-slot" hidden={!isFullscreen}>
-          <div className={`sketch-stage sketch-stage--${tab} ${tab === 'guide' && referenceImageUrl ? 'sketch-stage--reference' : ''}`} onPointerCancel={referencePointerEnd} onPointerDown={referencePointerDown} onPointerMove={referencePointerMove} onPointerUp={referencePointerEnd}>
-            {referenceImageUrl ? (
-              <div className="reference-layer" hidden={!referenceVisible} style={{ opacity: referenceOpacity / 100, transform: `translate(${referenceOffset.x}px, ${referenceOffset.y}px) scale(${referenceScale})` }}>
-                <Image alt="그림 참고 사진" fill sizes="(max-width: 640px) 100vw, 600px" src={referenceImageUrl} unoptimized />
-              </div>
-            ) : null}
+          <div className={`sketch-stage sketch-stage--${tab}`}>
             <canvas aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
             {crosshairVisible ? <div aria-hidden="true" className="canvas-crosshair" data-testid="canvas-crosshair" /> : null}
             <div aria-hidden="true" className={`drawing-loupe drawing-loupe--${loupePlacement} ${loupeActive ? 'is-visible' : ''}`} data-active={loupeActive} data-placement={loupePlacement} data-testid="drawing-loupe" ref={loupeRef} style={loupeBrushStyle}>
@@ -429,11 +393,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
           <div className="draw-tools">
             {tab === 'guide' ? (
               <div className="guide-controls">
-                {referenceImageUrl ? (
-                  <div className="reference-controls"><p>한 손가락으로 이동하고 두 손가락으로 확대·축소하세요.</p><button aria-pressed={referenceVisible} className="tool-button reference-visibility-toggle" onClick={() => setReferenceVisible((current) => !current)} type="button">참고 사진 {referenceVisible ? '숨기기' : '보기'}</button><label className="range-control"><span>사진 투명도</span><strong>{referenceOpacity}%</strong><input aria-label="사진 투명도" max="100" min="10" onChange={(event) => setReferenceOpacity(Number(event.target.value))} step="5" type="range" value={referenceOpacity} /></label><label className="range-control"><span>확대</span><strong>{Math.round(referenceScale * 100)}%</strong><input aria-label="확대" max="3" min="0.6" onChange={(event) => setReferenceScale(Number(event.target.value))} step="0.1" type="range" value={referenceScale} /></label><button className="tool-button" onClick={() => { setReferenceOffset({ x: 0, y: 0 }); setReferenceScale(1); }} type="button">위치 초기화</button></div>
-                ) : (
-                  <p className="guide-empty-copy">참고 사진 없이 중앙선만 사용할 수 있어요.</p>
-                )}
+                <p className="guide-empty-copy">중앙선을 켜고 얼굴 비율을 확인해 보세요.</p>
                 <label className="crosshair-toggle"><input aria-label="중앙선 보기" checked={crosshairVisible} onChange={(event) => setCrosshairVisible(event.target.checked)} type="checkbox" /><span>중앙선 보기</span></label>
               </div>
             ) : (

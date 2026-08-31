@@ -3,17 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 import { optimizeDrawingImages, optimizeImageForStorage } from '@/lib/images/optimize';
 
-async function makePng(width: number, height: number) {
-  return sharp({
-    create: {
-      width,
-      height,
-      channels: 4,
-      background: { r: 247, g: 244, b: 238, alpha: 1 },
-    },
-  }).png().toBuffer();
-}
-
 async function makeMarkedPortrait() {
   const width = 1440;
   const height = 1920;
@@ -79,17 +68,6 @@ describe('optimizeImageForStorage', () => {
     expect(pixel(360, 700)[2]).toBeGreaterThan(180);
     expect(pixel(20, 360).every((value) => value > 235)).toBe(true);
     expect(result.buffer.byteLength).toBeLessThanOrEqual(350_000);
-  });
-
-  it('rotates and bounds a reference image', async () => {
-    const source = await sharp(await makePng(2400, 1600)).withMetadata({ orientation: 6 }).toBuffer();
-    const result = await optimizeImageForStorage(source, 'reference');
-    const metadata = await sharp(result.buffer).metadata();
-
-    expect(metadata.format).toBe('webp');
-    expect(metadata.width).toBeLessThanOrEqual(1280);
-    expect(metadata.height).toBeLessThanOrEqual(1280);
-    expect(result.buffer.byteLength).toBeLessThanOrEqual(600_000);
   });
 
   it('keeps a complex sketch at 720 square while lowering WebP quality', async () => {

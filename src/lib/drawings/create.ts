@@ -10,7 +10,6 @@ interface CreateDrawingDraftParams {
   thumbnailPath: string;
   authorName: string;
   message?: string;
-  usedReferenceImage: boolean;
   createdAt: Date;
 }
 
@@ -23,7 +22,6 @@ export function createDrawingDraft({
   thumbnailPath,
   authorName,
   message,
-  usedReferenceImage,
   createdAt,
 }: CreateDrawingDraftParams): Drawing {
   const trimmedMessage = message?.trim();
@@ -38,7 +36,6 @@ export function createDrawingDraft({
     publicImageVersion: randomUUID(),
     authorName: authorName.trim(),
     message: trimmedMessage || null,
-    usedReferenceImage,
     bestRank: null,
     status: 'VISIBLE',
     moderationStatus: 'ACTIVE',

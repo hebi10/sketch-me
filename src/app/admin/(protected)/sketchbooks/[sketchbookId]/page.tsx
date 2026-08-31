@@ -36,10 +36,6 @@ export default async function AdminSketchbookDetailPage({
   const sketchbook = await getAdminSketchbookDetail(sketchbookId);
   if (!sketchbook) notFound();
 
-  const referenceState = !sketchbook.referenceImagePath
-    ? '참고 사진 없음'
-    : sketchbook.referenceImageEnabled ? '참고 사진 사용 중' : '참고 사진 있음 · 사용 안 함';
-
   return (
     <article className="admin-page admin-sketchbook-detail">
       <Link className="admin-back-link" href="/admin/sketchbooks">
@@ -81,7 +77,6 @@ export default async function AdminSketchbookDetailPage({
           <div><dt>소유자 공개</dt><dd>{sketchbook.status === 'PUBLIC' ? '공개' : '비공개'}</dd></div>
           <div><dt>참여 현황</dt><dd>{numberFormatter.format(sketchbook.participantCount)} / {numberFormatter.format(sketchbook.participantLimit)}</dd></div>
           <div><dt>생성자 그림</dt><dd>{sketchbook.ownerDrawingPath ? '생성자 그림 있음' : '생성자 그림 없음'}</dd></div>
-          <div><dt>참고 사진</dt><dd>{referenceState}</dd></div>
         </dl>
       </section>
 

@@ -26,11 +26,11 @@ describe('createSketchbookDraft', () => {
       participantLimit: 10,
       participantCount: 0,
       entitlements: { watermarkFree: false },
-      referenceImagePath: null,
-      referenceImageEnabled: false,
       moderationStatus: 'ACTIVE',
       moderatedAt: null,
       status: 'PUBLIC',
     });
+    expect(draft).not.toHaveProperty('referenceImagePath');
+    expect(draft).not.toHaveProperty('referenceImageEnabled');
   });
 });

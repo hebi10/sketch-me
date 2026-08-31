@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { SketchEditor, type SketchEditorHandle } from '@/components/sketch/SketchEditor';
-import { ClientImageCompressionError, compressReferenceImage } from '@/lib/images/client-compress';
 import { getPublicMutationHeaders } from '@/lib/security/app-check-client';
 import { FREE_PARTICIPANT_LIMIT } from '@/lib/sketchbooks/capacity';
 
@@ -30,11 +29,9 @@ export function CreateSketchbookForm() {
   const [name, setName] = useState('');
   const [managePin, setManagePin] = useState('');
   const [managePinHint, setManagePinHint] = useState('');
-  const [referenceImageDataUrl, setReferenceImageDataUrl] = useState<string | null>(null);
   const [ownerImageDataUrl, setOwnerImageDataUrl] = useState<string | null>(null);
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isCompressingReference, setIsCompressingReference] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [created, setCreated] = useState<CreateResult | null>(null);
 
@@ -77,29 +74,6 @@ export function CreateSketchbookForm() {
     }
   }, [hasLoadedDraft, managePin, managePinHint, name, ownerImageDataUrl]);
 
-  async function selectReference(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    event.currentTarget.value = '';
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      setError('JPG, PNG, WEBP 참고 사진만 선택할 수 있어요.');
-      return;
-    }
-    setError(null);
-    setIsCompressingReference(true);
-    try {
-      const compressed = await compressReferenceImage(file);
-      setReferenceImageDataUrl(compressed);
-      setError(null);
-    } catch (compressionError) {
-      setError(compressionError instanceof ClientImageCompressionError
-        ? compressionError.message
-        : '사진을 압축하지 못했습니다. 다른 사진을 선택해 주세요.');
-    } finally {
-      setIsCompressingReference(false);
-    }
-  }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!/^\d{4}$/.test(managePin)) {
@@ -115,7 +89,7 @@ export function CreateSketchbookForm() {
       const response = await fetch('/api/sketchbooks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...appCheckHeaders },
-        body: JSON.stringify({ name, managePin, managePinHint: managePinHint || undefined, ownerImageDataUrl: drawingDataUrl ?? undefined, referenceImageDataUrl: referenceImageDataUrl ?? undefined }),
+        body: JSON.stringify({ name, managePin, managePinHint: managePinHint || undefined, ownerImageDataUrl: drawingDataUrl ?? undefined }),
       });
       const data = (await response.json()) as Partial<CreateResult> & { message?: string };
       if (!response.ok || !data.manageUrl || !data.publicUrl) throw new Error(data.message ?? '스캐치북을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.');
@@ -159,21 +133,13 @@ export function CreateSketchbookForm() {
         <p className="field-hint">관리 비밀번호는 복구할 수 없어요.</p>
       </section>
 
-      <section className="reference-picker" aria-labelledby="reference-title">
-        <div><h2 id="reference-title">참고 사진</h2><p>선택 사항이에요. 친구가 그릴 때만 참고할 수 있어요.</p></div>
-        <label aria-disabled={isCompressingReference} className="button button--secondary" htmlFor="reference-image">{isCompressingReference ? '사진 압축 중...' : referenceImageDataUrl ? '다른 사진 선택' : '사진 선택하기'}</label>
-        <input accept="image/jpeg,image/png,image/webp" disabled={isCompressingReference} id="reference-image" onChange={selectReference} type="file" />
-        {isCompressingReference ? <p className="field-hint" role="status">사진 압축 중...</p> : null}
-        {referenceImageDataUrl ? <button className="button button--text" disabled={isCompressingReference} onClick={() => setReferenceImageDataUrl(null)} type="button">참고 사진 제거</button> : null}
-      </section>
-
       <section aria-labelledby="owner-sketch-title">
-        <div className="section-heading"><h2 id="owner-sketch-title">내가 그린 나 <span className="optional-label">선택</span></h2><p>그리지 않아도 스캐치북을 만들 수 있어요. 참고 사진은 저장되는 그림에 포함되지 않아요.</p></div>
-        <SketchEditor ariaLabel="내 모습을 그리는 캔버스" initialDrawingDataUrl={ownerImageDataUrl} onDrawingChange={setOwnerImageDataUrl} ref={editorRef} referenceImageUrl={referenceImageDataUrl} />
+        <div className="section-heading"><h2 id="owner-sketch-title">내가 그린 나 <span className="optional-label">선택</span></h2><p>그리지 않아도 스캐치북을 만들 수 있어요.</p></div>
+        <SketchEditor ariaLabel="내 모습을 그리는 캔버스" initialDrawingDataUrl={ownerImageDataUrl} onDrawingChange={setOwnerImageDataUrl} ref={editorRef} />
       </section>
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}
-      <button className="button button--primary create-submit" disabled={isSubmitting || isCompressingReference} type="submit">{isSubmitting ? '스캐치북 만드는 중...' : '내 스캐치북 만들기'}</button>
+      <button className="button button--primary create-submit" disabled={isSubmitting} type="submit">{isSubmitting ? '스캐치북 만드는 중...' : '내 스캐치북 만들기'}</button>
       <p className="field-hint">친구 그림 {FREE_PARTICIPANT_LIMIT}개까지 무료로 받아볼 수 있어요.</p>
     </form>
   );
