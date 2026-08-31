@@ -25,11 +25,11 @@ export default function LandingPage() {
 
         <figure className="landing-collage">
           <Image
-            alt="친구들이 연필로 그린 네 장의 초상화 카드"
-            height={1400}
+            alt="친구들이 손으로 그린 네 장의 초상화 카드"
+            height={1374}
             preload
-            src="/brand/landing-sketch-collage.webp"
-            width={1120}
+            src="/brand/landing-sketch-collage-v2.png"
+            width={1145}
           />
         </figure>
 
