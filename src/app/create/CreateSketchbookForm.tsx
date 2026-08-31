@@ -128,7 +128,7 @@ export function CreateSketchbookForm() {
         <input autoComplete="nickname" id="sketchbook-name" maxLength={24} name="name" onChange={(event) => setName(event.target.value)} placeholder="내 이름" required value={name} />
         <label className="field-label" htmlFor="manage-pin">관리 비밀번호</label>
         <input autoComplete="new-password" id="manage-pin" inputMode="numeric" maxLength={4} name="manage-pin" onChange={(event) => { event.currentTarget.setCustomValidity(''); setManagePin(event.target.value.replace(/\D/g, '')); }} onInvalid={(event) => { event.currentTarget.setCustomValidity('관리 비밀번호는 숫자 4자리로 입력해 주세요.'); setError('관리 비밀번호는 숫자 4자리로 입력해 주세요.'); }} pattern="[0-9]{4}" placeholder="숫자 4자리" required type="password" value={managePin} />
-        <label className="field-label" htmlFor="manage-pin-hint">비밀번호 힌트 <span className="optional-label">선택</span></label>
+        <label className="field-label" htmlFor="manage-pin-hint">비밀번호 힌트 <span className="optional-label">(선택)</span></label>
         <input id="manage-pin-hint" maxLength={40} name="manage-pin-hint" onChange={(event) => setManagePinHint(event.target.value)} placeholder="예: 좋아하는 숫자" value={managePinHint} />
         <p className="field-hint">관리 비밀번호는 복구할 수 없어요.</p>
       </section>
