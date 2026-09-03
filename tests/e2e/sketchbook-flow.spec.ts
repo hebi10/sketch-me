@@ -40,6 +40,43 @@ test('public image API를 Next optimizer로 직접 우회할 수 없다', async 
   expect(regularImageResponse.status()).toBe(200);
 });
 
+test('모바일 스토리 이미지 제목을 저장하고 다시 방문해도 유지한다', async ({ page }, testInfo) => {
+  test.setTimeout(60_000);
+  test.skip(testInfo.project.name !== 'mobile-chrome', '모바일 제목 저장 흐름은 모바일 프로젝트에서 한 번만 실행합니다.');
+
+  const uniqueName = `제목테스트${Date.now().toString().slice(-6)}`;
+  await page.goto('/create');
+  await page.getByLabel('이름 또는 애칭').fill(uniqueName);
+  await page.getByLabel('관리 비밀번호').fill('1234');
+  await page.getByRole('button', { name: '그림 그리기' }).click();
+  await drawOnCanvas(page);
+  await page.getByRole('button', { name: '확인' }).click();
+  await page.getByRole('button', { name: '내 스캐치북 만들기' }).click();
+
+  await expect(page.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible({ timeout: 15_000 });
+  await page.getByRole('button', { name: '내 스캐치북 관리하기' }).click();
+  await expect(page.getByText(`${uniqueName}님의 스케치북`)).toBeVisible();
+  const publicId = new URL(page.url()).pathname.split('/')[2];
+  await page.goto(`/m/${publicId}/share`);
+
+  const headingInput = page.getByRole('textbox', { name: '이미지 제목' });
+  await expect(headingInput).toHaveValue('친구들이 그린 내 모습');
+  await headingInput.fill('우리들의 소중한 추억');
+  await expect(page.getByRole('region', { name: '스토리 이미지 미리보기' })).toContainText('우리들의 소중한 추억');
+
+  const saveResponse = page.waitForResponse((response) => (
+    response.request().method() === 'PATCH'
+      && response.url().endsWith(`/api/manage/${publicId}/sketchbook`)
+  ));
+  await page.getByRole('button', { name: '제목 저장하기' }).click();
+  expect((await saveResponse).status()).toBe(200);
+  await expect(page.getByText('제목을 저장했어요.')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole('textbox', { name: '이미지 제목' })).toHaveValue('우리들의 소중한 추억');
+  await expect(page.getByRole('region', { name: '스토리 이미지 미리보기' })).toContainText('우리들의 소중한 추억');
+});
+
 test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', async ({ browser }, testInfo) => {
   test.setTimeout(60_000);
   test.skip(testInfo.project.name !== 'mobile-chrome', '전체 모바일 흐름은 모바일 프로젝트에서 한 번만 실행합니다.');

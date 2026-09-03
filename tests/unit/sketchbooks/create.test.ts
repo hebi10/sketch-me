@@ -29,6 +29,7 @@ describe('createSketchbookDraft', () => {
       moderationStatus: 'ACTIVE',
       moderatedAt: null,
       status: 'PUBLIC',
+      storyHeading: '친구들이 그린 내 모습',
     });
     expect(draft).not.toHaveProperty('referenceImagePath');
     expect(draft).not.toHaveProperty('referenceImageEnabled');

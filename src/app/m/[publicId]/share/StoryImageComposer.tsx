@@ -9,6 +9,7 @@ import {
   STORY_CTA_Y,
   STORY_HEIGHT,
   STORY_SHARED_HEADING,
+  STORY_SHARED_HEADING_MAX_LENGTH,
   STORY_WIDTH,
   storySlots,
   storyWatermark,
@@ -18,19 +19,88 @@ import { storyStyle } from '@/lib/share/story-style';
 
 interface StoryImageComposerProps {
   drawings: StoryDrawing[];
+  initialHeading?: string;
   initialWatermarkFree: boolean;
   name: string;
   publicId: string;
   publicUrl: string;
 }
 
-export function StoryImageComposer({ drawings, initialWatermarkFree, name, publicId, publicUrl }: StoryImageComposerProps) {
+export function StoryImageComposer({
+  drawings,
+  initialHeading = STORY_SHARED_HEADING,
+  initialWatermarkFree,
+  name,
+  publicId,
+  publicUrl,
+}: StoryImageComposerProps) {
+  const [heading, setHeading] = useState(initialHeading);
+  const [savedHeading, setSavedHeading] = useState(initialHeading);
+  const [headingStatus, setHeadingStatus] = useState<string | null>(null);
+  const [savingHeading, setSavingHeading] = useState(false);
   const [themeId, setThemeId] = useState<(typeof storyThemes)[number]['id']>(storyThemes[0].id);
   const [watermarkFree, setWatermarkFree] = useState(initialWatermarkFree);
   const theme = getStoryTheme(themeId);
 
+  async function saveHeading() {
+    const storyHeading = heading.trim();
+    if (!storyHeading) {
+      setHeadingStatus('이미지 제목을 입력해 주세요.');
+      return;
+    }
+
+    setSavingHeading(true);
+    setHeadingStatus(null);
+    try {
+      const response = await fetch(`/api/manage/${publicId}/sketchbook`, {
+        body: JSON.stringify({ storyHeading }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH',
+      });
+      const result = await response.json().catch(() => null) as { message?: string; storyHeading?: string } | null;
+      if (!response.ok || !result?.storyHeading) {
+        throw new Error(result?.message ?? '제목을 저장하지 못했어요.');
+      }
+      setHeading(result.storyHeading);
+      setSavedHeading(result.storyHeading);
+      setHeadingStatus('제목을 저장했어요.');
+    } catch (error) {
+      setHeadingStatus(error instanceof Error ? error.message : '제목을 저장하지 못했어요.');
+    } finally {
+      setSavingHeading(false);
+    }
+  }
+
   return (
     <>
+      <section aria-labelledby="story-heading-label" className="story-heading-editor">
+        <div className="story-heading-meta">
+          <label id="story-heading-label" htmlFor="story-heading">이미지 제목</label>
+          <span aria-label={`제목 ${heading.length}/${STORY_SHARED_HEADING_MAX_LENGTH}자`}>{heading.length}/{STORY_SHARED_HEADING_MAX_LENGTH}</span>
+        </div>
+        <div className="story-heading-row">
+          <input
+            id="story-heading"
+            maxLength={STORY_SHARED_HEADING_MAX_LENGTH}
+            onChange={(event) => {
+              setHeading(event.target.value);
+              setHeadingStatus(null);
+            }}
+            value={heading}
+          />
+          <button
+            aria-label="제목 저장하기"
+            className="button button--secondary"
+            disabled={savingHeading || !heading.trim() || heading.trim() === savedHeading}
+            onClick={saveHeading}
+            type="button"
+          >
+            {savingHeading ? '저장 중' : '저장'}
+          </button>
+        </div>
+        {headingStatus ? <p aria-live="polite">{headingStatus}</p> : null}
+      </section>
+
       <fieldset className="story-theme-picker">
         <legend>공유 이미지 디자인</legend>
         <div className="story-theme-options">
@@ -57,7 +127,7 @@ export function StoryImageComposer({ drawings, initialWatermarkFree, name, publi
           backgroundImage: `url(${theme.backgroundImage})`,
         }}
       >
-        <p className="story-preview__heading">{STORY_SHARED_HEADING}</p>
+        <p className="story-preview__heading">{heading || STORY_SHARED_HEADING}</p>
         <h1>BEST 4</h1>
         <div className="story-best-grid">
           {storySlots.map((slot) => {
@@ -105,7 +175,7 @@ export function StoryImageComposer({ drawings, initialWatermarkFree, name, publi
       ) : (
         <WatermarkPurchaseButton onPurchased={() => setWatermarkFree(true)} publicId={publicId} />
       )}
-      <StoryImageMaker backgroundImage={theme.backgroundImage} drawings={drawings} name={name} publicUrl={publicUrl} watermarkFree={watermarkFree} />
+      <StoryImageMaker backgroundImage={theme.backgroundImage} drawings={drawings} heading={heading || STORY_SHARED_HEADING} name={name} publicUrl={publicUrl} watermarkFree={watermarkFree} />
     </>
   );
 }

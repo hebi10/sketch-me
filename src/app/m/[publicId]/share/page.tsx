@@ -39,6 +39,7 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
       </header>
       <StoryImageComposer
         drawings={bestDrawings}
+        initialHeading={sketchbook.storyHeading}
         initialWatermarkFree={sketchbook.entitlements.watermarkFree}
         name={sketchbook.name}
         publicId={publicId}

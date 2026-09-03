@@ -38,6 +38,7 @@ describe('repository moderation compatibility', () => {
       moderatedAt: null,
       moderationStatus: 'ACTIVE',
       ownerDrawingPath: null,
+      storyHeading: '친구들이 그린 내 모습',
     });
   });
 

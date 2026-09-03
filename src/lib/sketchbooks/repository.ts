@@ -9,6 +9,7 @@ import {
   type LegacyManageSession,
   type PinManageSession,
 } from './manage-session';
+import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
 
 const collectionName = 'sketchbooks';
 const deletionJobCollectionName = 'sketchbookDeletionJobs';
@@ -42,6 +43,7 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     id,
     publicId: String(data.publicId),
     name: String(data.name),
+    storyHeading: data.storyHeading ? String(data.storyHeading) : STORY_SHARED_HEADING,
     manageTokenHash: String(data.manageTokenHash),
     managePinHash: data.managePinHash ? String(data.managePinHash) : null,
     managePinHint: data.managePinHint ? String(data.managePinHint) : null,
@@ -61,6 +63,13 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
 export async function saveSketchbook(sketchbook: Sketchbook) {
   await getAdminFirestore().collection(collectionName).doc(sketchbook.id).set(sketchbook);
   return sketchbook;
+}
+
+export async function updateSketchbookStoryHeading(sketchbookId: string, storyHeading: string) {
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
+    storyHeading,
+    updatedAt: new Date(),
+  });
 }
 
 export async function findSketchbookByPublicId(publicId: string) {

@@ -13,6 +13,7 @@ export interface Sketchbook {
   id: string;
   publicId: string;
   name: string;
+  storyHeading?: string;
   manageTokenHash: string;
   managePinHash?: string | null;
   managePinHint?: string | null;

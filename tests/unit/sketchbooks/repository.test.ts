@@ -15,6 +15,7 @@ import {
   markSketchbookDeletionStarted,
   saveDrawingWithinLimit,
   setBestDrawing,
+  updateSketchbookStoryHeading,
   updateDrawingForManagement,
 } from '@/lib/sketchbooks/repository';
 
@@ -248,6 +249,20 @@ describe('공개 그림 저장소 운영자 차단', () => {
       { status: 'DELETED', updatedAt: expect.any(Date) },
       { merge: true },
     );
+  });
+
+  it('스토리 제목과 수정 시각을 스케치북 문서에 함께 저장한다', async () => {
+    const update = vi.fn();
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({ doc: vi.fn(() => ({ update })) })),
+    });
+
+    await updateSketchbookStoryHeading('book-1', '우리들의 소중한 추억');
+
+    expect(update).toHaveBeenCalledWith({
+      storyHeading: '우리들의 소중한 추억',
+      updatedAt: expect.any(Date),
+    });
   });
 
   it('활성 PIN 세션을 확인한 뒤 삭제 재시도 식별자와 토큰 해시만 외부 문서 하나로 보존한다', async () => {

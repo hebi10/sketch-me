@@ -5,28 +5,33 @@ const {
   deleteSketchbookDeletionJob,
   deleteSketchbookPermanently,
   getAdminStorage,
+  getManagedSketchbook,
   markSketchbookDeletionStarted,
   operations,
   prepareSketchbookDeletion,
+  updateSketchbookStoryHeading,
 } = vi.hoisted(() => ({
   deleteFiles: vi.fn(),
   deleteSketchbookDeletionJob: vi.fn(),
   deleteSketchbookPermanently: vi.fn(),
   getAdminStorage: vi.fn(),
+  getManagedSketchbook: vi.fn(),
   markSketchbookDeletionStarted: vi.fn(),
   operations: [] as string[],
   prepareSketchbookDeletion: vi.fn(),
+  updateSketchbookStoryHeading: vi.fn(),
 }));
 
 vi.mock('@/lib/firebase/admin', () => ({ getAdminStorage }));
-vi.mock('@/lib/sketchbooks/management', () => ({ prepareSketchbookDeletion }));
+vi.mock('@/lib/sketchbooks/management', () => ({ getManagedSketchbook, prepareSketchbookDeletion }));
 vi.mock('@/lib/sketchbooks/repository', () => ({
   deleteSketchbookDeletionJob,
   deleteSketchbookPermanently,
   markSketchbookDeletionStarted,
+  updateSketchbookStoryHeading,
 }));
 
-import { DELETE } from '@/app/api/manage/[publicId]/sketchbook/route';
+import { DELETE, PATCH } from '@/app/api/manage/[publicId]/sketchbook/route';
 
 const request = new Request('http://localhost/api/manage/public-1/sketchbook', { method: 'DELETE' });
 const context = { params: Promise.resolve({ publicId: 'public-1' }) };
@@ -130,5 +135,51 @@ describe('DELETE /api/manage/:publicId/sketchbook', () => {
     expect(response.status).toBe(500);
     expect(deleteFiles).not.toHaveBeenCalled();
     expect(deleteSketchbookPermanently).not.toHaveBeenCalled();
+  });
+});
+
+describe('PATCH /api/manage/:publicId/sketchbook', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getManagedSketchbook.mockResolvedValue({ id: 'book-1' });
+    updateSketchbookStoryHeading.mockResolvedValue(undefined);
+  });
+
+  it('관리 중인 사용자가 제목을 저장하면 공백을 정리해 영구 반영한다', async () => {
+    const response = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
+      body: JSON.stringify({ storyHeading: '  우리들의 소중한 추억  ' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+    }), context);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ storyHeading: '우리들의 소중한 추억' });
+    expect(updateSketchbookStoryHeading).toHaveBeenCalledWith('book-1', '우리들의 소중한 추억');
+  });
+
+  it('빈 제목과 30자를 넘는 제목을 저장하지 않는다', async () => {
+    for (const storyHeading of ['   ', '가'.repeat(31)]) {
+      const response = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
+        body: JSON.stringify({ storyHeading }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH',
+      }), context);
+
+      expect(response.status).toBe(400);
+    }
+    expect(updateSketchbookStoryHeading).not.toHaveBeenCalled();
+  });
+
+  it('관리 권한이 없으면 제목을 저장하지 않는다', async () => {
+    getManagedSketchbook.mockResolvedValue(null);
+
+    const response = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
+      body: JSON.stringify({ storyHeading: '우리들의 소중한 추억' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+    }), context);
+
+    expect(response.status).toBe(403);
+    expect(updateSketchbookStoryHeading).not.toHaveBeenCalled();
   });
 });

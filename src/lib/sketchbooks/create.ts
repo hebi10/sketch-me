@@ -1,4 +1,5 @@
 import type { Sketchbook } from '@/lib/domain/types';
+import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
 import { FREE_PARTICIPANT_LIMIT } from './capacity';
 
 interface CreateSketchbookDraftParams {
@@ -35,6 +36,7 @@ export function createSketchbookDraft({
     participantLimit: FREE_PARTICIPANT_LIMIT,
     participantCount: 0,
     status: 'PUBLIC',
+    storyHeading: STORY_SHARED_HEADING,
     moderationStatus: 'ACTIVE',
     moderatedAt: null,
     createdAt,

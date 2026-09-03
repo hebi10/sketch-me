@@ -1,13 +1,36 @@
 import { NextResponse } from 'next/server';
 
 import { getAdminStorage } from '@/lib/firebase/admin';
-import { prepareSketchbookDeletion } from '@/lib/sketchbooks/management';
+import { STORY_SHARED_HEADING_MAX_LENGTH } from '@/lib/share/story-layout';
+import { getManagedSketchbook, prepareSketchbookDeletion } from '@/lib/sketchbooks/management';
 import { MANAGE_COOKIE_NAME } from '@/lib/sketchbooks/manage-session';
 import {
   deleteSketchbookDeletionJob,
   deleteSketchbookPermanently,
   markSketchbookDeletionStarted,
+  updateSketchbookStoryHeading,
 } from '@/lib/sketchbooks/repository';
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ publicId: string }> },
+) {
+  const { publicId } = await params;
+  const sketchbook = await getManagedSketchbook(publicId);
+  if (!sketchbook) return NextResponse.json({ message: '관리 권한이 없습니다.' }, { status: 403 });
+
+  const payload = await request.json().catch(() => null);
+  const storyHeading = typeof payload?.storyHeading === 'string' ? payload.storyHeading.trim() : '';
+  if (!storyHeading || storyHeading.length > STORY_SHARED_HEADING_MAX_LENGTH) {
+    return NextResponse.json(
+      { message: `이미지 제목은 1자 이상 ${STORY_SHARED_HEADING_MAX_LENGTH}자 이내로 입력해 주세요.` },
+      { status: 400 },
+    );
+  }
+
+  await updateSketchbookStoryHeading(sketchbook.id, storyHeading);
+  return NextResponse.json({ storyHeading });
+}
 
 export async function DELETE(
   _request: Request,

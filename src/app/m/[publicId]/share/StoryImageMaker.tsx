@@ -7,7 +7,6 @@ import {
   STORY_CTA_Y,
   STORY_HEIGHT,
   STORY_PUBLIC_URL_Y,
-  STORY_SHARED_HEADING,
   STORY_SHARED_HEADING_Y,
   STORY_WIDTH,
   storySlots,
@@ -24,6 +23,7 @@ export interface StoryDrawing {
 interface StoryImageMakerProps {
   backgroundImage: string;
   drawings: StoryDrawing[];
+  heading: string;
   name: string;
   publicUrl: string;
   watermarkFree: boolean;
@@ -62,7 +62,7 @@ function setFittedFont(
   }
 }
 
-export function StoryImageMaker({ backgroundImage, drawings, name, publicUrl, watermarkFree }: StoryImageMakerProps) {
+export function StoryImageMaker({ backgroundImage, drawings, heading, name, publicUrl, watermarkFree }: StoryImageMakerProps) {
   const [status, setStatus] = useState<string | null>(null);
 
   async function download() {
@@ -82,8 +82,8 @@ export function StoryImageMaker({ backgroundImage, drawings, name, publicUrl, wa
       context.drawImage(background, 0, 0, STORY_WIDTH, STORY_HEIGHT);
       context.fillStyle = storyStyle.ink;
       context.textAlign = 'center';
-      setFittedFont(context, STORY_SHARED_HEADING, storyStyle.fontFamily, { maxSize: 54, minSize: 24, maxWidth: 840, weight: 600 });
-      context.fillText(STORY_SHARED_HEADING, 540, STORY_SHARED_HEADING_Y);
+      setFittedFont(context, heading, storyStyle.fontFamily, { maxSize: 54, minSize: 24, maxWidth: 840, weight: 600 });
+      context.fillText(heading, 540, STORY_SHARED_HEADING_Y);
       const title = `BEST 4`;
       setFittedFont(context, title, storyStyle.fontFamily, { maxSize: 78, minSize: 28, maxWidth: 900, weight: 700 });
       context.fillText(title, 540, STORY_BEST_TITLE_Y);
