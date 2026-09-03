@@ -8,6 +8,7 @@ import {
   PurchaseConflictError,
 } from '@/lib/purchases/orders';
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
+import { DIGITAL_CONTENT_CONSENT_VERSION } from '@/lib/purchases/consent';
 import { getPurchasePlan } from '@/lib/purchases/plans';
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
@@ -16,11 +17,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   if (!sketchbook) return NextResponse.json({ message: '관리 권한이 없습니다.' }, { status: 403 });
   const body = await request.json().catch(() => null) as {
     buyerPhone?: unknown;
+    digitalContentConsent?: unknown;
     productId?: unknown;
     requestId?: unknown;
   } | null;
   const plan = getPurchasePlan(body?.productId);
   if (!plan) return NextResponse.json({ message: '선택한 상품을 확인해 주세요.' }, { status: 400 });
+  if (body?.digitalContentConsent !== true) {
+    return NextResponse.json(
+      { message: '디지털 혜택 제공 시작 내용을 확인해 주세요.' },
+      { status: 400 },
+    );
+  }
   const requestId = typeof body?.requestId === 'string' ? body.requestId : '';
   if (!/^[a-zA-Z0-9_-]{8,100}$/.test(requestId)) {
     return NextResponse.json({ message: '결제 요청을 다시 시작해 주세요.' }, { status: 400 });
@@ -34,7 +42,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
 
   let pending;
   try {
-    pending = await createPendingPurchase({ buyerPhone, plan, requestId, sketchbook });
+    pending = await createPendingPurchase({
+      buyerPhone,
+      digitalContentConsentVersion: DIGITAL_CONTENT_CONSENT_VERSION,
+      plan,
+      requestId,
+      sketchbook,
+    });
   } catch (error) {
     if (error instanceof PurchaseConflictError) {
       return NextResponse.json({ message: error.message }, { status: 409 });

@@ -161,7 +161,10 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await expect(ownerPage.getByRole('dialog', { name: '상품 선택하기' })).toBeVisible();
   await ownerPage.getByRole('radio', { name: /50명 추가.*4,490원/ }).check();
   await ownerPage.getByLabel('결제용 휴대전화번호').fill('010-1234-5678');
-  await expect(ownerPage.getByRole('button', { name: '4,490원 결제하기' })).toBeEnabled();
+  const capacityPurchaseButton = ownerPage.getByRole('button', { name: '4,490원 결제하기' });
+  await expect(capacityPurchaseButton).toBeDisabled();
+  await ownerPage.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ }).check();
+  await expect(capacityPurchaseButton).toBeEnabled();
   await ownerPage.getByRole('button', { name: '결제창 닫기' }).click();
   await expect(ownerPage.locator('.manage-summary p')).toContainText(/친구 그림\s*0\s*\/\s*10/);
   const managePath = new URL(ownerPage.url()).pathname;
@@ -248,6 +251,8 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   expect(previewRatio).toBeCloseTo(3 / 4, 2);
   await managerPage.getByLabel('결제용 휴대전화번호').fill('010-1234-5678');
   const watermarkPurchaseButton = managerPage.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' });
+  await expect(watermarkPurchaseButton).toBeDisabled();
+  await managerPage.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ }).check();
   await expect(watermarkPurchaseButton).toBeEnabled();
   await expect(managerPage.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
   const downloadPromise = managerPage.waitForEvent('download', { timeout: 15_000 });

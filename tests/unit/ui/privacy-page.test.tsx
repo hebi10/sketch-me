@@ -52,4 +52,21 @@ describe('PrivacyPage', () => {
     expect(screen.getByText(/숨김·삭제하면 새 공개 버전으로 바뀌거나 접근이 차단/)).toBeVisible();
     expect(screen.getByText(/관리 화면에서 전체 삭제를 요청하면 먼저 공개 접근을 막고/)).toBeVisible();
   });
+
+  it('개인정보 처리자와 고충처리 연락처를 식별할 수 있게 공개한다', () => {
+    render(<PrivacyPage />);
+
+    expect(screen.getByText(/개인정보처리자: 해비/)).toBeVisible();
+    expect(screen.getByText(/대표자: 박도영/)).toBeVisible();
+    expect(screen.getByRole('link', { name: 'asdlkj0104@gmail.com' })).toHaveAttribute(
+      'href',
+      'mailto:asdlkj0104@gmail.com',
+    );
+  });
+
+  it('디지털 혜택 제공 동의 기록의 처리 항목을 안내한다', () => {
+    render(<PrivacyPage />);
+
+    expect(screen.getByText(/동의 시각과 동의 문구 버전/)).toBeVisible();
+  });
 });

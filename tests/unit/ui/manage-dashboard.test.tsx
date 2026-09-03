@@ -363,7 +363,8 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     const dialog = screen.getByRole('dialog', { name: '상품 선택하기' });
     expect(dialog).toBeVisible();
     expect(screen.getByRole('radio', { name: /10명 추가.*1,000원/ })).toBeChecked();
-    expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms');
+    expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms#closure');
+    expect(screen.getByRole('link', { name: '전체 정책 보기' })).toHaveAttribute('href', '/terms');
 
     expect(screen.getByRole('group', { name: '친구 인원 추가' })).toBeVisible();
     expect(screen.getByRole('group', { name: '결과 이미지' })).toBeVisible();
@@ -371,10 +372,12 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     fireEvent.change(screen.getByLabelText('결제용 휴대전화번호'), {
       target: { value: '010-1234-5678' },
     });
+    expect(screen.getByRole('button', { name: '4,490원 결제하기' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ }));
     fireEvent.click(screen.getByRole('button', { name: '4,490원 결제하기' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/manage/public-1/purchase', {
-      body: expect.stringMatching(/"buyerPhone":"010-1234-5678","productId":"FRIENDS_50","requestId":"[^"]+"/),
+      body: expect.stringMatching(/"buyerPhone":"010-1234-5678","digitalContentConsent":true,"productId":"FRIENDS_50","requestId":"[^"]+"/),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
     }));
@@ -397,6 +400,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ }));
     fireEvent.change(screen.getByLabelText('결제용 휴대전화번호'), { target: { value: '02-1234-5678' } });
     fireEvent.click(screen.getByRole('button', { name: '1,000원 결제하기' }));
 
@@ -419,6 +423,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ }));
     fireEvent.change(screen.getByLabelText('결제용 휴대전화번호'), { target: { value: '010-1234-5678' } });
     fireEvent.click(screen.getByRole('button', { name: '1,000원 결제하기' }));
 

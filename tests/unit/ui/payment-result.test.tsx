@@ -29,4 +29,20 @@ describe('PaymentResult', () => {
     expect(screen.getByRole('heading', { name: '결제 결과를 확인하고 있습니다' })).toBeVisible();
     expect(screen.queryByText('결제가 완료됐습니다')).not.toBeInTheDocument();
   });
+
+  it('동의 기록이 없는 결제는 완료로 표시하지 않고 문의를 안내한다', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      json: async () => ({
+        amount: 1000,
+        paymentStatus: 'REVIEW_REQUIRED',
+        productType: 'WATERMARK_FREE',
+      }),
+      ok: true,
+    }));
+
+    render(<PaymentResult orderId="order-1" publicId="public-1" />);
+
+    expect(await screen.findByRole('heading', { name: '결제 확인이 필요합니다' })).toBeVisible();
+    expect(screen.getByText(/혜택은 적용되지 않았습니다/)).toBeVisible();
+  });
 });

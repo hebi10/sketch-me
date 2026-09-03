@@ -67,6 +67,23 @@ describe('POST /api/admin/payments/:orderId/cancel', () => {
     expect(mocks.markPurchaseCancelRequested).not.toHaveBeenCalled();
   });
 
+  it('동의 기록이 없어 격리된 결제도 관리자가 전체 취소할 수 있다', async () => {
+    mocks.findPurchaseByOrderId.mockResolvedValueOnce({
+      orderId: 'order-public-random',
+      paymentStatus: 'REVIEW_REQUIRED',
+      provider: 'PAYAPP',
+      providerOrderId: '2000',
+    });
+
+    const response = await POST(new Request('https://sketch.example.com/api/admin/payments/order-public-random/cancel', {
+      headers: { origin: 'https://sketch.example.com' },
+      method: 'POST',
+    }), { params: Promise.resolve({ orderId: 'order-public-random' }) });
+
+    expect(response.status).toBe(200);
+    expect(mocks.cancelPayAppPayment).toHaveBeenCalled();
+  });
+
   it('Origin, 인증, 주문 상태 중 하나라도 맞지 않으면 취소하지 않는다', async () => {
     mocks.isAllowedAdminOrigin.mockReturnValueOnce(false);
     expect((await POST(new Request('https://sketch.example.com', { method: 'POST' }), {

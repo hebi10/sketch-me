@@ -71,6 +71,8 @@ export function PaymentResult({ orderId, publicId }: PaymentResultProps) {
       }
     : status === 'CANCELLED'
       ? { description: '승인 취소 내역은 카드사 또는 결제수단에서 확인해 주세요.', title: '결제가 취소됐습니다' }
+      : status === 'REVIEW_REQUIRED'
+        ? { description: '혜택은 적용되지 않았습니다. 주문번호와 함께 고객센터로 문의해 주세요.', title: '결제 확인이 필요합니다' }
       : status === 'FAILED'
         ? { description: '결제수단을 확인한 뒤 다시 시도해 주세요.', title: '결제를 완료하지 못했습니다' }
         : { description: '페이앱의 완료 통보를 기다리고 있어요. 잠시만 기다려 주세요.', title: '결제 결과를 확인하고 있습니다' };

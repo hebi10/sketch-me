@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
 import { BuyerPhoneField } from '@/components/ui/BuyerPhoneField';
+import { PurchaseConsent } from '@/components/ui/PurchaseConsent';
 import type { Drawing, ModerationStatus, PurchaseProductId, ShareThumbnailMode, SketchbookEntitlements } from '@/lib/domain/types';
 import { openPaymentUrl } from '@/lib/payments/browser';
 import { normalizeBuyerPhone } from '@/lib/payments/phone';
@@ -66,6 +67,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   const [isDeleting, setIsDeleting] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [buyerPhone, setBuyerPhone] = useState('');
+  const [purchaseConsent, setPurchaseConsent] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -190,6 +192,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
     purchaseRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? `purchase_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     setMessage(null);
     setPurchaseError(null);
+    setPurchaseConsent(false);
     setPurchaseOpen(true);
   }
 
@@ -265,7 +268,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
 
   async function purchase() {
     const plan = getPurchasePlan(selectedProductId);
-    if (!plan) return;
+    if (!plan || !purchaseConsent) return;
     if (!normalizeBuyerPhone(buyerPhone)) {
       setPurchaseError('휴대전화번호를 확인해 주세요.');
       return;
@@ -277,7 +280,12 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       const response = await fetch(`/api/manage/${publicId}/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ buyerPhone, productId: plan.productId, requestId: purchaseRequestIdRef.current }),
+        body: JSON.stringify({
+          buyerPhone,
+          digitalContentConsent: true,
+          productId: plan.productId,
+          requestId: purchaseRequestIdRef.current,
+        }),
       });
       const result = await response.json().catch(() => ({})) as { message?: string; orderId?: string; payUrl?: string };
       if (!response.ok || !result.orderId || !result.payUrl) {
@@ -528,15 +536,21 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
               }}
               value={buyerPhone}
             />
+            <PurchaseConsent
+              checked={purchaseConsent}
+              disabled={isPurchasing}
+              id="manage-purchase-consent"
+              onChange={setPurchaseConsent}
+            />
             {purchaseError && purchaseError !== '휴대전화번호를 확인해 주세요.'
               ? <p className="purchase-error" role="alert">{purchaseError}</p>
               : null}
-            <button className="button button--primary purchase-submit" disabled={isPurchasing} onClick={purchase} type="button">
+            <button className="button button--primary purchase-submit" disabled={isPurchasing || !purchaseConsent} onClick={purchase} type="button">
               {isPurchasing ? '결제 처리 중...' : `${getPurchasePlan(selectedProductId)?.amount.toLocaleString('ko-KR')}원 결제하기`}
             </button>
             <p className="purchase-policy-note">
               추가 인원은 서비스 운영 중 만료되지 않으며, 구매일로부터 1년간 서비스를 보장합니다.{' '}
-              <Link href="/terms">서비스 이용 및 결제 안내</Link>
+              <Link href="/terms">전체 정책 보기</Link>
             </p>
           </dialog>
         </div>

@@ -108,6 +108,7 @@ describe('페이앱 주문 저장', () => {
 
     const result = await createPendingPurchase({
       buyerPhone: '01012345678',
+      digitalContentConsentVersion: '2026-09-03',
       orderId: 'order-public-random',
       plan,
       requestId: 'request-1234',
@@ -119,6 +120,8 @@ describe('페이앱 주문 저장', () => {
     const saved = state.purchases.get('sketchbooks/book-1/purchases/request-1234');
     expect(saved).toMatchObject({
       buyerPhoneLast4: '5678',
+      digitalContentConsentAt: expect.any(Date),
+      digitalContentConsentVersion: '2026-09-03',
       paymentStatus: 'READY',
       provider: 'PAYAPP',
     });
@@ -130,6 +133,7 @@ describe('페이앱 주문 저장', () => {
     getAdminFirestore.mockReturnValue(state.firestore);
     const input = {
       buyerPhone: '01012345678',
+      digitalContentConsentVersion: '2026-09-03',
       orderId: 'order-public-random',
       plan,
       requestId: 'request-1234',
@@ -150,11 +154,37 @@ describe('페이앱 주문 저장', () => {
     })).rejects.toBeInstanceOf(PurchaseConflictError);
   });
 
+  it('동의 기록이 없는 기존 READY 주문을 재개할 때 동의 시각과 버전을 보완한다', async () => {
+    const state = createFirestoreDouble();
+    getAdminFirestore.mockReturnValue(state.firestore);
+    const input = {
+      buyerPhone: '01012345678',
+      digitalContentConsentVersion: '2026-09-03',
+      orderId: 'order-public-random',
+      plan,
+      requestId: 'request-1234',
+      sketchbook,
+    };
+
+    await createPendingPurchase(input);
+    const path = 'sketchbooks/book-1/purchases/request-1234';
+    const legacyPurchase = state.purchases.get(path);
+    delete legacyPurchase?.digitalContentConsentAt;
+    delete legacyPurchase?.digitalContentConsentVersion;
+
+    await expect(createPendingPurchase(input)).resolves.toMatchObject({ isNew: false });
+    expect(state.purchases.get(path)).toMatchObject({
+      digitalContentConsentAt: expect.any(Date),
+      digitalContentConsentVersion: '2026-09-03',
+    });
+  });
+
   it('페이앱 주문번호를 연결한 뒤 주문번호로 안전하게 조회한다', async () => {
     const state = createFirestoreDouble();
     getAdminFirestore.mockReturnValue(state.firestore);
     await createPendingPurchase({
       buyerPhone: '01012345678',
+      digitalContentConsentVersion: '2026-09-03',
       orderId: 'order-public-random',
       plan,
       requestId: 'request-1234',
@@ -177,6 +207,7 @@ describe('페이앱 주문 저장', () => {
     getAdminFirestore.mockReturnValue(state.firestore);
     await createPendingPurchase({
       buyerPhone: '01012345678',
+      digitalContentConsentVersion: '2026-09-03',
       orderId: 'order-public-random',
       plan,
       requestId: 'request-1234',
@@ -207,6 +238,7 @@ describe('페이앱 주문 저장', () => {
     getAdminFirestore.mockReturnValue(state.firestore);
     await createPendingPurchase({
       buyerPhone: '01012345678',
+      digitalContentConsentVersion: '2026-09-03',
       orderId: 'order-public-random',
       plan,
       requestId: 'request-1234',
@@ -225,5 +257,40 @@ describe('페이앱 주문 저장', () => {
       providerOrderId: 'changed',
     })).rejects.toBeInstanceOf(PurchaseVerificationError);
     expect(state.books.get('book-1')?.participantLimit).toBe(20);
+  });
+
+  it('동의 기록이 없는 이전 주문의 결제가 완료되면 혜택을 적용하지 않고 검토 상태로 격리한다', async () => {
+    const state = createFirestoreDouble();
+    getAdminFirestore.mockReturnValue(state.firestore);
+    await createPendingPurchase({
+      buyerPhone: '01012345678',
+      digitalContentConsentVersion: '2026-09-03',
+      orderId: 'order-public-random',
+      plan,
+      requestId: 'request-1234',
+      sketchbook,
+    });
+    const path = 'sketchbooks/book-1/purchases/request-1234';
+    const legacyPurchase = state.purchases.get(path);
+    delete legacyPurchase?.digitalContentConsentAt;
+    delete legacyPurchase?.digitalContentConsentVersion;
+    await attachProviderPayment({
+      orderId: 'order-public-random',
+      payUrl: 'https://payapp.kr/pay/2000',
+      providerOrderId: '2000',
+    });
+
+    await expect(applyPayAppFeedback({
+      amount: 1000,
+      orderId: 'order-public-random',
+      payState: '4',
+      providerOrderId: '2000',
+    })).resolves.toBe('REVIEW_REQUIRED');
+
+    expect(state.books.get('book-1')?.participantLimit).toBe(20);
+    expect(state.purchases.get(path)).toMatchObject({
+      benefitAppliedAt: null,
+      paymentStatus: 'REVIEW_REQUIRED',
+    });
   });
 });

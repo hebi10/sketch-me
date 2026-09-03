@@ -288,8 +288,14 @@ a { color: inherit; text-decoration: none; }
 .legal-location-list { display: grid; gap: 8px; }
 .legal-page-links { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 44px 0 max(8px, env(safe-area-inset-bottom)); }
 .legal-page-links a { align-items: center; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); display: flex; font-size: var(--font-size-caption); justify-content: center; min-height: 48px; padding: 8px; text-align: center; }
-.marketing-footer { color: var(--muted); display: flex; flex-wrap: wrap; font-size: var(--font-size-caption); justify-content: center; padding-top: 24px; text-align: center; }
-.marketing-footer a { align-items: center; display: inline-flex; justify-content: center; min-height: 44px; padding-inline: 8px; }
+.marketing-footer { align-items: center; color: var(--muted); display: flex; flex-direction: column; font-size: var(--font-size-caption); padding-top: 24px; text-align: center; }
+.marketing-footer-links { display: flex; flex-wrap: wrap; justify-content: center; }
+.marketing-footer-links a { align-items: center; display: inline-flex; justify-content: center; min-height: 44px; padding-inline: 8px; }
+.business-disclosure { font-style: normal; }
+.business-disclosure--compact { border-top: 1px solid var(--line); line-height: 1.65; margin-top: 8px; max-width: 34rem; padding: 16px 0 max(8px, env(safe-area-inset-bottom)); width: 100%; }
+.business-disclosure--compact p { margin: 0; overflow-wrap: anywhere; }
+.business-disclosure--compact p + p { margin-top: 2px; }
+.business-disclosure--compact a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 720px) {
   .marketing-shell { padding: 20px; }
@@ -670,6 +676,50 @@ a { color: inherit; text-decoration: none; }
 }
 
 .purchase-policy-note a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.purchase-consent {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.purchase-consent label {
+  align-items: start;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  font-size: var(--font-size-label);
+  gap: 8px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  line-height: 1.5;
+}
+
+.purchase-consent input {
+  accent-color: var(--accent);
+  height: 18px;
+  margin: 2px 0 0;
+  width: 18px;
+}
+
+.purchase-consent input:focus-visible {
+  outline: 3px solid rgb(80 111 143 / 18%);
+  outline-offset: 2px;
+}
+
+.purchase-consent p,
+.watermark-purchase .purchase-consent p {
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+  margin: 0 0 0 28px;
+  text-align: left;
+}
+
+.purchase-consent a {
   color: var(--accent-strong);
   text-decoration: underline;
   text-underline-offset: 3px;

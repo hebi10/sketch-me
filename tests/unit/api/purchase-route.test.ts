@@ -59,6 +59,7 @@ describe('POST /api/manage/:publicId/purchase', () => {
   it('결제 요청만으로 혜택을 적용하지 않고 페이앱 URL을 반환한다', async () => {
     const response = await POST(paymentRequest({
       buyerPhone: '010-1234-5678',
+      digitalContentConsent: true,
       productId: 'FRIENDS_10',
       requestId: 'request-1234',
     }), { params: Promise.resolve({ publicId: 'public-1' }) });
@@ -70,6 +71,7 @@ describe('POST /api/manage/:publicId/purchase', () => {
     });
     expect(mocks.createPendingPurchase).toHaveBeenCalledWith(expect.objectContaining({
       buyerPhone: '01012345678',
+      digitalContentConsentVersion: expect.any(String),
       plan: expect.objectContaining({ amount: 1000, productId: 'FRIENDS_10' }),
       requestId: 'request-1234',
       sketchbook,
@@ -81,11 +83,40 @@ describe('POST /api/manage/:publicId/purchase', () => {
     });
   });
 
-  it('잘못된 전화번호와 요청 ID는 외부 결제 전에 거부한다', async () => {
+  it('디지털 혜택 제공 시작에 동의하지 않은 요청은 외부 결제 전에 거부한다', async () => {
     const response = await POST(paymentRequest({
-      buyerPhone: '02-1234-5678',
+      buyerPhone: '010-1234-5678',
+      digitalContentConsent: false,
+      productId: 'FRIENDS_10',
+      requestId: 'request-1234',
+    }), { params: Promise.resolve({ publicId: 'public-1' }) });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      message: '디지털 혜택 제공 시작 내용을 확인해 주세요.',
+    });
+    expect(mocks.createPendingPurchase).not.toHaveBeenCalled();
+    expect(mocks.requestPayAppPayment).not.toHaveBeenCalled();
+  });
+
+  it('잘못된 요청 ID는 외부 결제 전에 거부한다', async () => {
+    const response = await POST(paymentRequest({
+      buyerPhone: '010-1234-5678',
+      digitalContentConsent: true,
       productId: 'FRIENDS_10',
       requestId: 'short',
+    }), { params: Promise.resolve({ publicId: 'public-1' }) });
+
+    expect(response.status).toBe(400);
+    expect(mocks.requestPayAppPayment).not.toHaveBeenCalled();
+  });
+
+  it('잘못된 전화번호는 외부 결제 전에 거부한다', async () => {
+    const response = await POST(paymentRequest({
+      buyerPhone: '02-1234-5678',
+      digitalContentConsent: true,
+      productId: 'FRIENDS_10',
+      requestId: 'request-1234',
     }), { params: Promise.resolve({ publicId: 'public-1' }) });
 
     expect(response.status).toBe(400);
@@ -96,6 +127,7 @@ describe('POST /api/manage/:publicId/purchase', () => {
     mocks.requestPayAppPayment.mockRejectedValue(new Error('provider secret'));
     const response = await POST(paymentRequest({
       buyerPhone: '01012345678',
+      digitalContentConsent: true,
       productId: 'FRIENDS_10',
       requestId: 'request-1234',
     }), { params: Promise.resolve({ publicId: 'public-1' }) });
@@ -110,6 +142,7 @@ describe('POST /api/manage/:publicId/purchase', () => {
 
     const response = await POST(paymentRequest({
       buyerPhone: '01012345678',
+      digitalContentConsent: true,
       productId: 'FRIENDS_10',
       requestId: 'request-1234',
     }), { params: Promise.resolve({ publicId: 'public-1' }) });

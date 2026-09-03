@@ -18,6 +18,7 @@ const paymentStatusLabels: Record<AdminPurchaseListItem['paymentStatus'], string
   CANCELLED: '취소',
   FAILED: '실패',
   READY: '대기',
+  REVIEW_REQUIRED: '확인 필요',
   SUCCEEDED: '성공',
 };
 
@@ -92,9 +93,22 @@ function PaymentCard({ item }: { item: AdminPurchaseListItem }) {
             ) : '아직 결제되지 않음'}
           </dd>
         </div>
+        <div>
+          <dt>디지털 혜택 즉시 제공 동의</dt>
+          <dd>
+            {item.digitalContentConsentAt && item.digitalContentConsentVersion ? (
+              <>
+                <time dateTime={item.digitalContentConsentAt.toISOString()}>
+                  {dateTimeFormatter.format(item.digitalContentConsentAt)}
+                </time>
+                {' · 문구 버전 '}{item.digitalContentConsentVersion}
+              </>
+            ) : '동의 기록 없음'}
+          </dd>
+        </div>
       </dl>
       {item.provider === 'PAYAPP'
-        && item.paymentStatus === 'SUCCEEDED'
+        && ['SUCCEEDED', 'REVIEW_REQUIRED'].includes(item.paymentStatus)
         && item.providerOrderId
         && !item.cancelRequestedAt
         ? <AdminPaymentCancelButton orderId={item.orderId} />

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { BrandWordmark } from '@/components/ui/BrandWordmark';
+import { BusinessDisclosure } from '@/components/ui/BusinessDisclosure';
 
 export const metadata: Metadata = {
   title: '서비스 이용 및 결제 안내 | 스캐치북',
@@ -28,7 +29,8 @@ export default function TermsPage() {
           <a href="#service">서비스 이용</a>
           <a href="#payment">결제 안내</a>
           <a href="#guarantee">이용 보장</a>
-          <a href="#closure">서비스 종료</a>
+          <a href="#closure">서비스 종료·환불</a>
+          <a href="#seller">판매자 정보</a>
         </nav>
 
         <section id="service">
@@ -68,6 +70,8 @@ export default function TermsPage() {
             <li>환불 대상을 확인한 날부터 3영업일 이내에 환불을 진행합니다.</li>
           </ul>
           <p>전체 취소 또는 환불을 요청하려면 주문번호와 스케치북 공개 ID를 아래 문의 이메일로 보내 주세요. 결제 상태와 혜택 사용 여부를 확인한 뒤 관련 법령과 결제수단별 취소 가능 조건에 따라 처리합니다.</p>
+          <p>결제 완료와 동시에 선택한 디지털 혜택의 제공이 시작됩니다. 결제 화면에서 이에 동의한 뒤 결제를 진행하며, 제공이 시작된 뒤에는 관련 법령에 따라 청약철회가 제한될 수 있습니다.</p>
+          <p>상품이 표시·광고 또는 계약 내용과 다르게 제공된 경우에는 위 제한과 관계없이 관련 법령에 따른 청약철회와 환불을 요청할 수 있습니다.</p>
           <p>페이앱 정책상 휴대전화 결제는 당월 취소만 가능할 수 있고 가상계좌 결제는 결제 취소가 제한될 수 있습니다. 결제수단별 상세 조건은 결제 화면과 페이앱 안내를 함께 확인해 주세요.</p>
           <p>이용자가 직접 스케치북을 삭제했거나 이용정책을 위반해 제한된 경우에는 위 종료 보장이 적용되지 않을 수 있습니다. 관련 법령이 더 유리한 보호 기준을 정한 경우에는 그 기준을 우선 적용합니다.</p>
         </section>
@@ -78,8 +82,13 @@ export default function TermsPage() {
           <p>타인의 권리를 침해하거나 불법·유해한 콘텐츠를 올려서는 안 됩니다. 신고 또는 운영상 확인이 필요한 경우 콘텐츠를 임시 숨김하거나 삭제할 수 있습니다.</p>
         </section>
 
+        <section id="seller">
+          <h2>6. 판매자 정보</h2>
+          <BusinessDisclosure />
+        </section>
+
         <section id="changes">
-          <h2>6. 정책 변경과 문의</h2>
+          <h2>7. 정책 변경과 문의</h2>
           <p>정책을 변경하면 시행 10일 전에 안내하고, 이용자에게 불리한 중요한 변경은 시행 30일 전에 안내합니다. 법령상 즉시 반영이 필요한 경우에는 적용 후 지체 없이 알릴 수 있습니다.</p>
           <p>서비스 및 결제 정책 문의: <a href="mailto:asdlkj0104@gmail.com">asdlkj0104@gmail.com</a></p>
         </section>

@@ -275,7 +275,7 @@ function createPurchaseDocument(
   includeSketchbookId = true,
   overrides: {
     amount?: number;
-    paymentStatus?: 'READY' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+    paymentStatus?: 'READY' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'REVIEW_REQUIRED';
     provider?: 'MOCK' | 'PAYAPP' | 'TOSS' | null;
   } = {},
 ) {

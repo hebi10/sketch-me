@@ -10,6 +10,7 @@ export interface PurchaseRecord extends Purchase {
 
 export interface CreatePendingPurchaseInput {
   buyerPhone: string;
+  digitalContentConsentVersion: string;
   orderId?: string;
   plan: PurchasePlan;
   requestId: string;
@@ -71,6 +72,10 @@ function toPurchaseRecord(id: string, data: Record<string, unknown>): PurchaseRe
     cancelRequestedAt: toDate(data.cancelRequestedAt),
     cancelledAt: toDate(data.cancelledAt),
     createdAt: toDate(data.createdAt) ?? new Date(0),
+    digitalContentConsentAt: toDate(data.digitalContentConsentAt),
+    digitalContentConsentVersion: data.digitalContentConsentVersion
+      ? String(data.digitalContentConsentVersion)
+      : null,
     id,
     orderId: String(data.orderId),
     paidAt: toDate(data.paidAt),
@@ -112,6 +117,7 @@ export async function createPendingPurchase(
       transaction.get(purchaseReference),
     ]);
     if (!sketchbookDocument.exists) throw new PurchaseNotFoundError();
+    const now = new Date();
 
     if (purchaseDocument.exists) {
       const existing = purchaseDocument.data() ?? {};
@@ -120,6 +126,13 @@ export async function createPendingPurchase(
         || Number(existing.amount) !== input.plan.amount
       ) {
         throw new PurchaseConflictError();
+      }
+      if (existing.paymentStatus === 'READY' && !existing.digitalContentConsentAt) {
+        transaction.update(purchaseReference, {
+          digitalContentConsentAt: now,
+          digitalContentConsentVersion: input.digitalContentConsentVersion,
+          updatedAt: now,
+        });
       }
       return {
         isNew: false,
@@ -130,7 +143,6 @@ export async function createPendingPurchase(
       };
     }
 
-    const now = new Date();
     transaction.set(purchaseReference, {
       additionalLimit: input.plan.additionalLimit,
       amount: input.plan.amount,
@@ -138,6 +150,8 @@ export async function createPendingPurchase(
       buyerPhoneLast4: input.buyerPhone.slice(-4),
       cancelledAt: null,
       createdAt: now,
+      digitalContentConsentAt: now,
+      digitalContentConsentVersion: input.digitalContentConsentVersion,
       orderId,
       paidAt: null,
       paymentStatus: 'READY',
@@ -210,7 +224,7 @@ export async function failPendingPurchase(orderId: string): Promise<void> {
 
 export async function applyPayAppFeedback(
   input: PayAppFeedbackInput,
-): Promise<'APPLIED' | 'DUPLICATE' | 'UPDATED'> {
+): Promise<'APPLIED' | 'DUPLICATE' | 'REVIEW_REQUIRED' | 'UPDATED'> {
   const document = await findPurchaseDocumentByOrderId(input.orderId);
   if (!document) throw new PurchaseVerificationError();
   const firestore = getAdminFirestore();
@@ -237,6 +251,15 @@ export async function applyPayAppFeedback(
     const now = new Date();
     if (input.payState === '4') {
       if (purchase.benefitAppliedAt) return 'DUPLICATE';
+      if (!purchase.digitalContentConsentAt || !purchase.digitalContentConsentVersion) {
+        transaction.update(document.ref, {
+          paidAt: now,
+          paymentStatus: 'REVIEW_REQUIRED',
+          providerPayType: input.payType ?? null,
+          updatedAt: now,
+        });
+        return 'REVIEW_REQUIRED';
+      }
       const sketchbookData = sketchbookDocument.data() ?? {};
       if (Number(purchase.additionalLimit) > 0) {
         transaction.update(sketchbookReference, {

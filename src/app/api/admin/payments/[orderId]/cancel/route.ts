@@ -37,7 +37,7 @@ export async function POST(
   }
   if (
     purchase.provider !== 'PAYAPP'
-    || purchase.paymentStatus !== 'SUCCEEDED'
+    || !['SUCCEEDED', 'REVIEW_REQUIRED'].includes(purchase.paymentStatus)
     || !purchase.providerOrderId
     || purchase.cancelRequestedAt
   ) {

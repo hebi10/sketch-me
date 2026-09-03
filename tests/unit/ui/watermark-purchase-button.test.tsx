@@ -20,13 +20,16 @@ describe('WatermarkPurchaseButton', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     render(<WatermarkPurchaseButton onPurchased={vi.fn()} publicId="book-1" />);
+    expect(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' })).toBeDisabled();
+    expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms#closure');
     fireEvent.change(screen.getByLabelText('결제용 휴대전화번호'), {
       target: { value: '010-1234-5678' },
     });
+    fireEvent.click(screen.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ }));
     fireEvent.click(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/manage/book-1/purchase', {
-      body: expect.stringMatching(/"buyerPhone":"010-1234-5678","productId":"WATERMARK_FREE","requestId":"[^"]+"/),
+      body: expect.stringMatching(/"buyerPhone":"010-1234-5678","digitalContentConsent":true,"productId":"WATERMARK_FREE","requestId":"[^"]+"/),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
     }));
@@ -44,6 +47,7 @@ describe('WatermarkPurchaseButton', () => {
     fireEvent.change(screen.getByLabelText('결제용 휴대전화번호'), {
       target: { value: '01012345678' },
     });
+    fireEvent.click(screen.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ }));
     fireEvent.click(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('결제 요청을 처리하지 못했어요. 다시 시도해 주세요.');

@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { BrandWordmark } from '@/components/ui/BrandWordmark';
+import { BusinessDisclosure } from '@/components/ui/BusinessDisclosure';
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
 
 export default function LandingPage() {
@@ -40,8 +41,11 @@ export default function LandingPage() {
         </div>
       </section>
       <footer className="marketing-footer">
-        <Link href="/privacy">개인정보 처리방침</Link>
-        <Link href="/terms">서비스 이용 및 결제 안내</Link>
+        <nav aria-label="정책 안내" className="marketing-footer-links">
+          <Link href="/privacy">개인정보 처리방침</Link>
+          <Link href="/terms">서비스 이용 및 결제 안내</Link>
+        </nav>
+        <BusinessDisclosure compact />
       </footer>
     </main>
   );

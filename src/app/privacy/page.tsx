@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { BrandWordmark } from '@/components/ui/BrandWordmark';
+import { BUSINESS_INFO } from '@/lib/business';
 
 export const metadata: Metadata = {
   title: '개인정보 처리방침',
@@ -59,7 +60,7 @@ export default function PrivacyPage() {
             </div>
             <div>
               <dt>결제</dt>
-              <dd>결제용 휴대전화번호, 선택 상품, 결제 금액, 추가 인원, 주문·요청 ID, 페이앱 주문번호, 결제수단 유형, 처리 상태와 시각을 처리합니다. 스캐치북 서버에는 휴대전화번호 끝 4자리만 저장하며 전체 번호와 카드번호 등 결제수단 정보는 직접 저장하지 않습니다.</dd>
+              <dd>결제용 휴대전화번호, 선택 상품, 결제 금액, 추가 인원, 주문·요청 ID, 페이앱 주문번호, 결제수단 유형, 처리 상태와 시각, 디지털 혜택 즉시 제공 동의 시각과 동의 문구 버전을 처리합니다. 스캐치북 서버에는 휴대전화번호 끝 4자리만 저장하며 전체 번호와 카드번호 등 결제수단 정보는 직접 저장하지 않습니다.</dd>
             </div>
             <div>
               <dt>보안 정보</dt>
@@ -132,15 +133,16 @@ export default function PrivacyPage() {
 
         <section id="privacy-contact">
           <h2>개인정보 문의</h2>
-          <p>개인정보 보호와 관련한 문의, 불만 또는 권리 행사는 스캐치북 운영자에게 요청할 수 있습니다.</p>
-          <p><a href="mailto:asdlkj0104@gmail.com">asdlkj0104@gmail.com</a></p>
+          <p>개인정보처리자: {BUSINESS_INFO.name} · 대표자: {BUSINESS_INFO.representative}</p>
+          <p>개인정보 보호와 관련한 문의, 불만 또는 권리 행사는 아래 연락처로 요청할 수 있습니다.</p>
+          <p><a href={`mailto:${BUSINESS_INFO.email}`}>{BUSINESS_INFO.email}</a></p>
           <p>침해 상담이 필요한 경우 개인정보침해 신고센터(국번 없이 118) 또는 개인정보분쟁조정위원회(1833-6972)를 이용할 수 있습니다.</p>
         </section>
 
         <section id="privacy-change">
           <h2>처리방침 변경</h2>
           <p>내용이 바뀌면 시행 전에 서비스 화면을 통해 알립니다. 이용자 권리에 중대한 변경은 적용일 30일 전부터 안내합니다.</p>
-          <p>버전 1.1 · 2026년 9월 3일 시행</p>
+          <p>버전 1.2 · 2026년 9월 3일 시행</p>
         </section>
       </article>
 

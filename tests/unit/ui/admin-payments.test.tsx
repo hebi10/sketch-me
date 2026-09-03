@@ -30,6 +30,8 @@ function createPurchase(
     additionalLimit: 50,
     amount: 4_490,
     createdAt,
+    digitalContentConsentAt: createdAt,
+    digitalContentConsentVersion: '2026-09-03',
     id: 'purchase-1',
     orderId: 'ORDER-1',
     paidAt: createdAt,
@@ -72,9 +74,24 @@ describe('AdminPaymentList', () => {
     expect(within(card).getByText('+50명')).toBeVisible();
     expect(within(card).getByText('4,490원')).toBeVisible();
     expect(within(card).getByText('성공')).toBeVisible();
+    expect(within(card).getByText('디지털 혜택 즉시 제공 동의')).toBeVisible();
+    expect(within(card).getAllByText('2026. 8. 25. 오전 10:23')).toHaveLength(2);
+    expect(card).toHaveTextContent(/문구 버전 2026-09-03/);
     expect(within(card).queryByText(/모의 결제/)).not.toBeInTheDocument();
     expect(within(card).getByText('2000')).toBeVisible();
     expect(within(card).getByRole('button', { name: '전체 취소' })).toBeEnabled();
+  });
+
+  it('동의 기록이 없는 이전 주문은 관리자에게 명확히 구분해 표시한다', () => {
+    render(<AdminPaymentList page={{
+      items: [createPurchase({
+        digitalContentConsentAt: null,
+        digitalContentConsentVersion: null,
+      })],
+      nextCursor: null,
+    }} />);
+
+    expect(screen.getByText('동의 기록 없음')).toBeVisible();
   });
 
   it('모의 결제와 완료되지 않은 페이앱 주문에는 취소 버튼을 표시하지 않는다', () => {

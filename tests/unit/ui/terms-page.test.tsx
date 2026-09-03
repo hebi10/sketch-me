@@ -21,6 +21,8 @@ describe('TermsPage', () => {
     expect(screen.getByRole('heading', { name: '2. 결제 상품' })).toBeVisible();
     expect(screen.getByText(/페이앱의 검증된 결제 완료 통보를 서버가 확인한 뒤/)).toBeVisible();
     expect(screen.getByText(/전체 취소 또는 환불/)).toBeVisible();
+    expect(screen.getByText(/결제 완료와 동시에 선택한 디지털 혜택의 제공이 시작/)).toBeVisible();
+    expect(screen.getByText(/표시·광고 또는 계약 내용과 다르게 제공된 경우/)).toBeVisible();
     expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
   });
 
@@ -39,5 +41,24 @@ describe('TermsPage', () => {
 
     expect(screen.getAllByRole('link', { name: '개인정보 처리방침' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: '서비스 이용 및 결제 안내' }).some((link) => link.getAttribute('href') === '/terms')).toBe(true);
+  });
+
+  it('사업자등록증으로 확인한 판매자 정보를 공개하고 불필요한 개인정보는 제외한다', () => {
+    const { container } = render(<TermsPage />);
+
+    expect(screen.getByRole('heading', { name: '6. 판매자 정보' })).toBeVisible();
+    expect(screen.getByText('해비')).toBeVisible();
+    expect(screen.getByText('박도영')).toBeVisible();
+    expect(screen.getByText('432-13-02831')).toBeVisible();
+    expect(screen.getByText(/서울특별시 광진구/)).toBeVisible();
+    expect(container).not.toHaveTextContent('생년월일');
+  });
+
+  it('랜딩 초기 화면에서 판매자 정보와 사업자등록번호를 확인할 수 있다', () => {
+    render(<LandingPage />);
+
+    expect(screen.getByText(/상호 해비/)).toBeVisible();
+    expect(screen.getByText(/사업자등록번호 432-13-02831/)).toBeVisible();
+    expect(screen.getByText(/도매 및 소매업 · 전자상거래 소매업/)).toBeVisible();
   });
 });

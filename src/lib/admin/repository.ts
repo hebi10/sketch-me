@@ -107,6 +107,10 @@ function toAdminPurchase(
     providerOrderId: data.providerOrderId ? String(data.providerOrderId) : null,
     providerPayType: data.providerPayType ? String(data.providerPayType) : null,
     buyerPhoneLast4: data.buyerPhoneLast4 ? String(data.buyerPhoneLast4) : null,
+    digitalContentConsentAt: toOptionalDate(data.digitalContentConsentAt),
+    digitalContentConsentVersion: data.digitalContentConsentVersion
+      ? String(data.digitalContentConsentVersion)
+      : null,
     productType: data.productType as Purchase['productType'],
     amount: Number(data.amount) as Purchase['amount'],
     additionalLimit: Number(data.additionalLimit) as Purchase['additionalLimit'],
