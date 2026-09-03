@@ -3,9 +3,26 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { WatermarkPurchaseButton } from '@/app/m/[publicId]/share/WatermarkPurchaseButton';
 
+const { getPublicPaymentMode } = vi.hoisted(() => ({ getPublicPaymentMode: vi.fn() }));
+
+vi.mock('@/lib/purchases/mode', () => ({ getPublicPaymentMode }));
+
 describe('WatermarkPurchaseButton', () => {
+  beforeEach(() => {
+    getPublicPaymentMode.mockReturnValue('MOCK');
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('결제가 비활성화되면 금액이 있는 구매 버튼 대신 준비 안내를 표시한다', () => {
+    getPublicPaymentMode.mockReturnValue('DISABLED');
+
+    render(<WatermarkPurchaseButton onPurchased={vi.fn()} publicId="book-disabled" />);
+
+    expect(screen.getByRole('status', { name: '워터마크 제거 결제 준비 중' })).toHaveTextContent('결제 기능을 준비하고 있어요.');
+    expect(screen.queryByRole('button', { name: /990원/ })).not.toBeInTheDocument();
   });
 
   it('워터마크 제거 상품을 모의 결제하고 적용 콜백을 실행한다', async () => {

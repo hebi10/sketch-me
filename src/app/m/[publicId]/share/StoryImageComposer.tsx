@@ -158,10 +158,11 @@ export function StoryImageComposer({
             className="story-watermark"
             style={{
               height: `${(storyWatermark.height / STORY_HEIGHT) * 100}%`,
-              left: `${(storyWatermark.x / STORY_WIDTH) * 100}%`,
+              left: `50%`,
+              transform: `translateX(-50%)`,
               opacity: storyWatermark.opacity,
-              top: `${(storyWatermark.y / STORY_HEIGHT) * 100}%`,
-              width: `${(storyWatermark.width / STORY_WIDTH) * 100}%`,
+              top: `55%`,
+              width: `50%`,
             }}
           >
             <Image alt="스캐치북 워터마크" height={48} src="/brand/sketchbook-watermark.webp" unoptimized width={48} />

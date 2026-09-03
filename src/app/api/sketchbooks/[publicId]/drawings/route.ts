@@ -79,8 +79,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     if (failed?.status === 'rejected') throw failed.reason;
   } catch (error) {
     await deleteUploadedDrawingFiles(uploadedPaths);
-    const message = error instanceof Error ? error.message : '그림을 변환하지 못했습니다.';
-    return NextResponse.json({ message }, { status: error instanceof ImageOptimizationError ? 400 : 500 });
+    if (error instanceof ImageOptimizationError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
+    console.error('Drawing image processing failed', error instanceof Error ? error.name : 'UnknownError');
+    return NextResponse.json(
+      { message: '그림을 변환하지 못했어요. 잠시 후 다시 시도해 주세요.' },
+      { status: 500 },
+    );
   }
 
   const drawing = createDrawingDraft({
@@ -99,8 +105,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     await saveDrawingWithinLimit(sketchbook, drawing);
   } catch (error) {
     await deleteUploadedDrawingFiles(uploadedPaths);
-    const message = error instanceof Error ? error.message : '그림을 저장하지 못했습니다.';
-    return NextResponse.json({ message }, { status: 409 });
+    if (error instanceof Error && error.message === '친구 그림을 더 받을 수 있는 인원이 모두 찼습니다.') {
+      return NextResponse.json({ message: error.message }, { status: 409 });
+    }
+    if (error instanceof Error && error.message === '스케치북을 찾을 수 없거나 공개되어 있지 않습니다.') {
+      return NextResponse.json({ message: '스케치북을 찾을 수 없어요.' }, { status: 404 });
+    }
+    console.error('Drawing persistence failed', error instanceof Error ? error.name : 'UnknownError');
+    return NextResponse.json(
+      { message: '그림을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.' },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ drawingId }, { status: 201 });

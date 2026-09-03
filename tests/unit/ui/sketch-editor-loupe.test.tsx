@@ -85,4 +85,42 @@ describe('SketchEditor 그리기 돋보기', () => {
     fireEvent(canvas, new MouseEvent('pointerup', { bubbles: true }));
     expect(loupe).toHaveAttribute('data-active', 'false');
   });
+
+  it('가이드에서 돋보기를 끄면 그리는 동안에도 표시하지 않는다', () => {
+    const drawingContext = createCanvasContext();
+    const loupeContext = createCanvasContext();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function getContext(this: HTMLCanvasElement) {
+      return (this.dataset.loupe === 'true' ? loupeContext : drawingContext) as unknown as CanvasRenderingContext2D;
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,blank');
+
+    render(<SketchEditor ariaLabel="그리기 캔버스" />);
+    fireEvent.click(screen.getByRole('button', { name: '그림 그리기' }));
+    fireEvent.click(screen.getByRole('button', { name: '그리기 도구 열기' }));
+    fireEvent.click(screen.getByRole('button', { name: '가이드' }));
+
+    const loupeToggle = screen.getByRole('checkbox', { name: '돋보기 보기' });
+    expect(loupeToggle).toBeChecked();
+    fireEvent.click(loupeToggle);
+    fireEvent.click(screen.getByRole('button', { name: '그리기' }));
+
+    const canvas = screen.getByLabelText('그리기 캔버스');
+    Object.defineProperty(canvas, 'setPointerCapture', { value: vi.fn() });
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+      bottom: 360,
+      height: 360,
+      left: 0,
+      right: 360,
+      toJSON: () => ({}),
+      top: 0,
+      width: 360,
+      x: 0,
+      y: 0,
+    });
+
+    fireEvent(canvas, new MouseEvent('pointerdown', { bubbles: true, clientX: 180, clientY: 180 }));
+
+    expect(screen.getByTestId('drawing-loupe')).toHaveAttribute('data-active', 'false');
+    expect(loupeContext.drawImage).not.toHaveBeenCalled();
+  });
 });

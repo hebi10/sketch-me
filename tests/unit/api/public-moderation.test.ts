@@ -59,7 +59,7 @@ const sketchbook = {
   moderatedAt: null,
   moderationStatus: 'ACTIVE' as const,
   name: '해비',
-  ownerDrawingPath: 'sketchbooks/book-1/owner.webp',
+  ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp',
   participantCount: 1,
   participantLimit: 20,
   publicId: 'public-1',
@@ -72,7 +72,7 @@ const drawing = {
   bestRank: 1 as const,
   createdAt,
   id: 'drawing-1',
-  imagePath: 'sketchbooks/book-1/drawings/drawing-1.webp',
+  imagePath: 'sketchbooks/book-1/drawings/drawing-1/original.webp',
   thumbnailPath: 'sketchbooks/book-1/drawings/drawing-1/thumbnail.webp',
   publicImageVersion: 'version-1',
   message: null,
@@ -248,6 +248,65 @@ describe('공개 경로 운영자 차단', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+  });
+
+  it.each([
+    {
+      context: sketchbookContext,
+      getImage: getOwnerImage,
+      label: '다른 스케치북 소유자 그림',
+      setStoredPath: () => {
+        findSketchbookByPublicId.mockResolvedValue({
+          ...sketchbook,
+          ownerDrawingPath: 'sketchbooks/other-book/owner/original.webp',
+        });
+      },
+    },
+    {
+      context: drawingContext,
+      getImage: getDrawingImage,
+      label: '다른 그림 원본',
+      setStoredPath: () => {
+        findDrawing.mockResolvedValue({
+          ...drawing,
+          imagePath: 'sketchbooks/book-1/drawings/other-drawing/original.webp',
+        });
+      },
+    },
+  ])('$label 경로는 Storage를 읽지 않고 no-store 404를 반환한다', async ({
+    context,
+    getImage,
+    setStoredPath,
+  }) => {
+    setStoredPath();
+
+    const response = await getImage(new Request('http://localhost/image'), context as never);
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(getAdminStorage).not.toHaveBeenCalled();
+    expect(await response.text()).toBe('');
+  });
+
+  it.each([
+    { getImage: getOwnerImage, label: '소유자 그림', context: sketchbookContext },
+    { getImage: getDrawingImage, label: '친구 그림', context: drawingContext },
+  ])('$label의 안전하지 않은 MIME 메타데이터는 빈 500으로 처리한다', async ({
+    getImage,
+    context,
+  }) => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    file.getMetadata.mockResolvedValueOnce([{ contentType: 'text/html' }]);
+
+    const response = await getImage(new Request('http://localhost/image'), context as never);
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+    expect(response.headers.get('Content-Type')).not.toBe('text/html');
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(await response.text()).toBe('');
+    consoleError.mockRestore();
   });
 
   it('Story에는 공개 중인 ACTIVE BEST 그림만 전달한다', async () => {

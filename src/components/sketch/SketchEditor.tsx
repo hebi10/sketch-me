@@ -54,6 +54,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [history, setHistory] = useState<CanvasHistory | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [controlsOpen, setControlsOpen] = useState(false);
+    const [loupeEnabled, setLoupeEnabled] = useState(true);
     const [loupeActive, setLoupeActive] = useState(false);
     const [loupePlacement, setLoupePlacement] = useState<LoupePlacement>('above');
     const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
@@ -250,8 +251,10 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       drawingRef.current = true;
       lastPointRef.current = point;
       drawLine(point, { x: point.x + 0.1, y: point.y + 0.1 });
-      updateLoupe(point);
-      setLoupeActive(true);
+      if (loupeEnabled) {
+        updateLoupe(point);
+        setLoupeActive(true);
+      }
     }
 
     function pointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -260,7 +263,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       if (!point || !lastPointRef.current) return;
       drawLine(lastPointRef.current, point);
       lastPointRef.current = point;
-      updateLoupe(point);
+      if (loupeEnabled) updateLoupe(point);
     }
 
     function pointerEnd() {
@@ -352,6 +355,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
               <div className="guide-controls">
                 <p className="guide-empty-copy">중앙선을 켜고 얼굴 비율을 확인해 보세요.</p>
                 <label className="crosshair-toggle"><input aria-label="중앙선 보기" checked={crosshairVisible} onChange={(event) => setCrosshairVisible(event.target.checked)} type="checkbox" /><span>중앙선 보기</span></label>
+                <label className="crosshair-toggle"><input aria-label="돋보기 보기" checked={loupeEnabled} onChange={(event) => { setLoupeEnabled(event.target.checked); if (!event.target.checked) setLoupeActive(false); }} type="checkbox" /><span>돋보기 보기</span></label>
               </div>
             ) : (
               <><div className="tool-row drawing-action-row"><button className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button aria-label="되돌리기" className="tool-button tool-button--icon" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-undo.webp" width={26} /></button><button aria-label="다시 실행" className="tool-button tool-button--icon" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-redo.webp" width={26} /></button><button className="tool-button tool-button--clear" onClick={clear} type="button">전체 삭제</button></div>

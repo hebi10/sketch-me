@@ -1,12 +1,14 @@
 import { vi } from 'vitest';
 
-const { addMockPurchase, getManagedSketchbook } = vi.hoisted(() => ({
+const { addMockPurchase, getManagedSketchbook, getServerPaymentMode } = vi.hoisted(() => ({
   addMockPurchase: vi.fn(),
   getManagedSketchbook: vi.fn(),
+  getServerPaymentMode: vi.fn(),
 }));
 
 vi.mock('@/lib/sketchbooks/management', () => ({ getManagedSketchbook }));
 vi.mock('@/lib/sketchbooks/repository', () => ({ addMockPurchase }));
+vi.mock('@/lib/purchases/mode', () => ({ getServerPaymentMode }));
 
 import { POST } from '@/app/api/manage/[publicId]/purchase/route';
 
@@ -19,11 +21,28 @@ const sketchbook = {
 describe('POST /api/manage/:publicId/purchase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getServerPaymentMode.mockReturnValue('MOCK');
     getManagedSketchbook.mockResolvedValue(sketchbook);
     addMockPurchase.mockResolvedValue({
       entitlements: { watermarkFree: false },
       participantLimit: 70,
     });
+  });
+
+  it('결제가 비활성화되면 구매 기록이나 한도를 변경하지 않는다', async () => {
+    getServerPaymentMode.mockReturnValue('DISABLED');
+    const request = new Request('http://localhost/api/manage/public-1/purchase', {
+      body: JSON.stringify({ productId: 'FRIENDS_10', requestId: 'purchase-attempt-1234' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ publicId: 'public-1' }) });
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ message: '결제 기능을 준비하고 있어요. 현재는 결제를 진행할 수 없습니다.' });
+    expect(getManagedSketchbook).not.toHaveBeenCalled();
+    expect(addMockPurchase).not.toHaveBeenCalled();
   });
 
   it('허용된 상품을 서버 가격으로 결제하고 갱신된 한도를 반환한다', async () => {

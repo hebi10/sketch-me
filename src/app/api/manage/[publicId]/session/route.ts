@@ -3,12 +3,11 @@ import { NextResponse } from 'next/server';
 import { verifyManagePin } from '@/lib/sketchbooks/manage-pin';
 import { createPinManageCookieValue, MANAGE_COOKIE_NAME } from '@/lib/sketchbooks/manage-session';
 import {
+  consumeManagePinAttempt,
   createManagePinSession,
   findSketchbookByPublicId,
-  getManagePinAttempt,
-  saveManagePinAttempt,
 } from '@/lib/sketchbooks/repository';
-import { getManagePinAttemptSource, nextManagePinAttempt } from '@/lib/security/manage-pin-attempt';
+import { getManagePinAttemptSource } from '@/lib/security/manage-pin-attempt';
 
 const manageSessionMaxAge = 60 * 60 * 24 * 30;
 
@@ -25,21 +24,24 @@ export async function POST(
   }
 
   const sourceHash = getManagePinAttemptSource(request);
-  const currentAttempt = await getManagePinAttempt(sketchbook.id, sourceHash);
   const now = new Date();
-  if (currentAttempt?.lockedUntil && currentAttempt.lockedUntil > now) {
+  const isCorrectPin = /^\d{4}$/.test(pin) && await verifyManagePin(pin, sketchbook.managePinHash);
+  const { attempt, wasLocked } = await consumeManagePinAttempt(
+    sketchbook.id,
+    sourceHash,
+    isCorrectPin,
+    now,
+  );
+
+  if (wasLocked) {
     return NextResponse.json({ message: '입력을 여러 번 틀렸어요. 10분 뒤에 다시 시도해 주세요.' }, { status: 429 });
   }
 
-  const isCorrectPin = /^\d{4}$/.test(pin) && await verifyManagePin(pin, sketchbook.managePinHash);
-  const nextAttempt = nextManagePinAttempt(currentAttempt, isCorrectPin, now);
-  await saveManagePinAttempt(sketchbook.id, sourceHash, nextAttempt);
-
   if (!isCorrectPin) {
-    const message = nextAttempt.lockedUntil && nextAttempt.lockedUntil > now
+    const message = attempt.lockedUntil && attempt.lockedUntil > now
       ? '입력을 여러 번 틀렸어요. 10분 뒤에 다시 시도해 주세요.'
       : '관리 비밀번호가 맞지 않아요.';
-    return NextResponse.json({ message }, { status: nextAttempt.lockedUntil ? 429 : 401 });
+    return NextResponse.json({ message }, { status: attempt.lockedUntil ? 429 : 401 });
   }
 
   const session = await createManagePinSession(

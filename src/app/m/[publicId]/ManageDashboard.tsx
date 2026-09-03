@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import type { Drawing, ModerationStatus, PurchaseProductId, SketchbookEntitlements } from '@/lib/domain/types';
+import { getPublicPaymentMode } from '@/lib/purchases/mode';
 import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
@@ -53,6 +54,7 @@ function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) 
 
 export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false } }: ManageDashboardProps) {
   const router = useRouter();
+  const paymentMode = getPublicPaymentMode();
   const [limit, setLimit] = useState(participantLimit);
   const [entitlements, setEntitlements] = useState(initialEntitlements);
   const [message, setMessage] = useState<string | null>(null);
@@ -321,7 +323,14 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         ) : null}
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
         <progress max={limit} value={participantCount} />
-        <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">친구 그림 더 추가하기</button>
+        {paymentMode === 'MOCK' ? (
+          <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">친구 그림 더 추가하기</button>
+        ) : (
+          <section aria-label="결제 기능 준비 중" className="purchase-preparing" role="status">
+            <strong>결제 기능 준비 중</strong>
+            <p>결제 기능을 준비하고 있어요. 친구 그림 추가와 워터마크 제거는 준비가 끝나면 이용할 수 있어요.</p>
+          </section>
+        )}
       </section>
       {message ? <p className="submission-success" role="status">{message}</p> : null}
       <div className="manage-actions">

@@ -16,12 +16,24 @@ import {
 } from '@/lib/sketchbooks/manage-session';
 import { createSketchbookDraft } from '@/lib/sketchbooks/create';
 import { hashManagePin } from '@/lib/sketchbooks/manage-pin';
-import { createManagePinSession, saveSketchbook } from '@/lib/sketchbooks/repository';
+import {
+  createManagePinSession,
+  deleteSketchbookPermanently,
+  findSketchbookByPublicId,
+  saveSketchbook,
+} from '@/lib/sketchbooks/repository';
 
 const manageSessionMaxAge = 60 * 60 * 24 * 30;
 
-function createPublicId() {
-  return randomUUID().replaceAll('-', '').slice(0, 12);
+export async function createUniquePublicId(
+  generate: () => string = randomUUID,
+  findExisting: typeof findSketchbookByPublicId = findSketchbookByPublicId,
+) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate = generate().replaceAll('-', '');
+    if (!await findExisting(candidate)) return candidate;
+  }
+  throw new Error('PublicIdCollisionLimitExceeded');
 }
 
 function decodeImageDataUrl(imageDataUrl: string) {
@@ -50,13 +62,24 @@ export async function POST(request: Request) {
     );
   }
 
+  let publicId: string;
+  try {
+    publicId = await createUniquePublicId();
+  } catch (error) {
+    console.error('Sketchbook public ID allocation failed', error instanceof Error ? error.name : 'UnknownError');
+    return NextResponse.json(
+      { message: '스케치북을 만들지 못했어요. 잠시 후 다시 시도해 주세요.' },
+      { status: 500 },
+    );
+  }
+
   const manageToken = createManageToken();
   const managePinHash = await hashManagePin(parsed.data.managePin);
   const sketchbookId = randomUUID();
   const ownerDrawingPath = parsed.data.ownerImageDataUrl ? getOwnerDrawingPath(sketchbookId) : null;
   const sketchbook = createSketchbookDraft({
     id: sketchbookId,
-    publicId: createPublicId(),
+    publicId,
     name: parsed.data.name,
     manageTokenHash: hashManageToken(manageToken),
     managePinHash,
@@ -76,8 +99,14 @@ export async function POST(request: Request) {
     await saveSketchbook(sketchbook);
   } catch (error) {
     await Promise.all(uploadedPaths.map((path) => bucket.file(path).delete({ ignoreNotFound: true })));
-    const message = error instanceof Error ? error.message : '스캐치북을 만들지 못했습니다.';
-    return NextResponse.json({ message }, { status: error instanceof ImageOptimizationError ? 400 : 500 });
+    if (error instanceof ImageOptimizationError) {
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
+    console.error('Sketchbook creation failed', error instanceof Error ? error.name : 'UnknownError');
+    return NextResponse.json(
+      { message: '스케치북을 만들지 못했어요. 잠시 후 다시 시도해 주세요.' },
+      { status: 500 },
+    );
   }
 
   let session: { sessionId: string; token: string };
@@ -86,8 +115,16 @@ export async function POST(request: Request) {
       sketchbook.id,
       new Date(Date.now() + manageSessionMaxAge * 1_000),
     );
-  } catch {
-    return NextResponse.json({ message: '스캐치북은 만들었지만 관리 세션을 시작하지 못했어요. 관리 비밀번호로 다시 접속해 주세요.' }, { status: 500 });
+  } catch (error) {
+    console.error('Sketchbook manage session creation failed', error instanceof Error ? error.name : 'UnknownError');
+    await Promise.allSettled([
+      deleteSketchbookPermanently(sketchbook.id),
+      ...uploadedPaths.map((path) => bucket.file(path).delete({ ignoreNotFound: true })),
+    ]);
+    return NextResponse.json(
+      { message: '스케치북을 만들지 못했어요. 잠시 후 다시 시도해 주세요.' },
+      { status: 500 },
+    );
   }
 
   const response = NextResponse.json({ publicUrl: `/s/${sketchbook.publicId}`, manageUrl: `/m/${sketchbook.publicId}` });

@@ -3,11 +3,37 @@ import { vi } from 'vitest';
 
 import { ManageDashboard } from '@/app/m/[publicId]/ManageDashboard';
 
+const { getPublicPaymentMode } = vi.hoisted(() => ({ getPublicPaymentMode: vi.fn() }));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
 }));
+vi.mock('@/lib/purchases/mode', () => ({ getPublicPaymentMode }));
 
 describe('ManageDashboard 친구 그림 추가 결제', () => {
+  beforeEach(() => {
+    getPublicPaymentMode.mockReturnValue('MOCK');
+  });
+
+  it('결제가 비활성화되면 결제 준비 안내만 표시하고 구매 행동은 제공하지 않는다', () => {
+    getPublicPaymentMode.mockReturnValue('DISABLED');
+
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={5}
+        participantLimit={20}
+        publicId="payment-disabled"
+      />,
+    );
+
+    expect(screen.getByRole('status', { name: '결제 기능 준비 중' })).toHaveTextContent('결제 기능을 준비하고 있어요.');
+    expect(screen.queryByRole('button', { name: '친구 그림 더 추가하기' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '상품 선택하기' })).not.toBeInTheDocument();
+  });
+
   it('원본과 친구 그림이 준비될 때까지 개별 로딩 상태를 표시한다', async () => {
     const createdAt = new Date('2026-08-25T00:00:00.000Z');
     render(

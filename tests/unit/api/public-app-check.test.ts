@@ -201,7 +201,7 @@ describe('친구 그림 원본·썸네일 동시 저장', () => {
   });
 
   it('Firestore 등록이 실패하면 생성한 원본과 썸네일을 모두 정리한다', async () => {
-    saveDrawingWithinLimit.mockRejectedValueOnce(new Error('capacity changed'));
+    saveDrawingWithinLimit.mockRejectedValueOnce(new Error('친구 그림을 더 받을 수 있는 인원이 모두 찼습니다.'));
 
     const response = await submitDrawing(drawingRequest(), {
       params: Promise.resolve({ publicId: 'public-1' }),
@@ -211,6 +211,33 @@ describe('친구 그림 원본·썸네일 동시 저장', () => {
     expect(fileDelete).toHaveBeenCalledTimes(2);
     expect(fileDelete).toHaveBeenNthCalledWith(1, { ignoreNotFound: true });
     expect(fileDelete).toHaveBeenNthCalledWith(2, { ignoreNotFound: true });
+  });
+
+  it('예상하지 못한 저장 오류의 원문을 응답에 노출하지 않는다', async () => {
+    saveDrawingWithinLimit.mockRejectedValueOnce(new Error('firestore credential details'));
+
+    const response = await submitDrawing(drawingRequest(), {
+      params: Promise.resolve({ publicId: 'public-1' }),
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      message: '그림을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+    });
+    expect(fileDelete).toHaveBeenCalledTimes(2);
+  });
+
+  it('예상하지 못한 이미지 처리 오류의 원문을 응답에 노출하지 않는다', async () => {
+    optimizeDrawingImages.mockRejectedValueOnce(new Error('sharp internal path'));
+
+    const response = await submitDrawing(drawingRequest(), {
+      params: Promise.resolve({ publicId: 'public-1' }),
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      message: '그림을 변환하지 못했어요. 잠시 후 다시 시도해 주세요.',
+    });
   });
 });
 

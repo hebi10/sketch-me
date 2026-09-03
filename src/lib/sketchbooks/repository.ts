@@ -1,7 +1,10 @@
 import type { Drawing, Sketchbook } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
 import type { PurchasePlan } from '@/lib/purchases/plans';
-import type { ManagePinAttemptState } from '@/lib/security/manage-pin-attempt';
+import {
+  nextManagePinAttempt,
+  type ManagePinAttemptState,
+} from '@/lib/security/manage-pin-attempt';
 import { randomUUID } from 'node:crypto';
 import { createManageSessionToken, hashManageSessionToken } from './manage-pin';
 import {
@@ -463,6 +466,37 @@ export async function saveManagePinAttempt(
   await getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('managePinAttempts').doc(sourceHash).set({
     ...attempt,
     updatedAt: new Date(),
+  });
+}
+
+export async function consumeManagePinAttempt(
+  sketchbookId: string,
+  sourceHash: string,
+  isCorrectPin: boolean,
+  now = new Date(),
+) {
+  const firestore = getAdminFirestore();
+  const reference = firestore
+    .collection(collectionName)
+    .doc(sketchbookId)
+    .collection('managePinAttempts')
+    .doc(sourceHash);
+
+  return firestore.runTransaction(async (transaction) => {
+    const document = await transaction.get(reference);
+    const data = document.data();
+    const current: ManagePinAttemptState | null = document.exists && data
+      ? {
+          failureCount: Number(data.failureCount) || 0,
+          lockedUntil: data.lockedUntil ? toDate(data.lockedUntil) : null,
+        }
+      : null;
+    const wasLocked = Boolean(current?.lockedUntil && current.lockedUntil > now);
+    if (wasLocked && current) return { attempt: current, wasLocked: true };
+
+    const attempt = nextManagePinAttempt(current, isCorrectPin, now);
+    transaction.set(reference, { ...attempt, updatedAt: now });
+    return { attempt, wasLocked: false };
   });
 }
 

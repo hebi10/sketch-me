@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 
 import type { SketchbookEntitlements } from '@/lib/domain/types';
+import { getPublicPaymentMode } from '@/lib/purchases/mode';
 
 interface WatermarkPurchaseButtonProps {
   onPurchased: () => void;
@@ -10,6 +11,7 @@ interface WatermarkPurchaseButtonProps {
 }
 
 export function WatermarkPurchaseButton({ onPurchased, publicId }: WatermarkPurchaseButtonProps) {
+  const paymentMode = getPublicPaymentMode();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isPurchasingRef = useRef(false);
@@ -42,6 +44,15 @@ export function WatermarkPurchaseButton({ onPurchased, publicId }: WatermarkPurc
       isPurchasingRef.current = false;
       setIsPurchasing(false);
     }
+  }
+
+  if (paymentMode !== 'MOCK') {
+    return (
+      <section aria-label="워터마크 제거 결제 준비 중" className="watermark-purchase purchase-preparing" role="status">
+        <strong>워터마크 제거 결제 준비 중</strong>
+        <p>결제 기능을 준비하고 있어요. 준비가 끝나면 워터마크 없이 저장할 수 있어요.</p>
+      </section>
+    );
   }
 
   return (
