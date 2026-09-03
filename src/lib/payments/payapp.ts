@@ -70,7 +70,7 @@ function parseResponseBody(body: string): URLSearchParams {
 }
 
 export function getPayAppConfig(
-  environment: NodeJS.ProcessEnv = process.env,
+  environment: Readonly<Record<string, string | undefined>> = process.env,
 ): PayAppConfig {
   const userId = environment.PAYAPP_USER_ID?.trim() ?? '';
   const linkKey = environment.PAYAPP_LINK_KEY?.trim() ?? '';

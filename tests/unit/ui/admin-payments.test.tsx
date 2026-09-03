@@ -78,7 +78,7 @@ describe('AdminPaymentList', () => {
     render(<AdminPaymentList page={{
       items: [createPurchase({
         additionalLimit: 0,
-        amount: 990,
+        amount: 1000,
         productType: 'WATERMARK_FREE',
       })],
       nextCursor: null,

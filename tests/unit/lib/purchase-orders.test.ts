@@ -1,0 +1,220 @@
+import { vi } from 'vitest';
+
+const { getAdminFirestore } = vi.hoisted(() => ({ getAdminFirestore: vi.fn() }));
+
+vi.mock('@/lib/firebase/admin', () => ({ getAdminFirestore }));
+
+import {
+  PurchaseConflictError,
+  PurchaseVerificationError,
+  applyPayAppFeedback,
+  attachProviderPayment,
+  createPendingPurchase,
+  findPurchaseByOrderId,
+} from '@/lib/purchases/orders';
+
+type Stored = Record<string, unknown>;
+type Reference = { id: string; kind: 'purchase' | 'sketchbook'; path: string };
+
+function createFirestoreDouble() {
+  const books = new Map<string, Stored>([[
+    'book-1',
+    { entitlements: { watermarkFree: false }, participantLimit: 20, publicId: 'public-1' },
+  ]]);
+  const purchases = new Map<string, Stored>();
+
+  const purchaseReference = (bookId: string, requestId: string): Reference => ({
+    id: requestId,
+    kind: 'purchase',
+    path: `sketchbooks/${bookId}/purchases/${requestId}`,
+  });
+  const sketchbookReference = (bookId: string) => ({
+    id: bookId,
+    kind: 'sketchbook' as const,
+    path: `sketchbooks/${bookId}`,
+    collection: () => ({ doc: (requestId: string) => purchaseReference(bookId, requestId) }),
+  });
+  const read = (reference: Reference) => {
+    const data = reference.kind === 'sketchbook'
+      ? books.get(reference.id)
+      : purchases.get(reference.path);
+    return {
+      data: () => data,
+      exists: Boolean(data),
+      id: reference.id,
+      ref: reference,
+    };
+  };
+  const update = (reference: Reference, values: Stored) => {
+    const store = reference.kind === 'sketchbook' ? books : purchases;
+    const key = reference.kind === 'sketchbook' ? reference.id : reference.path;
+    store.set(key, { ...store.get(key), ...values });
+  };
+  const firestore = {
+    collection: vi.fn(() => ({ doc: (bookId: string) => sketchbookReference(bookId) })),
+    collectionGroup: vi.fn(() => ({
+      where: (_field: string, _operator: string, orderId: string) => ({
+        limit: () => ({
+          get: async () => {
+            const matches = [...purchases.entries()].filter(([, value]) => value.orderId === orderId);
+            return {
+              docs: matches.map(([path, data]) => ({
+                data: () => data,
+                id: path.split('/').at(-1)!,
+                ref: purchaseReference(path.split('/')[1], path.split('/').at(-1)!),
+              })),
+              empty: matches.length === 0,
+            };
+          },
+        }),
+      }),
+    })),
+    runTransaction: vi.fn(async (callback: (transaction: Record<string, unknown>) => Promise<unknown>) => callback({
+      get: async (reference: Reference) => read(reference),
+      set: (reference: Reference, values: Stored) => update(reference, values),
+      update,
+    })),
+  };
+  return { books, firestore, purchases };
+}
+
+const sketchbook = {
+  createdAt: new Date(),
+  entitlements: { watermarkFree: false },
+  id: 'book-1',
+  manageTokenHash: 'hash',
+  moderatedAt: null,
+  moderationStatus: 'ACTIVE' as const,
+  name: '내 이름',
+  ownerDrawingPath: null,
+  participantCount: 0,
+  participantLimit: 20,
+  publicId: 'public-1',
+  status: 'PUBLIC' as const,
+  updatedAt: new Date(),
+};
+const plan = {
+  additionalLimit: 10 as const,
+  amount: 1000 as const,
+  kind: 'capacity' as const,
+  label: '친구 그림 10명 추가' as const,
+  productId: 'FRIENDS_10' as const,
+};
+
+describe('페이앱 주문 저장', () => {
+  it('READY 주문에는 전체 전화번호를 남기지 않고 혜택도 적용하지 않는다', async () => {
+    const state = createFirestoreDouble();
+    getAdminFirestore.mockReturnValue(state.firestore);
+
+    const result = await createPendingPurchase({
+      buyerPhone: '01012345678',
+      orderId: 'order-public-random',
+      plan,
+      requestId: 'request-1234',
+      sketchbook,
+    });
+
+    expect(result).toMatchObject({ isNew: true, orderId: 'order-public-random' });
+    expect(state.books.get('book-1')?.participantLimit).toBe(20);
+    const saved = state.purchases.get('sketchbooks/book-1/purchases/request-1234');
+    expect(saved).toMatchObject({
+      buyerPhoneLast4: '5678',
+      paymentStatus: 'READY',
+      provider: 'PAYAPP',
+    });
+    expect(JSON.stringify(saved)).not.toContain('01012345678');
+  });
+
+  it('동일 요청은 기존 주문을 반환하고 다른 상품 재사용은 거부한다', async () => {
+    const state = createFirestoreDouble();
+    getAdminFirestore.mockReturnValue(state.firestore);
+    const input = {
+      buyerPhone: '01012345678',
+      orderId: 'order-public-random',
+      plan,
+      requestId: 'request-1234',
+      sketchbook,
+    };
+
+    await createPendingPurchase(input);
+    await expect(createPendingPurchase(input)).resolves.toMatchObject({ isNew: false });
+    await expect(createPendingPurchase({
+      ...input,
+      plan: {
+        additionalLimit: 0,
+        amount: 1000,
+        kind: 'watermark',
+        label: '워터마크 제거',
+        productId: 'WATERMARK_FREE',
+      },
+    })).rejects.toBeInstanceOf(PurchaseConflictError);
+  });
+
+  it('페이앱 주문번호를 연결한 뒤 주문번호로 안전하게 조회한다', async () => {
+    const state = createFirestoreDouble();
+    getAdminFirestore.mockReturnValue(state.firestore);
+    await createPendingPurchase({
+      buyerPhone: '01012345678',
+      orderId: 'order-public-random',
+      plan,
+      requestId: 'request-1234',
+      sketchbook,
+    });
+
+    await attachProviderPayment({
+      orderId: 'order-public-random',
+      providerOrderId: '2000',
+    });
+
+    await expect(findPurchaseByOrderId('order-public-random')).resolves.toMatchObject({
+      providerOrderId: '2000',
+    });
+  });
+
+  it('동일 완료 통보가 반복되어도 혜택은 한 번만 적용한다', async () => {
+    const state = createFirestoreDouble();
+    getAdminFirestore.mockReturnValue(state.firestore);
+    await createPendingPurchase({
+      buyerPhone: '01012345678',
+      orderId: 'order-public-random',
+      plan,
+      requestId: 'request-1234',
+      sketchbook,
+    });
+    await attachProviderPayment({ orderId: 'order-public-random', providerOrderId: '2000' });
+
+    const feedback = {
+      amount: 1000,
+      orderId: 'order-public-random',
+      payState: '4',
+      payType: 'CARD',
+      providerOrderId: '2000',
+    };
+    await expect(applyPayAppFeedback(feedback)).resolves.toBe('APPLIED');
+    await expect(applyPayAppFeedback(feedback)).resolves.toBe('DUPLICATE');
+
+    expect(state.books.get('book-1')?.participantLimit).toBe(30);
+    expect(state.purchases.get('sketchbooks/book-1/purchases/request-1234')?.benefitAppliedAt).toBeInstanceOf(Date);
+  });
+
+  it('금액 또는 페이앱 주문번호가 다른 완료 통보를 거부한다', async () => {
+    const state = createFirestoreDouble();
+    getAdminFirestore.mockReturnValue(state.firestore);
+    await createPendingPurchase({
+      buyerPhone: '01012345678',
+      orderId: 'order-public-random',
+      plan,
+      requestId: 'request-1234',
+      sketchbook,
+    });
+    await attachProviderPayment({ orderId: 'order-public-random', providerOrderId: '2000' });
+
+    await expect(applyPayAppFeedback({
+      amount: 1,
+      orderId: 'order-public-random',
+      payState: '4',
+      providerOrderId: 'changed',
+    })).rejects.toBeInstanceOf(PurchaseVerificationError);
+    expect(state.books.get('book-1')?.participantLimit).toBe(20);
+  });
+});
