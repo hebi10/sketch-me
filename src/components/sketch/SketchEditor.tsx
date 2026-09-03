@@ -28,7 +28,6 @@ interface SketchEditorProps {
 }
 
 type EditorTab = 'draw' | 'guide';
-type LoupePlacement = 'above' | 'below';
 
 const loupeSize = 104;
 const loupeHorizontalOffset = 64;
@@ -55,8 +54,8 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [controlsOpen, setControlsOpen] = useState(false);
     const [loupeEnabled, setLoupeEnabled] = useState(true);
+    const [leftHandMode, setLeftHandMode] = useState(false);
     const [loupeActive, setLoupeActive] = useState(false);
-    const [loupePlacement, setLoupePlacement] = useState<LoupePlacement>('above');
     const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
     const [drawingError, setDrawingError] = useState<string | null>(null);
     const loupeBrushStyle = {
@@ -212,15 +211,12 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       const sourceY = Math.min(height - sourceSize, Math.max(0, point.y - sourceSize / 2));
       const canvasPixelsPerCssPixel = width / bounds.width;
       const edgePadding = ((loupeSize / 2) + 4) * canvasPixelsPerCssPixel;
-      const preferredDisplayX = point.x - loupeHorizontalOffset * canvasPixelsPerCssPixel;
+      const horizontalDirection = leftHandMode ? 1 : -1;
+      const preferredDisplayX = point.x + horizontalDirection * loupeHorizontalOffset * canvasPixelsPerCssPixel;
       const displayX = Math.min(width - edgePadding, Math.max(edgePadding, preferredDisplayX));
-      const nextPlacement: LoupePlacement = point.y / height < (loupeSize + 36) / bounds.height
-        ? 'below'
-        : 'above';
 
       loupe.style.left = `${(displayX / width) * 100}%`;
       loupe.style.top = `${(point.y / height) * 100}%`;
-      setLoupePlacement(nextPlacement);
       loupeContext.clearRect(0, 0, loupeSize, loupeSize);
       loupeContext.drawImage(
         canvas,
@@ -339,7 +335,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
           <div className={`sketch-stage sketch-stage--${tab}`}>
             <canvas aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
             {crosshairVisible ? <div aria-hidden="true" className="canvas-crosshair" data-testid="canvas-crosshair" /> : null}
-            <div aria-hidden="true" className={`drawing-loupe drawing-loupe--${loupePlacement} ${loupeActive ? 'is-visible' : ''}`} data-active={loupeActive} data-placement={loupePlacement} data-testid="drawing-loupe" ref={loupeRef} style={loupeBrushStyle}>
+            <div aria-hidden="true" className={`drawing-loupe drawing-loupe--above ${loupeActive ? 'is-visible' : ''}`} data-active={loupeActive} data-placement="above" data-testid="drawing-loupe" ref={loupeRef} style={loupeBrushStyle}>
               <canvas data-loupe="true" height={loupeSize} ref={loupeCanvasRef} width={loupeSize} />
               <span className="drawing-loupe-tip" />
             </div>
@@ -356,6 +352,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
                 <p className="guide-empty-copy">중앙선을 켜고 얼굴 비율을 확인해 보세요.</p>
                 <label className="crosshair-toggle"><input aria-label="중앙선 보기" checked={crosshairVisible} onChange={(event) => setCrosshairVisible(event.target.checked)} type="checkbox" /><span>중앙선 보기</span></label>
                 <label className="crosshair-toggle"><input aria-label="돋보기 보기" checked={loupeEnabled} onChange={(event) => { setLoupeEnabled(event.target.checked); if (!event.target.checked) setLoupeActive(false); }} type="checkbox" /><span>돋보기 보기</span></label>
+                <label className="crosshair-toggle"><input aria-label="왼손 모드" checked={leftHandMode} onChange={(event) => setLeftHandMode(event.target.checked)} type="checkbox" /><span>왼손 모드</span></label>
               </div>
             ) : (
               <><div className="tool-row drawing-action-row"><button className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button aria-label="되돌리기" className="tool-button tool-button--icon" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-undo.webp" width={26} /></button><button aria-label="다시 실행" className="tool-button tool-button--icon" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-redo.webp" width={26} /></button><button className="tool-button tool-button--clear" onClick={clear} type="button">전체 삭제</button></div>
