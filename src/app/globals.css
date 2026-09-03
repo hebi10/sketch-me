@@ -1503,6 +1503,11 @@ main {
   font-family: var(--font-handwriting), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
+.manage-system-sans .best-actions button {
+  font-family: var(--font-handwriting), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-weight: 700;
+}
+
 .manage-security-modal {
   background: var(--canvas);
   border: 1px solid var(--line);
