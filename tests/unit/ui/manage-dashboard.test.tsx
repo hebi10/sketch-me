@@ -219,6 +219,24 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.queryByRole('img', { name: '직접 그린 내 모습' })).not.toBeInTheDocument();
   });
 
+  it('그림 순위 선택 영역을 공유 화면 링크의 목적지로 제공한다', () => {
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={0}
+        participantLimit={20}
+        publicId="public-1"
+      />,
+    );
+
+    expect(screen.getByRole('region', { name: '그림 순위 선택' })).toHaveAttribute(
+      'id',
+      'drawing-ranking',
+    );
+  });
+
   it('인원 상품 결제를 완료하면 참여 한도를 갱신하고 모의 결제 완료 팝업을 표시한다', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({ entitlements: { watermarkFree: false }, participantLimit: 70 }),

@@ -324,6 +324,15 @@ describe('공개 경로 운영자 차단', () => {
     expect(screen.queryByRole('img', { name: 'BEST 3 그림' })).not.toBeInTheDocument();
   });
 
+  it('공유 화면에서 그림 순위 선택 영역으로 바로 이동할 수 있다', async () => {
+    render(await SharePage({ params: Promise.resolve({ publicId: 'public-1' }) }));
+
+    expect(screen.getByRole('link', { name: '순위 정하러 가기' })).toHaveAttribute(
+      'href',
+      '/m/public-1#drawing-ranking',
+    );
+  });
+
   it('관리자가 순위를 지정한 소유자 그림을 Story에 전달한다', async () => {
     getManagedSketchbook.mockResolvedValue({ ...sketchbook, ownerBestRank: 2 });
 

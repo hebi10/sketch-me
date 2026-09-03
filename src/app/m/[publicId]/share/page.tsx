@@ -41,6 +41,11 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
         <span className="header-title">스토리 이미지</span>
         <span aria-hidden="true" className="header-balance" />
       </header>
+      <div className="story-ranking-action">
+        <Link className="button button--secondary" href={`/m/${publicId}#drawing-ranking`}>
+          순위 정하러 가기
+        </Link>
+      </div>
       <StoryImageComposer
         drawings={bestDrawings}
         initialHeading={sketchbook.storyHeading}

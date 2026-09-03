@@ -59,6 +59,11 @@ test('모바일 스토리 이미지 제목을 저장하고 다시 방문해도 �
   const publicId = new URL(page.url()).pathname.split('/')[2];
   await page.goto(`/m/${publicId}/share`);
 
+  await page.getByRole('link', { name: '순위 정하러 가기' }).click();
+  await expect(page).toHaveURL(`/m/${publicId}#drawing-ranking`);
+  await expect(page.getByRole('region', { name: '그림 순위 선택' })).toBeInViewport();
+  await page.goto(`/m/${publicId}/share`);
+
   const headingInput = page.getByRole('textbox', { name: '이미지 제목' });
   await expect(headingInput).toHaveValue('친구들이 그린 내 모습');
   await headingInput.fill('우리들의 소중한 추억');

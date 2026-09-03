@@ -335,8 +335,8 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         <ShareSketchbookButton name={name} publicId={publicId} />
         <Link className="button button--primary" href={`/m/${publicId}/share`}>스토리 이미지 만들기</Link>
       </div>
-      <section className="manage-drawings">
-        <h2>그림 순위 선택</h2>
+      <section aria-labelledby="drawing-ranking-title" className="manage-drawings" id="drawing-ranking">
+        <h2 id="drawing-ranking-title">그림 순위 선택</h2>
         <div className="friend-drawing-grid">
           {ownerDrawingPath ? (
             <article className="friend-drawing-card manage-drawing-card owner-original-card">
