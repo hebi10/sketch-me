@@ -4,6 +4,7 @@ export type ModerationStatus = 'ACTIVE' | 'BLOCKED';
 export type PurchaseStatus = 'READY' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 export type PurchaseProductId = 'FRIENDS_10' | 'FRIENDS_50' | 'FRIENDS_100' | 'WATERMARK_FREE';
 export type ShareType = 'SELF_VS_FRIENDS' | 'FRIENDS_BEST';
+export type BestRank = 1 | 2 | 3 | 4 | null;
 
 export interface SketchbookEntitlements {
   watermarkFree: boolean;
@@ -18,6 +19,7 @@ export interface Sketchbook {
   managePinHash?: string | null;
   managePinHint?: string | null;
   managePinEnabledAt?: Date | null;
+  ownerBestRank?: BestRank;
   ownerDrawingPath: string | null;
   entitlements: SketchbookEntitlements;
   participantLimit: number;
@@ -39,7 +41,7 @@ export interface Drawing {
   publicImageVersion: string;
   authorName: string;
   message: string | null;
-  bestRank: 1 | 2 | 3 | 4 | null;
+  bestRank: BestRank;
   status: DrawingStatus;
   moderationStatus: ModerationStatus;
   moderatedAt: Date | null;

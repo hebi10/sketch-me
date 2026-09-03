@@ -28,6 +28,10 @@ export default async function SharePage({ params }: { params: Promise<{ publicId
       rank: drawing.bestRank as 1 | 2 | 3 | 4,
       imageUrl: `/api/manage/${publicId}/drawings/${drawing.id}/image`,
     }))
+    .concat(sketchbook.ownerDrawingPath && sketchbook.ownerBestRank ? [{
+      rank: sketchbook.ownerBestRank,
+      imageUrl: `/api/manage/${publicId}/owner/image`,
+    }] : [])
     .sort((a, b) => a.rank - b.rank) satisfies StoryDrawing[];
 
   return (

@@ -175,12 +175,13 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.getByRole('button', { name: '그림 삭제' })).toBeEnabled();
   });
 
-  it('직접 그린 내 모습이 있으면 친구 그림 목록보다 먼저 보여준다', () => {
+  it('내 그림을 친구 그림보다 먼저 순위 후보로 보여주고 수동 순위만 표시한다', () => {
     render(
       <ManageDashboard
         drawings={[]}
         moderationStatus="ACTIVE"
         name="내 이름"
+        ownerBestRank={2}
         ownerDrawingPath="sketchbooks/book-1/owner/original.webp"
         participantCount={0}
         participantLimit={20}
@@ -193,6 +194,13 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       expect.stringContaining('/api/manage/public-1/owner/image'),
     );
     expect(screen.getByRole('img', { name: '직접 그린 내 모습' })).toHaveAttribute('loading', 'eager');
+    const ownerCard = screen.getByRole('img', { name: '직접 그린 내 모습' }).closest('article');
+    expect(ownerCard).not.toBeNull();
+    expect(within(ownerCard as HTMLElement).getByText('내 그림')).toBeVisible();
+    expect(within(ownerCard as HTMLElement).getByText('BEST 2')).toBeVisible();
+    fireEvent.click(within(ownerCard as HTMLElement).getByText('순위 정하기'));
+    expect(within(ownerCard as HTMLElement).getByRole('button', { name: '2' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(ownerCard as HTMLElement).getByRole('button', { name: 'BEST 해제' })).toBeEnabled();
   });
 
   it('직접 그린 내 모습이 없으면 원본 영역을 표시하지 않는다', () => {

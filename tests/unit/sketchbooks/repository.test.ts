@@ -14,6 +14,7 @@ import {
   listVisibleDrawings,
   markSketchbookDeletionStarted,
   saveDrawingWithinLimit,
+  setOwnerBestDrawing,
   setBestDrawing,
   updateOwnerDrawingForManagement,
   updateSketchbookStoryHeading,
@@ -140,6 +141,7 @@ describe('공개 그림 저장소 운영자 차단', () => {
         ? {
             data: () => ({
               moderationStatus: 'ACTIVE',
+              ownerBestRank: 1,
               participantCount: 2,
               participantLimit: 20,
               status: 'PUBLIC',
@@ -171,6 +173,78 @@ describe('공개 그림 저장소 운영자 차단', () => {
     expect(transaction.set).toHaveBeenCalledWith(drawingReference, {
       ...drawing,
       bestRank: 2,
+    });
+  });
+
+  it('소유자 그림을 BEST로 지정하면 같은 순위의 친구 그림을 해제한다', async () => {
+    const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
+    const friendReference = { id: 'friend-1' };
+    const rankedQuery = { kind: 'ranked' };
+    const drawingsCollection = { where: vi.fn(() => rankedQuery) };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => reference.kind === 'sketchbook'
+        ? { data: () => ({ ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp' }), exists: true }
+        : { docs: [{ ref: friendReference }] }),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn(() => drawingsCollection),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await setOwnerBestDrawing('book-1', 2);
+
+    expect(drawingsCollection.where).toHaveBeenCalledWith('bestRank', '==', 2);
+    expect(transaction.update).toHaveBeenCalledWith(friendReference, {
+      bestRank: null,
+      updatedAt: expect.any(Date),
+    });
+    expect(transaction.update).toHaveBeenCalledWith(expect.objectContaining(sketchbookReference), {
+      ownerBestRank: 2,
+      updatedAt: expect.any(Date),
+    });
+  });
+
+  it('친구 그림을 BEST로 지정하면 같은 순위의 소유자 그림을 해제한다', async () => {
+    const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
+    const target = { id: 'drawing-1', kind: 'target' };
+    const rankedQuery = { kind: 'ranked' };
+    const drawingsCollection = {
+      doc: vi.fn(() => target),
+      where: vi.fn(() => rankedQuery),
+    };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => {
+        if (reference.kind === 'sketchbook') return { data: () => ({ ownerBestRank: 3 }), exists: true };
+        if (reference.kind === 'target') return { data: () => ({ moderationStatus: 'ACTIVE', status: 'VISIBLE' }), exists: true };
+        return { docs: [] };
+      }),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn(() => drawingsCollection),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await setBestDrawing('book-1', 'drawing-1', 3);
+
+    expect(transaction.update).toHaveBeenCalledWith(expect.objectContaining(sketchbookReference), {
+      ownerBestRank: null,
+      updatedAt: expect.any(Date),
+    });
+    expect(transaction.update).toHaveBeenCalledWith(target, {
+      bestRank: 3,
+      updatedAt: expect.any(Date),
     });
   });
 

@@ -15,6 +15,7 @@ interface ManageDashboardProps {
   publicId: string;
   name: string;
   moderationStatus: ModerationStatus;
+  ownerBestRank?: Drawing['bestRank'];
   ownerDrawingPath?: string | null;
   participantCount: number;
   participantLimit: number;
@@ -52,7 +53,7 @@ function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) 
   );
 }
 
-export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false } }: ManageDashboardProps) {
+export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false } }: ManageDashboardProps) {
   const router = useRouter();
   const paymentMode = getPublicPaymentMode();
   const [limit, setLimit] = useState(participantLimit);
@@ -199,6 +200,21 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
     window.location.reload();
   }
 
+  async function updateOwnerBestRank(bestRank: Drawing['bestRank']) {
+    setMessage(null);
+    const response = await fetch(`/api/manage/${publicId}/sketchbook`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerBestRank: bestRank }),
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({})) as { message?: string };
+      setMessage(result.message ?? '순위를 변경하지 못했습니다.');
+      return;
+    }
+    window.location.reload();
+  }
+
   async function deleteDrawing(drawingId: string) {
     if (!window.confirm('이 그림을 삭제할까요? 삭제하면 되돌릴 수 없습니다.')) return;
     const response = await fetch(`/api/manage/${publicId}/drawings/${drawingId}`, { method: 'DELETE' });
@@ -310,17 +326,6 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         </section>
       ) : null}
       <section className="manage-summary">
-        {ownerDrawingPath ? (
-          <figure className="owner-original-card">
-            <figcaption><span>직접 그린 내 모습</span><b>원본</b></figcaption>
-            <div className="managed-image-frame owner-original-image">
-              <ManageImage alt="직접 그린 내 모습" height={600} loading="eager" src={`/api/manage/${publicId}/owner/image`} unoptimized width={600} />
-            </div>
-            <div className="share-action-stack">
-              <Link className="button button--secondary" href={`/m/${publicId}/owner/edit`}>내 그림 수정하기</Link>
-            </div>
-          </figure>
-        ) : null}
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
         <progress max={limit} value={participantCount} />
         {paymentMode === 'MOCK' ? (
@@ -338,9 +343,31 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
         <Link className="button button--primary" href={`/m/${publicId}/share`}>스토리 이미지 만들기</Link>
       </div>
       <section className="manage-drawings">
-        <h2>친구들이 그린 나</h2>
+        <h2>그림 순위 정하기</h2>
         <div className="friend-drawing-grid">
-          {items.length ? items.map((drawing, index) => (
+          {ownerDrawingPath ? (
+            <article className="friend-drawing-card manage-drawing-card owner-original-card">
+              <div className="manage-drawing-image managed-image-frame owner-original-image">
+                {ownerBestRank ? <span className="best-badge">BEST {ownerBestRank}</span> : null}
+                <ManageImage alt="직접 그린 내 모습" height={600} loading="eager" src={`/api/manage/${publicId}/owner/image`} unoptimized width={600} />
+              </div>
+              <p>내 그림</p>
+              <span>직접 그린 내 모습</span>
+              <details className="drawing-actions">
+                <summary>순위 정하기</summary>
+                <div className="drawing-action-panel">
+                  <div className="best-actions" aria-label="내 그림 BEST 순위 지정">
+                    {[1, 2, 3, 4].map((rank) => (
+                      <button aria-pressed={ownerBestRank === rank} key={rank} onClick={() => updateOwnerBestRank(rank as 1 | 2 | 3 | 4)} type="button">{rank}</button>
+                    ))}
+                  </div>
+                  {ownerBestRank ? <button onClick={() => updateOwnerBestRank(null)} type="button">BEST 해제</button> : null}
+                  <Link className="button button--secondary" href={`/m/${publicId}/owner/edit`}>내 그림 수정하기</Link>
+                </div>
+              </details>
+            </article>
+          ) : null}
+          {items.map((drawing, index) => (
             <article className="friend-drawing-card manage-drawing-card" key={drawing.id}>
               <div className="manage-drawing-image managed-image-frame">
                 {drawing.bestRank ? <span className="best-badge">BEST {drawing.bestRank}</span> : null}
@@ -369,7 +396,8 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
                 </div>
               </details>
             </article>
-          )) : <p className="empty-drawings">아직 친구가 남긴 그림이 없어요.</p>}
+          ))}
+          {!ownerDrawingPath && !items.length ? <p className="empty-drawings">아직 친구가 남긴 그림이 없어요.</p> : null}
         </div>
       </section>
       <section className="delete-sketchbook" aria-labelledby="delete-sketchbook-title">

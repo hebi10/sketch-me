@@ -27,6 +27,7 @@ describe('owner sketchbook creation', () => {
     });
 
     expect(draft).toMatchObject({
+      ownerBestRank: null,
       ownerDrawingPath: 'sketchbooks/book-1/owner/original.png',
     });
     expect(draft).not.toHaveProperty('referenceImagePath');

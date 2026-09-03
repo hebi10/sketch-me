@@ -27,6 +27,7 @@ const sketchbook = {
   moderationStatus: 'ACTIVE' as const,
   name: '해비',
   ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp',
+  ownerBestRank: null,
   participantCount: 0,
   participantLimit: 20,
   publicId: 'public-1',
@@ -64,5 +65,19 @@ describe('공개 스케치북 소유자 그림', () => {
     }));
 
     expect(screen.queryByRole('heading', { name: '내가 그린 나' })).not.toBeInTheDocument();
+  });
+
+  it('친구 그림이 없어도 직접 지정한 소유자 그림을 공개 BEST에 표시한다', async () => {
+    findSketchbookByPublicId.mockResolvedValue({ ...sketchbook, ownerBestRank: 2 });
+
+    render(await PublicSketchbookPage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(screen.getByRole('img', { name: 'BEST 2, 해비님의 그림' })).toHaveAttribute(
+      'src',
+      '/api/sketchbooks/public-1/owner/image',
+    );
   });
 });

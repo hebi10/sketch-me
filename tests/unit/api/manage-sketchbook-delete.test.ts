@@ -9,6 +9,8 @@ const {
   markSketchbookDeletionStarted,
   operations,
   prepareSketchbookDeletion,
+  clearOwnerBestDrawing,
+  setOwnerBestDrawing,
   updateSketchbookStoryHeading,
 } = vi.hoisted(() => ({
   deleteFiles: vi.fn(),
@@ -19,6 +21,8 @@ const {
   markSketchbookDeletionStarted: vi.fn(),
   operations: [] as string[],
   prepareSketchbookDeletion: vi.fn(),
+  clearOwnerBestDrawing: vi.fn(),
+  setOwnerBestDrawing: vi.fn(),
   updateSketchbookStoryHeading: vi.fn(),
 }));
 
@@ -28,6 +32,8 @@ vi.mock('@/lib/sketchbooks/repository', () => ({
   deleteSketchbookDeletionJob,
   deleteSketchbookPermanently,
   markSketchbookDeletionStarted,
+  clearOwnerBestDrawing,
+  setOwnerBestDrawing,
   updateSketchbookStoryHeading,
 }));
 
@@ -142,6 +148,8 @@ describe('PATCH /api/manage/:publicId/sketchbook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getManagedSketchbook.mockResolvedValue({ id: 'book-1' });
+    clearOwnerBestDrawing.mockResolvedValue(undefined);
+    setOwnerBestDrawing.mockResolvedValue(undefined);
     updateSketchbookStoryHeading.mockResolvedValue(undefined);
   });
 
@@ -155,6 +163,37 @@ describe('PATCH /api/manage/:publicId/sketchbook', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ storyHeading: '우리들의 소중한 추억' });
     expect(updateSketchbookStoryHeading).toHaveBeenCalledWith('book-1', '우리들의 소중한 추억');
+  });
+
+  it('내 그림의 BEST 순위를 지정하거나 해제한다', async () => {
+    const rankedResponse = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
+      body: JSON.stringify({ ownerBestRank: 2 }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+    }), context);
+    const clearedResponse = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
+      body: JSON.stringify({ ownerBestRank: null }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+    }), context);
+
+    expect(rankedResponse.status).toBe(200);
+    await expect(rankedResponse.json()).resolves.toEqual({ ownerBestRank: 2 });
+    expect(setOwnerBestDrawing).toHaveBeenCalledWith('book-1', 2);
+    expect(clearedResponse.status).toBe(200);
+    await expect(clearedResponse.json()).resolves.toEqual({ ownerBestRank: null });
+    expect(clearOwnerBestDrawing).toHaveBeenCalledWith('book-1');
+  });
+
+  it('내 그림에는 BEST 1부터 4까지만 지정할 수 있다', async () => {
+    const response = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
+      body: JSON.stringify({ ownerBestRank: 5 }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+    }), context);
+
+    expect(response.status).toBe(400);
+    expect(setOwnerBestDrawing).not.toHaveBeenCalled();
   });
 
   it('빈 제목과 30자를 넘는 제목을 저장하지 않는다', async () => {

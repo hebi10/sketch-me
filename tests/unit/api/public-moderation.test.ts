@@ -60,6 +60,7 @@ const sketchbook = {
   moderationStatus: 'ACTIVE' as const,
   name: '해비',
   ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp',
+  ownerBestRank: null,
   participantCount: 1,
   participantLimit: 20,
   publicId: 'public-1',
@@ -321,5 +322,16 @@ describe('공개 경로 운영자 차단', () => {
     expect(screen.getByRole('img', { name: 'BEST 1 그림' })).toBeVisible();
     expect(screen.queryByRole('img', { name: 'BEST 2 그림' })).not.toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'BEST 3 그림' })).not.toBeInTheDocument();
+  });
+
+  it('관리자가 순위를 지정한 소유자 그림을 Story에 전달한다', async () => {
+    getManagedSketchbook.mockResolvedValue({ ...sketchbook, ownerBestRank: 2 });
+
+    render(await SharePage({ params: Promise.resolve({ publicId: 'public-1' }) }));
+
+    expect(screen.getByRole('img', { name: 'BEST 2 그림' })).toHaveAttribute(
+      'src',
+      '/api/manage/public-1/owner/image',
+    );
   });
 });

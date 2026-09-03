@@ -5,9 +5,11 @@ import { STORY_SHARED_HEADING_MAX_LENGTH } from '@/lib/share/story-layout';
 import { getManagedSketchbook, prepareSketchbookDeletion } from '@/lib/sketchbooks/management';
 import { MANAGE_COOKIE_NAME } from '@/lib/sketchbooks/manage-session';
 import {
+  clearOwnerBestDrawing,
   deleteSketchbookDeletionJob,
   deleteSketchbookPermanently,
   markSketchbookDeletionStarted,
+  setOwnerBestDrawing,
   updateSketchbookStoryHeading,
 } from '@/lib/sketchbooks/repository';
 
@@ -19,7 +21,19 @@ export async function PATCH(
   const sketchbook = await getManagedSketchbook(publicId);
   if (!sketchbook) return NextResponse.json({ message: '관리 권한이 없습니다.' }, { status: 403 });
 
-  const payload = await request.json().catch(() => null);
+  const payload = await request.json().catch(() => null) as Record<string, unknown> | null;
+  if (payload && Object.hasOwn(payload, 'ownerBestRank')) {
+    if (payload.ownerBestRank === null) {
+      await clearOwnerBestDrawing(sketchbook.id);
+      return NextResponse.json({ ownerBestRank: null });
+    }
+    const ownerBestRank = Number(payload.ownerBestRank);
+    if (!Number.isInteger(ownerBestRank) || ![1, 2, 3, 4].includes(ownerBestRank)) {
+      return NextResponse.json({ message: 'BEST 순위는 1부터 4까지 선택해 주세요.' }, { status: 400 });
+    }
+    await setOwnerBestDrawing(sketchbook.id, ownerBestRank as 1 | 2 | 3 | 4);
+    return NextResponse.json({ ownerBestRank });
+  }
   const storyHeading = typeof payload?.storyHeading === 'string' ? payload.storyHeading.trim() : '';
   if (!storyHeading || storyHeading.length > STORY_SHARED_HEADING_MAX_LENGTH) {
     return NextResponse.json(

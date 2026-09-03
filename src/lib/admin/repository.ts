@@ -51,6 +51,9 @@ function toAdminSketchbook(
     id,
     publicId: String(data.publicId ?? ''),
     name: String(data.name ?? ''),
+    ownerBestRank: ([1, 2, 3, 4].includes(Number(data.ownerBestRank))
+      ? Number(data.ownerBestRank)
+      : null) as Sketchbook['ownerBestRank'],
     ownerDrawingPath: data.ownerDrawingPath ? String(data.ownerDrawingPath) : null,
     entitlements: {
       watermarkFree: data.entitlements?.watermarkFree === true,

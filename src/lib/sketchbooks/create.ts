@@ -31,6 +31,7 @@ export function createSketchbookDraft({
     managePinHash,
     managePinHint: managePinHint?.trim() || null,
     managePinEnabledAt: managePinHash ? createdAt : null,
+    ownerBestRank: null,
     ownerDrawingPath,
     entitlements: { watermarkFree: false },
     participantLimit: FREE_PARTICIPANT_LIMIT,

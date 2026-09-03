@@ -51,6 +51,9 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     managePinHash: data.managePinHash ? String(data.managePinHash) : null,
     managePinHint: data.managePinHint ? String(data.managePinHint) : null,
     managePinEnabledAt: data.managePinEnabledAt ? toDate(data.managePinEnabledAt) : null,
+    ownerBestRank: ([1, 2, 3, 4].includes(Number(data.ownerBestRank))
+      ? Number(data.ownerBestRank)
+      : null) as Sketchbook['ownerBestRank'],
     ownerDrawingPath: data.ownerDrawingPath ? String(data.ownerDrawingPath) : null,
     entitlements: { watermarkFree: entitlements.watermarkFree === true },
     participantLimit: Number(data.participantLimit),
@@ -191,6 +194,8 @@ export async function saveDrawingWithinLimit(sketchbook: Sketchbook, drawing: Dr
           .map((document) => Number(document.data().bestRank))
           .filter((rank): rank is 1 | 2 | 3 | 4 => rank >= 1 && rank <= 4),
       );
+      const ownerBestRank = Number(currentData.ownerBestRank);
+      if (ownerBestRank >= 1 && ownerBestRank <= 4) usedRanks.add(ownerBestRank as 1 | 2 | 3 | 4);
       automaticBestRank = ([1, 2, 3, 4] as const).find((rank) => !usedRanks.has(rank)) ?? null;
     }
     savedDrawing = automaticBestRank ? { ...drawing, bestRank: automaticBestRank } : drawing;
@@ -275,11 +280,13 @@ export async function deleteDrawingForManagement(sketchbookId: string, drawingId
 
 export async function setBestDrawing(sketchbookId: string, drawingId: string, bestRank: 1 | 2 | 3 | 4) {
   const firestore = getAdminFirestore();
-  const collection = firestore.collection(collectionName).doc(sketchbookId).collection('drawings');
+  const sketchbookReference = firestore.collection(collectionName).doc(sketchbookId);
+  const collection = sketchbookReference.collection('drawings');
   const target = collection.doc(drawingId);
 
   await firestore.runTransaction(async (transaction) => {
-    const [targetDocument, ranked] = await Promise.all([
+    const [sketchbookDocument, targetDocument, ranked] = await Promise.all([
+      transaction.get(sketchbookReference),
       transaction.get(target),
       transaction.get(collection.where('bestRank', '==', bestRank)),
     ]);
@@ -292,8 +299,38 @@ export async function setBestDrawing(sketchbookId: string, drawingId: string, be
     if (targetDocument.data()?.status !== 'VISIBLE') {
       throw new Error('공개 중인 그림만 BEST로 선정할 수 있습니다.');
     }
-    ranked.docs.forEach((document) => transaction.update(document.ref, { bestRank: null, updatedAt: new Date() }));
-    transaction.update(target, { bestRank, updatedAt: new Date() });
+    const updatedAt = new Date();
+    ranked.docs.forEach((document) => transaction.update(document.ref, { bestRank: null, updatedAt }));
+    if (sketchbookDocument.exists && sketchbookDocument.data()?.ownerBestRank === bestRank) {
+      transaction.update(sketchbookReference, { ownerBestRank: null, updatedAt });
+    }
+    transaction.update(target, { bestRank, updatedAt });
+  });
+}
+
+export async function setOwnerBestDrawing(sketchbookId: string, bestRank: 1 | 2 | 3 | 4) {
+  const firestore = getAdminFirestore();
+  const sketchbookReference = firestore.collection(collectionName).doc(sketchbookId);
+  const drawingsCollection = sketchbookReference.collection('drawings');
+
+  await firestore.runTransaction(async (transaction) => {
+    const [sketchbookDocument, ranked] = await Promise.all([
+      transaction.get(sketchbookReference),
+      transaction.get(drawingsCollection.where('bestRank', '==', bestRank)),
+    ]);
+    if (!sketchbookDocument.exists || !sketchbookDocument.data()?.ownerDrawingPath) {
+      throw new Error('순위를 지정할 내 그림을 찾을 수 없습니다.');
+    }
+    const updatedAt = new Date();
+    ranked.docs.forEach((document) => transaction.update(document.ref, { bestRank: null, updatedAt }));
+    transaction.update(sketchbookReference, { ownerBestRank: bestRank, updatedAt });
+  });
+}
+
+export async function clearOwnerBestDrawing(sketchbookId: string) {
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
+    ownerBestRank: null,
+    updatedAt: new Date(),
   });
 }
 
