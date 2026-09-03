@@ -116,7 +116,9 @@ test('모바일에서 소유자 그림 수정과 첫 친구 그림 자동 BEST�
   await expect(page.getByRole('img', { name: 'BEST 1, 첫 번째 친구님의 그림' })).toBeVisible();
 
   await page.goto(`/m/${publicId}`);
-  await page.getByRole('link', { name: '내 그림 수정하기' }).click();
+  const ownerDrawingCard = page.locator('article.owner-original-card');
+  await ownerDrawingCard.getByText('순위 선택', { exact: true }).click();
+  await ownerDrawingCard.getByRole('link', { name: '내 그림 수정하기' }).click();
   await expect(page).toHaveURL(`/m/${publicId}/owner/edit`);
   await page.getByRole('button', { name: '그림 편집 열기' }).click();
   await drawOnCanvas(page);
@@ -158,12 +160,10 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await ownerPage.getByRole('button', { name: '저장 공간 추가하기' }).click();
   await expect(ownerPage.getByRole('dialog', { name: '상품 선택하기' })).toBeVisible();
   await ownerPage.getByRole('radio', { name: /50명 추가.*4,490원/ }).check();
-  await ownerPage.getByRole('button', { name: '4,490원 결제하기' }).click();
-  const paymentSuccessDialog = ownerPage.getByRole('dialog', { name: '결제 완료' });
-  await expect(paymentSuccessDialog.getByText('모의 결제가 완료됐습니다')).toBeVisible();
-  await expect(paymentSuccessDialog.getByText('친구 그림 50명이 추가됐어요.')).toBeVisible();
-  await paymentSuccessDialog.getByRole('button', { name: '확인' }).click();
-  await expect(ownerPage.locator('.manage-summary p')).toContainText(/친구 그림\s*0\s*\/\s*60/);
+  await ownerPage.getByLabel('결제용 휴대전화번호').fill('010-1234-5678');
+  await expect(ownerPage.getByRole('button', { name: '4,490원 결제하기' })).toBeEnabled();
+  await ownerPage.getByRole('button', { name: '결제창 닫기' }).click();
+  await expect(ownerPage.locator('.manage-summary p')).toContainText(/친구 그림\s*0\s*\/\s*10/);
   const managePath = new URL(ownerPage.url()).pathname;
   const managementPublicId = managePath.split('/')[2];
   const publicPath = `/s/${managementPublicId}`;
@@ -221,7 +221,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await managerPage.getByRole('button', { name: '관리 페이지 열기' }).click();
   expect((await manageSessionResponse).status()).toBe(200);
   await expect(managerPage).toHaveURL(`/m/${managementPublicId}`);
-  await expect(managerPage.getByText('모바일 친구')).toBeVisible();
+  await expect(managerPage.getByText('모바일 친구', { exact: true })).toBeVisible();
   const friendDrawingCard = managerPage.locator('article.manage-drawing-card').filter({ hasText: '모바일 친구' });
   await friendDrawingCard.getByText('순위 선택').click();
   await Promise.all([
@@ -246,14 +246,10 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
     return bounds.width / bounds.height;
   });
   expect(previewRatio).toBeCloseTo(3 / 4, 2);
-  const watermarkPurchaseButton = managerPage.getByRole('button', { name: '워터마크 없이 저장하기 · 990원' });
+  await managerPage.getByLabel('결제용 휴대전화번호').fill('010-1234-5678');
+  const watermarkPurchaseButton = managerPage.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' });
   await expect(watermarkPurchaseButton).toBeEnabled();
-  await watermarkPurchaseButton.click({ force: true });
-  const watermarkSuccessDialog = managerPage.getByRole('dialog', { name: '결제 완료' });
-  await expect(watermarkSuccessDialog.getByText('모의 결제가 완료됐습니다')).toBeVisible();
-  await watermarkSuccessDialog.getByRole('button', { name: '확인' }).click();
-  await expect(managerPage.getByText('워터마크 제거가 적용되어 있어요.')).toBeVisible();
-  await expect(managerPage.getByRole('img', { name: '스캐치북 워터마크' })).toHaveCount(0);
+  await expect(managerPage.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
   const downloadPromise = managerPage.waitForEvent('download', { timeout: 15_000 });
   await managerPage.getByRole('button', { name: 'PNG로 저장하기' }).click({ force: true });
   const download = await downloadPromise;

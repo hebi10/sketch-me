@@ -336,7 +336,7 @@ a { color: inherit; text-decoration: none; }
   .draw-shell .editor-tabs { border-top: 1px solid var(--line); }
 }
 
-/* Drawing fullscreen and mock purchase overlays */
+/* Drawing fullscreen and payment overlays */
 .sr-only {
   clip: rect(0, 0, 0, 0);
   clip-path: inset(50%);
@@ -639,13 +639,6 @@ a { color: inherit; text-decoration: none; }
   color: var(--danger);
   font-size: .8rem;
   margin: 12px 0 0;
-  text-align: center;
-}
-
-.purchase-mock-note {
-  color: var(--muted);
-  font-size: .75rem;
-  margin: 8px 0 0;
   text-align: center;
 }
 

@@ -15,7 +15,7 @@ describe('StoryImageComposer', () => {
     expect(screen.getByText('친구들이 그린 내 모습')).toBeInTheDocument();
     expect(preview).toHaveTextContent('BEST 4');
     expect(screen.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
-    expect(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 990원' })).toBeVisible();
+    expect(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' })).toBeVisible();
   });
 
   it('updates the preview background when a user selects a different design', () => {
@@ -66,11 +66,7 @@ describe('StoryImageComposer', () => {
     expect(await screen.findByText('제목을 저장했어요.')).toBeVisible();
   });
 
-  it('워터마크 결제 완료 팝업을 확인한 뒤 구매 혜택을 적용한다', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      json: async () => ({ entitlements: { watermarkFree: true }, participantLimit: 20 }),
-      ok: true,
-    }));
+  it('워터마크 제거 결제에 필요한 휴대전화번호 입력과 실제 금액을 표시한다', () => {
     render(
       <StoryImageComposer
         drawings={[]}
@@ -81,13 +77,9 @@ describe('StoryImageComposer', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 990원' }));
-
-    const successDialog = await screen.findByRole('dialog', { name: '결제 완료' });
     expect(screen.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
-    fireEvent.click(successDialog.querySelector('button')!);
-
-    expect(await screen.findByText('워터마크 제거가 적용되어 있어요.')).toBeVisible();
-    expect(screen.queryByRole('img', { name: '스캐치북 워터마크' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '결제용 휴대전화번호' })).toBeVisible();
+    expect(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' })).toBeEnabled();
+    expect(screen.queryByRole('dialog', { name: '결제 완료' })).not.toBeInTheDocument();
   });
 });

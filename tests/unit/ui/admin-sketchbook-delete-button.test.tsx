@@ -40,7 +40,7 @@ describe('AdminSketchbookDeleteButton', () => {
     expect(screen.getByRole('dialog', { name: '내 이름 스케치북을 완전히 삭제할까요?' }))
       .toHaveAttribute('aria-modal', 'true');
     expect(screen.getByText(/생성자와 친구 그림 파일/)).toBeVisible();
-    expect(screen.getByText(/관리 세션과 모의 결제 기록/)).toBeVisible();
+    expect(screen.getByText(/관리 세션과 결제 기록/)).toBeVisible();
     expect(screen.getByText('public-1')).toBeVisible();
     const input = screen.getByRole('textbox', { name: '확인을 위해 공개 ID 입력' });
     const confirm = screen.getByRole('button', { name: '완전히 삭제하기' });

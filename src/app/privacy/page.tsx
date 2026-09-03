@@ -22,7 +22,7 @@ export default function PrivacyPage() {
           <p className="eyebrow">개인정보 처리 안내</p>
           <h1>개인정보 처리방침</h1>
           <p>스캐치북은 서비스를 제공하는 데 필요한 정보만 처리하고, 이용자가 직접 삭제하고 관리할 수 있도록 합니다.</p>
-          <p className="legal-effective-date">시행일: 2026년 8월 26일</p>
+          <p className="legal-effective-date">시행일: 2026년 9월 3일</p>
         </div>
 
         <nav aria-label="개인정보 처리방침 목차" className="legal-toc">
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
             </div>
             <div>
               <dt>결제</dt>
-              <dd>선택 상품, 결제 금액, 추가 인원, 주문·요청 ID, 처리 상태와 시각을 저장합니다. 카드번호 등 결제수단 정보는 직접 저장하지 않습니다.</dd>
+              <dd>결제용 휴대전화번호, 선택 상품, 결제 금액, 추가 인원, 주문·요청 ID, 페이앱 주문번호, 결제수단 유형, 처리 상태와 시각을 처리합니다. 스캐치북 서버에는 휴대전화번호 끝 4자리만 저장하며 전체 번호와 카드번호 등 결제수단 정보는 직접 저장하지 않습니다.</dd>
             </div>
             <div>
               <dt>보안 정보</dt>
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
         <section id="privacy-retention">
           <h2>보유 기간과 파기</h2>
           <ul>
-            <li>스케치북, 보관용 그림·갤러리 썸네일, 사진, 한마디와 결제 기록: 스케치북을 삭제할 때까지</li>
+            <li>스케치북, 보관용 그림·갤러리 썸네일, 사진, 한마디와 앱 내 결제 기록: 스케치북을 삭제할 때까지. 다만 관계 법령상 보존 의무가 있는 거래 기록은 해당 기간 동안 별도 보관할 수 있습니다.</li>
             <li>관리 로그인 세션: 발급일로부터 최대 30일 또는 로그아웃·스케치북 삭제 시까지</li>
             <li>관리자 로그인 세션: 발급일로부터 최대 12시간 또는 로그아웃 시까지</li>
             <li>브라우저 생성 초안: 생성 완료 또는 브라우저 세션 종료 시까지</li>
@@ -89,13 +89,15 @@ export default function PrivacyPage() {
         </section>
 
         <section id="privacy-third-party">
-          <h2>개인정보의 제3자 제공</h2>
-          <p>스캐치북은 이용자의 개인정보를 별도 제3자에게 제공하지 않습니다. 다만 이용자가 공개 링크를 직접 공유하여 정보가 공개되는 경우와 법령에 따라 제출 의무가 있는 경우는 제외합니다.</p>
+          <h2>개인정보의 제3자 제공 및 처리위탁</h2>
+          <p>스캐치북은 결제 처리에 필요한 범위를 제외하고 이용자의 개인정보를 제3자에게 제공하지 않습니다. 이용자가 공개 링크를 직접 공유하여 정보가 공개되는 경우와 법령에 따라 제출 의무가 있는 경우는 예외입니다.</p>
+          <p><strong>주식회사 유디아이디(페이앱)</strong>에 결제 요청·승인·취소·정산 처리를 위탁합니다. 결제용 휴대전화번호, 주문번호, 상품명과 결제금액이 페이앱으로 전송되며, 결제수단 정보는 페이앱 결제 화면에서 직접 처리됩니다. 페이앱은 처리 목적 달성 시까지 또는 전자상거래·전자금융거래 관련 법령이 정한 기간 동안 정보를 보관할 수 있습니다.</p>
+          <p><a href="https://www.payapp.kr/homepage/udidTerms/payapp_privacy.html">페이앱 개인정보 처리방침</a>에서 상세 처리 항목과 보유 기간을 확인할 수 있습니다.</p>
         </section>
 
         <section id="privacy-transfer">
           <h2>처리위탁 및 국외 이전</h2>
-          <p>서비스 제공을 위해 Google LLC의 Firebase·Google Cloud 서비스를 사용합니다. 서비스 이용에 필요한 정보는 암호화된 네트워크를 통해 전송되며, 스케치북 삭제 또는 서비스 계약 종료 시까지 처리됩니다.</p>
+          <p>서비스 제공을 위해 Google LLC의 Firebase·Google Cloud 서비스와 주식회사 유디아이디의 페이앱을 사용합니다. 서비스 이용에 필요한 정보는 암호화된 네트워크를 통해 전송되며, 각 처리 목적 달성 또는 서비스 계약 종료 시까지 처리됩니다.</p>
           <ul className="legal-location-list">
             <li>Cloud Firestore: 데이터베이스 저장, 대한민국 서울</li>
             <li>Cloud Storage for Firebase: 그림·사진 저장, 미국 버지니아</li>
@@ -138,7 +140,7 @@ export default function PrivacyPage() {
         <section id="privacy-change">
           <h2>처리방침 변경</h2>
           <p>내용이 바뀌면 시행 전에 서비스 화면을 통해 알립니다. 이용자 권리에 중대한 변경은 적용일 30일 전부터 안내합니다.</p>
-          <p>버전 1.0 · 2026년 8월 26일 시행</p>
+          <p>버전 1.1 · 2026년 9월 3일 시행</p>
         </section>
       </article>
 

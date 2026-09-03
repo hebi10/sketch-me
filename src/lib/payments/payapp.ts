@@ -150,6 +150,7 @@ export async function requestPayAppPayment(
     response = await transport(PAYAPP_API_URL, {
       body,
       method: 'POST',
+      signal: AbortSignal.timeout(10_000),
     });
   } catch {
     throw new PayAppResponseError();
@@ -191,6 +192,7 @@ export async function cancelPayAppPayment(
     response = await transport(PAYAPP_API_URL, {
       body,
       method: 'POST',
+      signal: AbortSignal.timeout(10_000),
     });
   } catch {
     throw new PayAppResponseError('결제 취소 요청을 처리하지 못했습니다.');

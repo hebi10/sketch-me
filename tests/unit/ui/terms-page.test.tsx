@@ -19,7 +19,8 @@ describe('TermsPage', () => {
     expect(screen.getByText(/종료일 최소 30일 전/)).toBeVisible();
     expect(screen.getByText(/환불 대상을 확인한 날부터 3영업일 이내/)).toBeVisible();
     expect(screen.getByRole('heading', { name: '2. 결제 상품' })).toBeVisible();
-    expect(screen.getByText(/결제가 완료되면 선택한 상품의 혜택이 즉시 적용/)).toBeVisible();
+    expect(screen.getByText(/페이앱의 검증된 결제 완료 통보를 서버가 확인한 뒤/)).toBeVisible();
+    expect(screen.getByText(/전체 취소 또는 환불/)).toBeVisible();
     expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
   });
 
@@ -27,10 +28,10 @@ describe('TermsPage', () => {
     render(<TermsPage />);
 
     expect(screen.getByText('스케치북 하나당 친구 그림 10개까지 무료로 받을 수 있습니다.')).toBeVisible();
-    expect(screen.getByText('친구 그림 10명 추가 · 990원')).toBeVisible();
+    expect(screen.getByText('친구 그림 10명 추가 · 1,000원')).toBeVisible();
     expect(screen.getByText('친구 그림 50명 추가 · 4,490원')).toBeVisible();
     expect(screen.getByText('친구 그림 100명 추가 · 8,490원')).toBeVisible();
-    expect(screen.getByText('결과 이미지 워터마크 제거 · 990원')).toBeVisible();
+    expect(screen.getByText('결과 이미지 워터마크 제거 · 1,000원')).toBeVisible();
   });
 
   it('랜딩에서 개인정보와 이용·결제 정책으로 이동할 수 있다', () => {

@@ -64,7 +64,7 @@ export function PaymentSuccessDialog({
         <div className="purchase-dialog-heading">
           <h2 id={titleId}>결제 완료</h2>
         </div>
-        <p className="purchase-dialog-copy">모의 결제가 완료됐습니다</p>
+        <p className="purchase-dialog-copy">결제 처리가 완료됐습니다</p>
         <p className="purchase-dialog-copy" id={descriptionId}>{description}</p>
         <button className="button button--primary purchase-submit" onClick={onClose} type="button">
           확인

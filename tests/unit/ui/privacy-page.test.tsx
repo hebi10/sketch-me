@@ -7,7 +7,7 @@ describe('PrivacyPage', () => {
     render(<PrivacyPage />);
 
     expect(screen.getByRole('heading', { name: '개인정보 처리방침' })).toBeVisible();
-    expect(screen.getByText('시행일: 2026년 8월 26일')).toBeVisible();
+    expect(screen.getByText('시행일: 2026년 9월 3일')).toBeVisible();
     expect(screen.getByRole('heading', { name: '처리하는 개인정보' })).toBeVisible();
     expect(screen.getByText(/이름 또는 애칭, 관리용 비밀번호의 일방향 해시/)).toBeVisible();
     expect(screen.getByText(/스케치북을 삭제할 때까지/)).toBeVisible();
@@ -18,11 +18,11 @@ describe('PrivacyPage', () => {
     expect(screen.queryByText(/참고 사진/)).not.toBeInTheDocument();
   });
 
-  it('제3자 제공 여부와 권리 행사 연락처를 안내한다', () => {
+  it('결제 처리위탁과 권리 행사 연락처를 안내한다', () => {
     render(<PrivacyPage />);
 
-    expect(screen.getByRole('heading', { name: '개인정보의 제3자 제공' })).toBeVisible();
-    expect(screen.getByText(/제3자에게 제공하지 않습니다/)).toBeVisible();
+    expect(screen.getByRole('heading', { name: '개인정보의 제3자 제공 및 처리위탁' })).toBeVisible();
+    expect(screen.getByText("주식회사 유디아이디(페이앱)")).toBeVisible();
     expect(screen.getByRole('heading', { name: '이용자의 권리와 행사 방법' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'asdlkj0104@gmail.com' })).toHaveAttribute('href', 'mailto:asdlkj0104@gmail.com');
   });
@@ -39,6 +39,8 @@ describe('PrivacyPage', () => {
 
     expect(screen.getByText(/결제에 따른 참여 가능 인원·워터마크 제거 권한과 구매 기록 관리/)).toBeVisible();
     expect(screen.getByText(/카드번호 등 결제수단 정보는 직접 저장하지 않습니다/)).toBeVisible();
+    expect(screen.getAllByText(/결제용 휴대전화번호/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/끝 4자리만 저장/)).toBeVisible();
     expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
   });
 

@@ -1,4 +1,4 @@
-export type PaymentMode = 'DISABLED' | 'MOCK';
+export type PaymentMode = 'PAYAPP';
 
 interface PaymentModeInput {
   configuredMode?: string;
@@ -7,7 +7,7 @@ interface PaymentModeInput {
 
 export function resolvePaymentMode(input: PaymentModeInput = {}): PaymentMode {
   void input;
-  return 'MOCK';
+  return 'PAYAPP';
 }
 
 export function getServerPaymentMode(): PaymentMode {

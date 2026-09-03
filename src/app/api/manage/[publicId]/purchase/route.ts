@@ -5,6 +5,7 @@ import {
   attachProviderPayment,
   createPendingPurchase,
   failPendingPurchase,
+  PurchaseConflictError,
 } from '@/lib/purchases/orders';
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
 import { getPurchasePlan } from '@/lib/purchases/plans';
@@ -31,7 +32,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     return NextResponse.json({ message: '휴대전화번호를 확인해 주세요.' }, { status: 400 });
   }
 
-  const pending = await createPendingPurchase({ buyerPhone, plan, requestId, sketchbook });
+  let pending;
+  try {
+    pending = await createPendingPurchase({ buyerPhone, plan, requestId, sketchbook });
+  } catch (error) {
+    if (error instanceof PurchaseConflictError) {
+      return NextResponse.json({ message: error.message }, { status: 409 });
+    }
+    return NextResponse.json({ message: '결제 요청을 저장하지 못했습니다.' }, { status: 500 });
+  }
   if (!pending.isNew && pending.payUrl && pending.paymentStatus === 'READY') {
     return NextResponse.json({ orderId: pending.orderId, payUrl: pending.payUrl });
   }
@@ -56,7 +65,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     });
     return NextResponse.json({ orderId: pending.orderId, payUrl: payment.payUrl });
   } catch {
-    await failPendingPurchase(pending.orderId);
+    try {
+      await failPendingPurchase(pending.orderId);
+    } catch {
+      // 결제 공급자 오류를 안전하게 응답하는 것이 우선이며, 저장소 오류 원문은 노출하지 않습니다.
+    }
     return NextResponse.json({ message: '결제창을 열지 못했습니다.' }, { status: 502 });
   }
 }

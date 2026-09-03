@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/sketchbooks/management', () => ({ getManagedSketchbook: mocks.getManagedSketchbook }));
-vi.mock('@/lib/purchases/orders', () => ({
+vi.mock('@/lib/purchases/orders', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/purchases/orders')>(),
   attachProviderPayment: mocks.attachProviderPayment,
   createPendingPurchase: mocks.createPendingPurchase,
   failPendingPurchase: mocks.failPendingPurchase,
@@ -20,6 +21,7 @@ vi.mock('@/lib/payments/payapp', async (importOriginal) => ({
 }));
 
 import { POST } from '@/app/api/manage/[publicId]/purchase/route';
+import { PurchaseConflictError } from '@/lib/purchases/orders';
 
 const sketchbook = {
   entitlements: { watermarkFree: false },
@@ -41,6 +43,7 @@ describe('POST /api/manage/:publicId/purchase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getManagedSketchbook.mockResolvedValue(sketchbook);
+    mocks.failPendingPurchase.mockResolvedValue(undefined);
     mocks.createPendingPurchase.mockResolvedValue({
       isNew: true,
       orderId: 'order-public-random',
@@ -100,5 +103,19 @@ describe('POST /api/manage/:publicId/purchase', () => {
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({ message: '결제창을 열지 못했습니다.' });
     expect(mocks.failPendingPurchase).toHaveBeenCalledWith('order-public-random');
+  });
+
+  it('같은 요청 ID를 다른 상품에 재사용하면 외부 결제 전에 충돌로 거부한다', async () => {
+    mocks.createPendingPurchase.mockRejectedValue(new PurchaseConflictError());
+
+    const response = await POST(paymentRequest({
+      buyerPhone: '01012345678',
+      productId: 'FRIENDS_10',
+      requestId: 'request-1234',
+    }), { params: Promise.resolve({ publicId: 'public-1' }) });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({ message: '이미 다른 상품으로 시작된 결제 요청입니다.' });
+    expect(mocks.requestPayAppPayment).not.toHaveBeenCalled();
   });
 });

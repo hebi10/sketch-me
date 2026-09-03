@@ -44,6 +44,7 @@ describe('페이앱 서버 연동', () => {
     const [url, init] = transport.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://api.payapp.kr/oapi/apiLoad.html');
     expect(init.method).toBe('POST');
+    expect(init.signal).toBeInstanceOf(AbortSignal);
     expect(Object.fromEntries(init.body as URLSearchParams)).toEqual({
       checkretry: 'y',
       cmd: 'payrequest',
@@ -68,6 +69,7 @@ describe('페이앱 서버 연동', () => {
     }, transport)).resolves.toBeUndefined();
 
     const [, init] = transport.mock.calls[0] as [string, RequestInit];
+    expect(init.signal).toBeInstanceOf(AbortSignal);
     expect(Object.fromEntries(init.body as URLSearchParams)).toEqual({
       cancelmemo: '관리자 전체 취소',
       cmd: 'paycancel',

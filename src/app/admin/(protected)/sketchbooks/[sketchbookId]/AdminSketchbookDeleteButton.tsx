@@ -108,7 +108,7 @@ export function AdminSketchbookDeleteButton({
         confirmDisabled={!confirmed}
         confirmLabel="완전히 삭제하기"
         confirmVariant="danger"
-        description="생성자와 친구 그림 파일, 그림 문서, 관리 세션과 모의 결제 기록을 포함한 모든 데이터가 영구 삭제됩니다."
+        description="생성자와 친구 그림 파일, 그림 문서, 관리 세션과 결제 기록을 포함한 모든 데이터가 영구 삭제됩니다."
         error={error}
         eyebrow={null}
         initialFocusSelector="[data-admin-delete-confirmation]"
