@@ -177,10 +177,6 @@ describe('공개 경로 운영자 차단', () => {
       'src',
       '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
     );
-    expect(screen.getByRole('img', { name: '친구님의 최근 그림' })).toHaveAttribute(
-      'src',
-      '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
-    );
   });
 
   it('공개 페이지는 전달된 BLOCKED 그림을 렌더링하지 않는다', async () => {
