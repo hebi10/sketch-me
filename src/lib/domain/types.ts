@@ -57,13 +57,19 @@ export interface Purchase {
   sketchbookPublicId: string;
   sketchbookName: string;
   orderId: string;
-  provider: 'MOCK' | 'TOSS';
+  provider: 'MOCK' | 'PAYAPP' | 'TOSS';
+  providerOrderId?: string | null;
+  providerPayType?: string | null;
+  buyerPhoneLast4?: string | null;
   productType: PurchaseProductId;
-  amount: 990 | 4490 | 8490;
+  amount: 1000 | 4490 | 8490;
   additionalLimit: 0 | 10 | 50 | 100;
   paymentStatus: PurchaseStatus;
   paidAt: Date | null;
+  benefitAppliedAt?: Date | null;
+  cancelledAt?: Date | null;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface ShareImage {

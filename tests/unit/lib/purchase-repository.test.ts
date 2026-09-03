@@ -153,7 +153,7 @@ describe('addMockPurchase', () => {
       status: 'PUBLIC' as const,
       updatedAt: new Date(),
     };
-    const plan = { additionalLimit: 10 as const, amount: 990 as const, kind: 'capacity' as const, label: '친구 그림 10명 추가' as const, productId: 'FRIENDS_10' as const };
+    const plan = { additionalLimit: 10 as const, amount: 1000 as const, kind: 'capacity' as const, label: '친구 그림 10명 추가' as const, productId: 'FRIENDS_10' as const };
 
     await expect(addMockPurchase(sketchbook, plan, 'purchase-attempt-1234')).resolves.toEqual({
       entitlements: { watermarkFree: false },
@@ -210,7 +210,7 @@ describe('addMockPurchase', () => {
       status: 'PUBLIC' as const,
       updatedAt: new Date(),
     };
-    const plan = { additionalLimit: 0 as const, amount: 990 as const, kind: 'watermark' as const, label: '워터마크 제거' as const, productId: 'WATERMARK_FREE' as const };
+    const plan = { additionalLimit: 0 as const, amount: 1000 as const, kind: 'watermark' as const, label: '워터마크 제거' as const, productId: 'WATERMARK_FREE' as const };
 
     await expect(addMockPurchase(sketchbook, plan, 'watermark-attempt-1234')).resolves.toEqual({
       entitlements: { watermarkFree: true },
@@ -222,7 +222,7 @@ describe('addMockPurchase', () => {
     expect(transaction.update.mock.calls[0]?.[1]).not.toHaveProperty('participantLimit');
     expect(transaction.set).toHaveBeenCalledWith(purchaseReference, expect.objectContaining({
       additionalLimit: 0,
-      amount: 990,
+      amount: 1000,
       productType: 'WATERMARK_FREE',
     }));
   });
