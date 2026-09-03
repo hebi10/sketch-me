@@ -197,7 +197,7 @@ test('설정 패널을 열면 캔버스가 가려지지 않고 위쪽 정사각�
   }
 });
 
-test('그림 그리기에서 우측 하단 아이콘으로 도구를 열고 확인한다', async ({ page }) => {
+test('그림 그리기에서 캔버스 아래 아이콘으로 도구를 열고 확인한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/create');
 
@@ -212,15 +212,26 @@ test('그림 그리기에서 우측 하단 아이콘으로 도구를 열고 확�
   expect((canvasBounds?.width ?? 0) / (canvasBounds?.height ?? 1)).toBeCloseTo(1, 2);
 
   const confirmButton = page.getByRole('button', { name: '확인' });
+  const exitButton = page.getByRole('button', { name: '그리기 나가기' });
+  const undoButton = page.getByRole('button', { name: '그림 기록 한 단계 이전' });
   const toolsButton = page.getByRole('button', { name: '그리기 도구 열기' });
   await expect(toolsButton.locator('img')).toHaveAttribute('src', /drawing-controls\.webp/);
+  await expect(exitButton.locator('img')).toHaveAttribute('src', /fullscreen-exit\.webp/);
+  await expect(undoButton.locator('img')).toHaveAttribute('src', /fullscreen-back\.webp/);
   const confirmBounds = await confirmButton.boundingBox();
+  const exitBounds = await exitButton.boundingBox();
+  const undoBounds = await undoButton.boundingBox();
   const toolsBounds = await toolsButton.boundingBox();
   expect(confirmBounds).not.toBeNull();
+  expect(exitBounds).not.toBeNull();
+  expect(undoBounds).not.toBeNull();
   expect(toolsBounds).not.toBeNull();
-  const viewportWidth = page.viewportSize()?.width ?? 0;
-  expect(viewportWidth - ((confirmBounds?.x ?? 0) + (confirmBounds?.width ?? 0))).toBeLessThanOrEqual(12);
-  expect(viewportWidth - ((toolsBounds?.x ?? 0) + (toolsBounds?.width ?? 0))).toBeLessThanOrEqual(12);
+  expect(await page.locator('.fullscreen-controls').evaluate((element) => getComputedStyle(element).position)).toBe('static');
+  expect(exitBounds?.x ?? Infinity).toBeLessThan(undoBounds?.x ?? 0);
+  expect(undoBounds?.x ?? Infinity).toBeLessThan(toolsBounds?.x ?? 0);
+  expect(toolsBounds?.x ?? Infinity).toBeLessThan(confirmBounds?.x ?? 0);
+  expect(exitBounds?.y).toBe(confirmBounds?.y);
+  expect(exitBounds?.y ?? 0).toBeGreaterThanOrEqual((canvasBounds?.y ?? 0) + (canvasBounds?.height ?? 0));
 
   await toolsButton.click();
   await expect(page.getByRole('navigation', { name: '그림 편집 단계' })).toBeVisible();
@@ -236,7 +247,7 @@ test('그림 그리기에서 우측 하단 아이콘으로 도구를 열고 확�
   await expect(fullscreen).toHaveCount(0);
 });
 
-test('파일 오류는 좁은 모바일에서도 우측 하단 전체 화면 컨트롤과 겹치지 않는다', async ({ page }) => {
+test('파일 오류는 좁은 모바일에서도 캔버스 하단 조작 바와 겹치지 않는다', async ({ page }) => {
   for (const viewport of [{ width: 280, height: 700 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);
     await page.goto('/create');
