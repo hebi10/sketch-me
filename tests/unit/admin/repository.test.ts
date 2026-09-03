@@ -104,14 +104,6 @@ const activePurchaseIndexes: FirestoreIndex[] = [
     collectionGroup: 'purchases',
     queryScope: 'COLLECTION_GROUP',
     fields: [
-      { fieldPath: 'createdAt', order: 'DESCENDING' },
-      { fieldPath: '__name__', order: 'DESCENDING' },
-    ],
-  },
-  {
-    collectionGroup: 'purchases',
-    queryScope: 'COLLECTION_GROUP',
-    fields: [
       { fieldPath: 'paymentStatus', order: 'ASCENDING' },
       { fieldPath: 'amount', order: 'ASCENDING' },
     ],
@@ -176,7 +168,7 @@ describe('admin repository Firestore indexes', () => {
     ]));
   });
 
-  it('purchase 인덱스는 모든 결제 공급자를 조회하는 쿼리 3개와 정확히 일치한다', () => {
+  it('purchase 복합 인덱스는 모든 결제 공급자를 조회하는 집계 쿼리 2개와 정확히 일치한다', () => {
     const purchaseIndexes = firestoreIndexes.indexes.filter((index) => (
       index.collectionGroup === 'purchases'
     ));
@@ -206,6 +198,19 @@ describe('admin repository Firestore indexes', () => {
       {
         collectionGroup: 'drawings',
         fieldPath: 'status',
+        indexes: [
+          { order: 'ASCENDING', queryScope: 'COLLECTION_GROUP' },
+          { order: 'DESCENDING', queryScope: 'COLLECTION_GROUP' },
+        ],
+      },
+    ]));
+  });
+
+  it('결제 목록의 createdAt collection-group 단일 필드 인덱스가 있다', () => {
+    expect(firestoreIndexes.fieldOverrides).toEqual(expect.arrayContaining([
+      {
+        collectionGroup: 'purchases',
+        fieldPath: 'createdAt',
         indexes: [
           { order: 'ASCENDING', queryScope: 'COLLECTION_GROUP' },
           { order: 'DESCENDING', queryScope: 'COLLECTION_GROUP' },
