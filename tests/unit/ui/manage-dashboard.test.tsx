@@ -140,7 +140,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     );
 
     expect(screen.getByText('운영자 숨김')).toBeVisible();
-    fireEvent.click(screen.getByText('그림 관리'));
+    fireEvent.click(screen.getByText('순위 정하기'));
     expect(screen.getByRole('button', { name: '친구 페이지에서 숨기기' })).toBeDisabled();
     screen.getAllByRole('button', { name: /^[1-4]$/ }).forEach((button) => {
       expect(button).toBeDisabled();

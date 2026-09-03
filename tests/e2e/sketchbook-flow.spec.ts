@@ -214,7 +214,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   expect((await manageSessionResponse).status()).toBe(200);
   await expect(managerPage).toHaveURL(`/m/${managementPublicId}`);
   await expect(managerPage.getByText('모바일 친구')).toBeVisible();
-  await managerPage.getByText('그림 관리').click();
+  await managerPage.getByText('순위 정하기').click();
   await Promise.all([
     managerPage.waitForNavigation(),
     managerPage.locator('.best-actions button').first().click(),

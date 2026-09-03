@@ -345,7 +345,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
                   : drawing.status === 'VISIBLE' ? '공개 중' : '숨김'}
               </span>
               <details className="drawing-actions">
-                <summary>그림 관리</summary>
+                <summary>순위 정하기</summary>
                 <div className="drawing-action-panel">
                   <button disabled={drawing.moderationStatus === 'BLOCKED'} onClick={() => updateDrawing(drawing.id, { action: drawing.status === 'VISIBLE' ? 'hide' : 'show' })} type="button">
                     {drawing.status === 'VISIBLE' ? '친구 페이지에서 숨기기' : '친구 페이지에 공개하기'}
