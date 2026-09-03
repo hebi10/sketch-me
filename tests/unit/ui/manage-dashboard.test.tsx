@@ -168,7 +168,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.getByText('운영자 숨김')).toBeVisible();
     fireEvent.click(screen.getByText('순위 정하기'));
     expect(screen.getByRole('button', { name: '친구 페이지에서 숨기기' })).toBeDisabled();
-    screen.getAllByRole('button', { name: /^[1-4]$/ }).forEach((button) => {
+    screen.getAllByRole('button', { name: /^[1-4]위$/ }).forEach((button) => {
       expect(button).toBeDisabled();
     });
     expect(screen.getByRole('button', { name: 'BEST 해제' })).toBeDisabled();
@@ -199,7 +199,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(within(ownerCard as HTMLElement).getByText('내 그림')).toBeVisible();
     expect(within(ownerCard as HTMLElement).getByText('BEST 2')).toBeVisible();
     fireEvent.click(within(ownerCard as HTMLElement).getByText('순위 정하기'));
-    expect(within(ownerCard as HTMLElement).getByRole('button', { name: '2' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(ownerCard as HTMLElement).getByRole('button', { name: '2위' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(ownerCard as HTMLElement).getByRole('button', { name: 'BEST 해제' })).toBeEnabled();
   });
 

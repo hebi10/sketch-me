@@ -358,7 +358,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
                 <div className="drawing-action-panel">
                   <div className="best-actions" aria-label="내 그림 BEST 순위 지정">
                     {[1, 2, 3, 4].map((rank) => (
-                      <button aria-pressed={ownerBestRank === rank} key={rank} onClick={() => updateOwnerBestRank(rank as 1 | 2 | 3 | 4)} type="button">{rank}</button>
+                      <button aria-pressed={ownerBestRank === rank} key={rank} onClick={() => updateOwnerBestRank(rank as 1 | 2 | 3 | 4)} type="button">{rank}위</button>
                     ))}
                   </div>
                   {ownerBestRank ? <button onClick={() => updateOwnerBestRank(null)} type="button">BEST 해제</button> : null}
@@ -388,7 +388,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
                   </button>
                   <div className="best-actions" aria-label="BEST 순위 지정">
                     {[1, 2, 3, 4].map((rank) => (
-                      <button aria-pressed={drawing.bestRank === rank} disabled={drawing.status !== 'VISIBLE' || drawing.moderationStatus === 'BLOCKED'} key={rank} onClick={() => updateDrawing(drawing.id, { action: 'best', bestRank: rank })} type="button">{rank}</button>
+                      <button aria-pressed={drawing.bestRank === rank} disabled={drawing.status !== 'VISIBLE' || drawing.moderationStatus === 'BLOCKED'} key={rank} onClick={() => updateDrawing(drawing.id, { action: 'best', bestRank: rank })} type="button">{rank}위</button>
                     ))}
                   </div>
                   {drawing.bestRank ? <button disabled={drawing.moderationStatus === 'BLOCKED'} onClick={() => updateDrawing(drawing.id, { action: 'clearBest' })} type="button">BEST 해제</button> : null}
