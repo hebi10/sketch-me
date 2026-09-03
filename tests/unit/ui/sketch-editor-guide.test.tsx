@@ -50,4 +50,16 @@ describe('SketchEditor 가이드', () => {
     expect(screen.queryByTestId('canvas-crosshair')).not.toBeInTheDocument();
   });
 
+  it('그리기 도구 패널에는 그리기와 가이드 탭만 표시한다', () => {
+    render(<SketchEditor ariaLabel="그리기 캔버스" />);
+
+    fireEvent.click(screen.getByRole('button', { name: '그림 그리기' }));
+    fireEvent.click(screen.getByRole('button', { name: '그리기 도구 열기' }));
+
+    const tabs = screen.getByRole('navigation', { name: '그림 편집 단계' });
+    expect(tabs).toHaveTextContent('그리기');
+    expect(tabs).toHaveTextContent('가이드');
+    expect(screen.queryByRole('button', { name: '편집' })).not.toBeInTheDocument();
+  });
+
 });

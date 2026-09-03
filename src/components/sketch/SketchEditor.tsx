@@ -27,7 +27,7 @@ interface SketchEditorProps {
   reopenLabel?: string;
 }
 
-type EditorTab = 'draw' | 'guide' | 'edit';
+type EditorTab = 'draw' | 'guide';
 type LoupePlacement = 'above' | 'below';
 
 const loupeSize = 104;
@@ -346,7 +346,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
           <nav aria-label="그림 편집 단계" className="editor-tabs">
             <button aria-pressed={tab === 'draw'} onClick={() => setTab('draw')} type="button">그리기</button>
             <button aria-pressed={tab === 'guide'} onClick={() => setTab('guide')} type="button">가이드</button>
-            <button aria-pressed={tab === 'edit'} onClick={() => setTab('edit')} type="button">편집</button>
           </nav>
           <div className="draw-tools">
             {tab === 'guide' ? (
