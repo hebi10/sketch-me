@@ -10,6 +10,7 @@ const {
   fileSave,
   findSketchbookByPublicId,
   getAdminStorage,
+  getDrawingSubmissionSourceHash,
   getPublicMutationHeaders,
   optimizeDrawingImages,
   optimizeImageForStorage,
@@ -25,6 +26,7 @@ const {
   fileSave: vi.fn(),
   findSketchbookByPublicId: vi.fn(),
   getAdminStorage: vi.fn(),
+  getDrawingSubmissionSourceHash: vi.fn(),
   getPublicMutationHeaders: vi.fn(),
   optimizeDrawingImages: vi.fn(),
   optimizeImageForStorage: vi.fn(),
@@ -37,6 +39,7 @@ const {
 vi.mock('@/lib/security/app-check-server', () => ({ enforceAppCheck }));
 vi.mock('@/lib/security/app-check-client', () => ({ getPublicMutationHeaders }));
 vi.mock('@/lib/security/rate-limit', () => ({ enforcePublicMutationLimit }));
+vi.mock('@/lib/security/drawing-submission-source', () => ({ getDrawingSubmissionSourceHash }));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminStorage }));
 vi.mock('@/lib/images/optimize', () => ({
   ImageOptimizationError: class ImageOptimizationError extends Error {},
@@ -91,6 +94,7 @@ describe('공개 mutation Route Handler App Check 순서', () => {
     createManagePinSession.mockResolvedValue({ sessionId: 'session-1', token: 'session-token' });
     findSketchbookByPublicId.mockResolvedValue({
       id: 'book-1',
+      manageTokenHash: 'book-secret',
       moderationStatus: 'ACTIVE',
       name: '해비',
       participantCount: 0,
@@ -103,6 +107,7 @@ describe('공개 mutation Route Handler App Check 순서', () => {
       original: { buffer: Buffer.from('original-webp'), contentType: 'image/webp' },
       thumbnail: { buffer: Buffer.from('thumbnail-webp'), contentType: 'image/webp' },
     });
+    getDrawingSubmissionSourceHash.mockReturnValue('source-hash');
   });
 
   it('스케치북 생성은 App Check 거절 시 다른 제한·저장 동작 전에 중단한다', async () => {
@@ -151,6 +156,7 @@ describe('친구 그림 원본·썸네일 동시 저장', () => {
     enforcePublicMutationLimit.mockReturnValue(null);
     findSketchbookByPublicId.mockResolvedValue({
       id: 'book-1',
+      manageTokenHash: 'book-secret',
       moderationStatus: 'ACTIVE',
       name: '해비',
       participantCount: 0,
@@ -162,6 +168,7 @@ describe('친구 그림 원본·썸네일 동시 저장', () => {
       original: { buffer: Buffer.from('original-webp'), contentType: 'image/webp' },
       thumbnail: { buffer: Buffer.from('thumbnail-webp'), contentType: 'image/webp' },
     });
+    getDrawingSubmissionSourceHash.mockReturnValue('source-hash');
     storageFile.mockReturnValue({ delete: fileDelete, save: fileSave });
     getAdminStorage.mockReturnValue({
       bucket: vi.fn(() => ({ file: storageFile })),
@@ -197,7 +204,22 @@ describe('친구 그림 원본·썸네일 동시 저장', () => {
         imagePath: expect.stringMatching(/\/original\.webp$/),
         thumbnailPath: expect.stringMatching(/\/thumbnail\.webp$/),
       }),
+      'source-hash',
     );
+  });
+
+  it('같은 스케치북의 IP 제출 한도를 넘으면 안내하고 업로드 파일을 정리한다', async () => {
+    saveDrawingWithinLimit.mockRejectedValueOnce(new Error('한 친구는 같은 스캐치북에 그림을 2개까지만 남길 수 있어요.'));
+
+    const response = await submitDrawing(drawingRequest(), {
+      params: Promise.resolve({ publicId: 'public-1' }),
+    });
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({
+      message: '한 친구는 같은 스캐치북에 그림을 2개까지만 남길 수 있어요.',
+    });
+    expect(fileDelete).toHaveBeenCalledTimes(2);
   });
 
   it('Firestore 등록이 실패하면 생성한 원본과 썸네일을 모두 정리한다', async () => {

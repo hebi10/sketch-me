@@ -81,11 +81,17 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   const [shareThumbnailVersion, setShareThumbnailVersion] = useState<string | null>(initialShareThumbnailVersion);
   const [shareThumbnailMessage, setShareThumbnailMessage] = useState<string | null>(null);
   const [isSavingShareThumbnail, setIsSavingShareThumbnail] = useState(false);
+  const [drawingToDelete, setDrawingToDelete] = useState<string | null>(null);
+  const [restoreSubmissionQuota, setRestoreSubmissionQuota] = useState(false);
+  const [isDeletingDrawing, setIsDeletingDrawing] = useState(false);
+  const [deleteDrawingError, setDeleteDrawingError] = useState<string | null>(null);
   const manageMainRef = useRef<HTMLElement>(null);
   const purchaseDialogRef = useRef<HTMLDialogElement>(null);
   const purchaseTriggerRef = useRef<HTMLButtonElement>(null);
   const securityDialogRef = useRef<HTMLDialogElement>(null);
   const securityTriggerRef = useRef<HTMLButtonElement>(null);
+  const deleteDrawingDialogRef = useRef<HTMLDialogElement>(null);
+  const deleteDrawingTriggerRef = useRef<HTMLButtonElement | null>(null);
   const purchaseRequestIdRef = useRef('');
   const isPurchasingRef = useRef(false);
   const isSavingSecurityRef = useRef(false);
@@ -188,6 +194,24 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
     };
   }, [securityOpen]);
 
+  useEffect(() => {
+    if (!drawingToDelete) return;
+    const dialog = deleteDrawingDialogRef.current;
+    const main = manageMainRef.current;
+    const trigger = deleteDrawingTriggerRef.current;
+    if (!dialog || !main) return;
+    main.setAttribute('inert', '');
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+    dialog.querySelector<HTMLElement>('button, input')?.focus();
+
+    return () => {
+      if (dialog.open && typeof dialog.close === 'function') dialog.close();
+      main.removeAttribute('inert');
+      trigger?.focus();
+    };
+  }, [drawingToDelete]);
+
   function openPurchaseDialog() {
     purchaseRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? `purchase_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     setMessage(null);
@@ -256,14 +280,34 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
     }
   }
 
-  async function deleteDrawing(drawingId: string) {
-    if (!window.confirm('이 그림을 삭제할까요? 삭제하면 되돌릴 수 없습니다.')) return;
-    const response = await fetch(`/api/manage/${publicId}/drawings/${drawingId}`, { method: 'DELETE' });
-    if (!response.ok) {
-      setMessage('그림을 삭제하지 못했습니다.');
-      return;
+  function openDeleteDrawingDialog(drawingId: string, trigger: HTMLButtonElement) {
+    deleteDrawingTriggerRef.current = trigger;
+    setRestoreSubmissionQuota(false);
+    setDeleteDrawingError(null);
+    setDrawingToDelete(drawingId);
+  }
+
+  async function deleteDrawing() {
+    if (!drawingToDelete || isDeletingDrawing) return;
+    setIsDeletingDrawing(true);
+    setDeleteDrawingError(null);
+    try {
+      const response = await fetch(`/api/manage/${publicId}/drawings/${drawingToDelete}`, {
+        body: JSON.stringify({ restoreSubmissionQuota }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        setDeleteDrawingError('그림을 삭제하지 못했습니다. 다시 시도해 주세요.');
+        return;
+      }
+      setDrawingToDelete(null);
+      router.refresh();
+    } catch {
+      setDeleteDrawingError('연결을 확인하고 다시 시도해 주세요.');
+    } finally {
+      setIsDeletingDrawing(false);
     }
-    window.location.reload();
   }
 
   async function purchase() {
@@ -473,7 +517,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
                     ))}
                   </div>
                   {drawing.bestRank ? <button disabled={drawing.moderationStatus === 'BLOCKED'} onClick={() => updateDrawing(drawing.id, { action: 'clearBest' })} type="button">BEST 해제</button> : null}
-                  <button className="danger-action" onClick={() => deleteDrawing(drawing.id)} type="button">그림 삭제</button>
+                  <button className="danger-action" onClick={(event) => openDeleteDrawingDialog(drawing.id, event.currentTarget)} type="button">그림 삭제</button>
                 </div>
               </details>
             </article>
@@ -569,6 +613,35 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
             <button className="button button--primary" disabled={isSavingSecurity} type="submit">{isSavingSecurity ? '변경하는 중...' : '비밀번호 변경하기'}</button>
           </form>
           </dialog>
+      ) : null}
+      {drawingToDelete ? (
+        <dialog
+          aria-labelledby="delete-drawing-title"
+          className="manage-security-modal manage-system-sans"
+          onCancel={(event) => {
+            event.preventDefault();
+            if (!isDeletingDrawing) setDrawingToDelete(null);
+          }}
+          ref={deleteDrawingDialogRef}
+        >
+          <div className="dialog-heading">
+            <h2 id="delete-drawing-title">친구 그림 삭제</h2>
+            <button aria-label="친구 그림 삭제창 닫기" className="icon-button" disabled={isDeletingDrawing} onClick={() => setDrawingToDelete(null)} type="button">×</button>
+          </div>
+          <p className="delete-drawing-copy">그림은 영구 삭제되며 되돌릴 수 없어요.</p>
+          <label className="delete-drawing-quota-option">
+            <input checked={restoreSubmissionQuota} disabled={isDeletingDrawing} onChange={(event) => setRestoreSubmissionQuota(event.target.checked)} type="checkbox" />
+            <span>
+              <strong>이 친구가 다시 그림을 남길 수 있도록 1회 복구</strong>
+              <small>선택하지 않으면 삭제 후에도 이 친구의 제출 횟수는 유지돼요.</small>
+            </span>
+          </label>
+          {deleteDrawingError ? <p className="form-error" role="alert">{deleteDrawingError}</p> : null}
+          <div className="delete-confirm-actions">
+            <button className="button button--danger" disabled={isDeletingDrawing} onClick={deleteDrawing} type="button">{isDeletingDrawing ? '삭제하는 중...' : '삭제하기'}</button>
+            <button className="button button--secondary" disabled={isDeletingDrawing} onClick={() => setDrawingToDelete(null)} type="button">취소</button>
+          </div>
+        </dialog>
       ) : null}
     </>
   );

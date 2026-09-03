@@ -13,6 +13,7 @@ import {
   deleteDrawingForManagement,
   deleteSketchbookDeletionJob,
   DrawingPublicPromotionBlockedError,
+  DrawingSubmissionLimitError,
   findSketchbookByPublicId,
   findVisibleBestDrawing,
   findSketchbookDeletionTargetById,
@@ -177,7 +178,7 @@ describe('공개 그림 저장소 운영자 차단', () => {
       runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
     });
 
-    await expect(saveDrawingWithinLimit(sketchbook, drawing)).rejects.toThrow();
+    await expect(saveDrawingWithinLimit(sketchbook, drawing, 'source-hash')).rejects.toThrow();
     expect(transaction.set).not.toHaveBeenCalled();
     expect(transaction.update).not.toHaveBeenCalled();
   });
@@ -185,14 +186,16 @@ describe('공개 그림 저장소 운영자 차단', () => {
   it('새 친구 그림은 제출 트랜잭션에서 가장 낮은 빈 BEST 순위를 자동으로 받는다', async () => {
     const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
     const drawingReference = { id: 'drawing-1', kind: 'drawing' };
+    const submissionSourceReference = { id: 'source-hash', kind: 'submission-source' };
     const rankedQuery = { kind: 'ranked-query' };
     const drawingsCollection = {
       doc: vi.fn(() => drawingReference),
       where: vi.fn(() => rankedQuery),
     };
+    const submissionSourcesCollection = { doc: vi.fn(() => submissionSourceReference) };
     const transaction = {
-      get: vi.fn(async (reference: { kind: string }) => reference.kind === 'sketchbook'
-        ? {
+      get: vi.fn(async (reference: { kind: string }) => {
+        if (reference.kind === 'sketchbook') return {
             data: () => ({
               moderationStatus: 'ACTIVE',
               ownerBestRank: 1,
@@ -201,13 +204,15 @@ describe('공개 그림 저장소 운영자 차단', () => {
               status: 'PUBLIC',
             }),
             exists: true,
-          }
-        : {
+          };
+        if (reference.kind === 'submission-source') return { data: () => undefined, exists: false };
+        return {
             docs: [
               { data: () => ({ bestRank: 1 }) },
               { data: () => ({ bestRank: 3 }) },
             ],
-          }),
+          };
+      }),
       set: vi.fn(),
       update: vi.fn(),
     };
@@ -215,19 +220,62 @@ describe('공개 그림 저장소 운영자 차단', () => {
       collection: vi.fn(() => ({
         doc: vi.fn(() => ({
           ...sketchbookReference,
-          collection: vi.fn(() => drawingsCollection),
+          collection: vi.fn((name: string) => name === 'drawings'
+            ? drawingsCollection
+            : submissionSourcesCollection),
         })),
       })),
       runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
     });
 
-    await saveDrawingWithinLimit(sketchbook, drawing);
+    await saveDrawingWithinLimit(sketchbook, drawing, 'source-hash');
 
     expect(drawingsCollection.where).toHaveBeenCalledWith('bestRank', 'in', [1, 2, 3, 4]);
     expect(transaction.set).toHaveBeenCalledWith(drawingReference, {
       ...drawing,
       bestRank: 2,
+      submissionQuotaRestoredAt: null,
+      submissionSourceHash: 'source-hash',
     });
+  });
+
+  it('같은 스케치북의 제출 출처가 이미 2개를 남겼으면 세 번째 그림을 거부한다', async () => {
+    const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
+    const drawingReference = { id: 'drawing-1', kind: 'drawing' };
+    const submissionSourceReference = { id: 'source-hash', kind: 'submission-source' };
+    const drawingsCollection = { doc: vi.fn(() => drawingReference) };
+    const submissionSourcesCollection = { doc: vi.fn(() => submissionSourceReference) };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => reference.kind === 'sketchbook'
+        ? {
+            data: () => ({
+              moderationStatus: 'ACTIVE',
+              participantCount: 0,
+              participantLimit: 20,
+              status: 'PUBLIC',
+            }),
+            exists: true,
+          }
+        : { data: () => ({ submissionCount: 2 }), exists: true }),
+      set: vi.fn(),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn((name: string) => name === 'drawings'
+            ? drawingsCollection
+            : submissionSourcesCollection),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await expect(saveDrawingWithinLimit(sketchbook, drawing, 'source-hash'))
+      .rejects.toBeInstanceOf(DrawingSubmissionLimitError);
+    expect(transaction.set).not.toHaveBeenCalled();
+    expect(transaction.update).not.toHaveBeenCalled();
   });
 
   it('순위가 없는 소유자 그림을 1위로 지정하면 기존 친구 그림을 아래로 밀고 4위를 해제한다', async () => {
@@ -400,14 +448,15 @@ describe('공개 그림 저장소 운영자 차단', () => {
   it('다섯 번째 그림부터는 빈 BEST 자리가 있어도 자동 순위를 배정하지 않는다', async () => {
     const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
     const drawingReference = { id: 'drawing-1', kind: 'drawing' };
+    const submissionSourceReference = { id: 'source-hash', kind: 'submission-source' };
     const rankedQuery = { kind: 'ranked-query' };
     const drawingsCollection = {
       doc: vi.fn(() => drawingReference),
       where: vi.fn(() => rankedQuery),
     };
     const transaction = {
-      get: vi.fn(async (reference: { kind: string }) => reference.kind === 'sketchbook'
-        ? {
+      get: vi.fn(async (reference: { kind: string }) => {
+        if (reference.kind === 'sketchbook') return {
             data: () => ({
               moderationStatus: 'ACTIVE',
               participantCount: 4,
@@ -415,8 +464,10 @@ describe('공개 그림 저장소 운영자 차단', () => {
               status: 'PUBLIC',
             }),
             exists: true,
-          }
-        : { docs: [{ data: () => ({ bestRank: 1 }) }] }),
+          };
+        if (reference.kind === 'submission-source') return { data: () => undefined, exists: false };
+        return { docs: [{ data: () => ({ bestRank: 1 }) }] };
+      }),
       set: vi.fn(),
       update: vi.fn(),
     };
@@ -424,16 +475,22 @@ describe('공개 그림 저장소 운영자 차단', () => {
       collection: vi.fn(() => ({
         doc: vi.fn(() => ({
           ...sketchbookReference,
-          collection: vi.fn(() => drawingsCollection),
+          collection: vi.fn((name: string) => name === 'drawings'
+            ? drawingsCollection
+            : { doc: vi.fn(() => submissionSourceReference) }),
         })),
       })),
       runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
     });
 
-    await saveDrawingWithinLimit(sketchbook, drawing);
+    await saveDrawingWithinLimit(sketchbook, drawing, 'source-hash');
 
     expect(drawingsCollection.where).not.toHaveBeenCalled();
-    expect(transaction.set).toHaveBeenCalledWith(drawingReference, drawing);
+    expect(transaction.set).toHaveBeenCalledWith(drawingReference, {
+      ...drawing,
+      submissionQuotaRestoredAt: null,
+      submissionSourceHash: 'source-hash',
+    });
   });
 
   it('차단된 그림은 공개 중이어도 BEST로 지정하지 않는다', async () => {
@@ -518,6 +575,7 @@ describe('공개 그림 저장소 운영자 차단', () => {
           data: () => ({
             imagePath: 'sketchbooks/book-1/drawings/drawing-1/original.webp',
             status: 'VISIBLE',
+            submissionSourceHash: 'source-hash',
             thumbnailPath: 'sketchbooks/book-1/drawings/drawing-1/thumbnail.webp',
           }),
           exists: true,
@@ -540,6 +598,59 @@ describe('공개 그림 저장소 운영자 차단', () => {
     });
     expect(transaction.update).toHaveBeenCalledWith(drawingReference, expect.objectContaining({
       publicImageVersion: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      status: 'DELETED',
+    }));
+    expect(transaction.get).toHaveBeenCalledTimes(2);
+    expect(transaction.update).not.toHaveBeenCalledWith(drawingReference, expect.objectContaining({
+      submissionQuotaRestoredAt: expect.anything(),
+    }));
+  });
+
+  it('관리자가 선택하면 삭제한 그림의 제출 출처 횟수를 한 번 복구한다', async () => {
+    const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
+    const drawingReference = { id: 'drawing-1', kind: 'drawing' };
+    const submissionSourceReference = { id: 'source-hash', kind: 'submission-source' };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => {
+        if (reference.kind === 'sketchbook') {
+          return { data: () => ({ participantCount: 1 }), exists: true };
+        }
+        if (reference.kind === 'drawing') {
+          return {
+            data: () => ({
+              imagePath: 'sketchbooks/book-1/drawings/drawing-1/original.webp',
+              status: 'VISIBLE',
+              submissionSourceHash: 'source-hash',
+              thumbnailPath: null,
+            }),
+            exists: true,
+          };
+        }
+        return { data: () => ({ submissionCount: 2 }), exists: true };
+      }),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn((name: string) => ({
+            doc: vi.fn(() => name === 'drawings' ? drawingReference : submissionSourceReference),
+          })),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<unknown>) => callback(transaction)),
+    });
+
+    await deleteDrawingForManagement('book-1', 'drawing-1', { restoreSubmissionQuota: true });
+
+    expect(transaction.get).toHaveBeenCalledWith(submissionSourceReference);
+    expect(transaction.update).toHaveBeenCalledWith(submissionSourceReference, {
+      submissionCount: 1,
+      updatedAt: expect.any(Date),
+    });
+    expect(transaction.update).toHaveBeenCalledWith(drawingReference, expect.objectContaining({
+      submissionQuotaRestoredAt: expect.any(Date),
       status: 'DELETED',
     }));
   });

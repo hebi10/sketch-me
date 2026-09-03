@@ -18,6 +18,7 @@ const collectionName = 'sketchbooks';
 const adminDeletionJobCollectionName = 'adminSketchbookDeletionJobs';
 const deletionJobCollectionName = 'sketchbookDeletionJobs';
 const bestRanks = [1, 2, 3, 4] as const;
+const maxDrawingsPerSubmissionSource = 2;
 
 type BestRank = (typeof bestRanks)[number];
 
@@ -75,6 +76,13 @@ export class DrawingPublicPromotionBlockedError extends Error {
   constructor() {
     super('운영자가 차단한 그림은 공개할 수 없습니다.');
     this.name = 'DrawingPublicPromotionBlockedError';
+  }
+}
+
+export class DrawingSubmissionLimitError extends Error {
+  constructor() {
+    super('한 친구는 같은 스캐치북에 그림을 2개까지만 남길 수 있어요.');
+    this.name = 'DrawingSubmissionLimitError';
   }
 }
 
@@ -239,15 +247,23 @@ export async function findVisibleBestDrawing(sketchbookId: string, bestRank: Bes
     : null;
 }
 
-export async function saveDrawingWithinLimit(sketchbook: Sketchbook, drawing: Drawing) {
+export async function saveDrawingWithinLimit(
+  sketchbook: Sketchbook,
+  drawing: Drawing,
+  submissionSourceHash: string,
+) {
   const firestore = getAdminFirestore();
   const sketchbookReference = firestore.collection(collectionName).doc(sketchbook.id);
   const drawingsCollection = sketchbookReference.collection('drawings');
   const drawingReference = drawingsCollection.doc(drawing.id);
+  const submissionSourceReference = sketchbookReference.collection('submissionSources').doc(submissionSourceHash);
   let savedDrawing = drawing;
 
   await firestore.runTransaction(async (transaction) => {
-    const current = await transaction.get(sketchbookReference);
+    const [current, submissionSource] = await Promise.all([
+      transaction.get(sketchbookReference),
+      transaction.get(submissionSourceReference),
+    ]);
     const currentData = current.data();
 
     if (
@@ -260,6 +276,11 @@ export async function saveDrawingWithinLimit(sketchbook: Sketchbook, drawing: Dr
 
     if (Number(currentData.participantCount) >= Number(currentData.participantLimit)) {
       throw new Error('친구 그림을 더 받을 수 있는 인원이 모두 찼습니다.');
+    }
+
+    const submissionCount = Number(submissionSource.data()?.submissionCount ?? 0);
+    if (submissionCount >= maxDrawingsPerSubmissionSource) {
+      throw new DrawingSubmissionLimitError();
     }
 
     let automaticBestRank: Drawing['bestRank'] = null;
@@ -276,10 +297,19 @@ export async function saveDrawingWithinLimit(sketchbook: Sketchbook, drawing: Dr
     }
     savedDrawing = automaticBestRank ? { ...drawing, bestRank: automaticBestRank } : drawing;
 
-    transaction.set(drawingReference, savedDrawing);
+    const updatedAt = new Date();
+    transaction.set(drawingReference, {
+      ...savedDrawing,
+      submissionQuotaRestoredAt: null,
+      submissionSourceHash,
+    });
+    transaction.set(submissionSourceReference, {
+      submissionCount: submissionCount + 1,
+      updatedAt,
+    }, { merge: true });
     transaction.update(sketchbookReference, {
       participantCount: Number(currentData.participantCount) + 1,
-      updatedAt: new Date(),
+      updatedAt,
     });
   });
 
@@ -322,7 +352,11 @@ export async function clearBestDrawing(sketchbookId: string, drawingId: string) 
   await reference.update({ bestRank: null, updatedAt: new Date() });
 }
 
-export async function deleteDrawingForManagement(sketchbookId: string, drawingId: string) {
+export async function deleteDrawingForManagement(
+  sketchbookId: string,
+  drawingId: string,
+  options: { restoreSubmissionQuota?: boolean } = {},
+) {
   const firestore = getAdminFirestore();
   const sketchbookReference = firestore.collection(collectionName).doc(sketchbookId);
   const drawingReference = sketchbookReference.collection('drawings').doc(drawingId);
@@ -337,16 +371,36 @@ export async function deleteDrawingForManagement(sketchbookId: string, drawingId
     }
     const drawing = drawingDocument.data();
     if (drawing?.status === 'DELETED') return null;
+    const updatedAt = new Date();
+    const submissionSourceHash = typeof drawing?.submissionSourceHash === 'string'
+      ? drawing.submissionSourceHash
+      : null;
+    const shouldRestoreSubmissionQuota = options.restoreSubmissionQuota === true
+      && Boolean(submissionSourceHash)
+      && !drawing?.submissionQuotaRestoredAt;
+    const submissionSourceReference = shouldRestoreSubmissionQuota && submissionSourceHash
+      ? sketchbookReference.collection('submissionSources').doc(submissionSourceHash)
+      : null;
+    const submissionSourceDocument = submissionSourceReference
+      ? await transaction.get(submissionSourceReference)
+      : null;
     transaction.update(drawingReference, {
       status: 'DELETED',
       bestRank: null,
       publicImageVersion: randomUUID(),
-      updatedAt: new Date(),
+      ...(shouldRestoreSubmissionQuota ? { submissionQuotaRestoredAt: updatedAt } : {}),
+      updatedAt,
     });
     transaction.update(sketchbookReference, {
       participantCount: Math.max(0, Number(sketchbookDocument.data()?.participantCount) - 1),
-      updatedAt: new Date(),
+      updatedAt,
     });
+    if (submissionSourceReference && submissionSourceDocument?.exists) {
+      transaction.update(submissionSourceReference, {
+        submissionCount: Math.max(0, Number(submissionSourceDocument.data()?.submissionCount) - 1),
+        updatedAt,
+      });
+    }
     return {
       imagePath: String(drawing?.imagePath ?? ''),
       thumbnailPath: drawing?.thumbnailPath ? String(drawing.thumbnailPath) : null,

@@ -227,6 +227,12 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await expect(managerPage.getByText('모바일 친구', { exact: true })).toBeVisible();
   const friendDrawingCard = managerPage.locator('article.manage-drawing-card').filter({ hasText: '모바일 친구' });
   await friendDrawingCard.getByText('순위 선택').click();
+  await friendDrawingCard.getByRole('button', { name: '그림 삭제' }).click();
+  const deleteDrawingDialog = managerPage.getByRole('dialog', { name: '친구 그림 삭제' });
+  await expect(deleteDrawingDialog).toBeVisible();
+  await expect(deleteDrawingDialog.getByRole('checkbox', { name: /1회 복구/ })).not.toBeChecked();
+  await deleteDrawingDialog.getByRole('button', { name: '취소' }).click();
+  await expect(deleteDrawingDialog).toBeHidden();
   await Promise.all([
     managerPage.waitForResponse((response) => (
       response.request().method() === 'PATCH'

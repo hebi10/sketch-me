@@ -13,7 +13,7 @@ export function ShareSketchbookButton({ publicId, name, menuItem = false, previe
       if (navigator.share) {
         try {
           await navigator.share({
-            title: `${name}의 스캐치북`,
+            title: `${name}의 스캐치북 도착!`,
             text: `${name}님을 기억나는 모습대로 그려주세요.`,
             url,
           });

@@ -279,6 +279,56 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.getByRole('button', { name: '그림 삭제' })).toBeEnabled();
   });
 
+  it('그림 삭제 확인창에서 제출 횟수 복구 여부를 선택해 전달한다', async () => {
+    const createdAt = new Date('2026-08-25T00:00:00.000Z');
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ManageDashboard
+        drawings={[{
+          authorName: '친구',
+          bestRank: null,
+          createdAt,
+          id: 'drawing-1',
+          imagePath: 'sketchbooks/book-1/drawings/drawing-1/original.webp',
+          publicImageVersion: 'version-1',
+          thumbnailPath: null,
+          message: null,
+          moderatedAt: null,
+          moderationStatus: 'ACTIVE',
+          sketchbookId: 'book-1',
+          sketchbookName: '내 이름',
+          sketchbookPublicId: 'public-1',
+          status: 'VISIBLE',
+          updatedAt: createdAt,
+        }]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={1}
+        participantLimit={20}
+        publicId="public-1"
+      />,
+    );
+
+    fireEvent.click(screen.getByText('순위 선택'));
+    fireEvent.click(screen.getByRole('button', { name: '그림 삭제' }));
+    const dialog = screen.getByRole('dialog', { name: '친구 그림 삭제' });
+    expect(dialog).toBeVisible();
+    const restore = screen.getByRole('checkbox', { name: /이 친구가 다시 그림을 남길 수 있도록 1회 복구/ });
+    expect(restore).not.toBeChecked();
+    fireEvent.click(restore);
+    fireEvent.click(screen.getByRole('button', { name: '삭제하기' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/manage/public-1/drawings/drawing-1',
+      {
+        body: JSON.stringify({ restoreSubmissionQuota: true }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'DELETE',
+      },
+    ));
+  });
+
   it('내 그림을 친구 그림보다 먼저 순위 후보로 보여주고 수동 순위만 표시한다', () => {
     render(
       <ManageDashboard

@@ -39,14 +39,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pu
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ publicId: string; drawingId: string }> },
 ) {
   const { publicId, drawingId } = await params;
   const sketchbook = await getManagedSketchbook(publicId);
   if (!sketchbook) return NextResponse.json({ message: '관리 권한이 없습니다.' }, { status: 403 });
 
-  const imagePaths = await deleteDrawingForManagement(sketchbook.id, drawingId);
+  const payload = await request.json().catch(() => null) as { restoreSubmissionQuota?: unknown } | null;
+  const imagePaths = await deleteDrawingForManagement(sketchbook.id, drawingId, {
+    restoreSubmissionQuota: payload?.restoreSubmissionQuota === true,
+  });
   if (imagePaths) {
     const paths = [imagePaths.imagePath, imagePaths.thumbnailPath].filter((path): path is string => Boolean(path));
     await Promise.all(paths.map((path) => (

@@ -1777,6 +1777,48 @@ main {
   width: 100%;
 }
 
+.delete-drawing-copy {
+  color: var(--muted);
+  font-size: var(--font-size-note);
+  line-height: 1.55;
+  margin: 12px 0;
+}
+
+.delete-drawing-quota-option {
+  align-items: start;
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  line-height: 1.5;
+  margin: 16px 0;
+}
+
+.delete-drawing-quota-option input {
+  accent-color: var(--accent);
+  height: 18px;
+  margin: 3px 0 0;
+  width: 18px;
+}
+
+.delete-drawing-quota-option span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.delete-drawing-quota-option strong {
+  font-size: var(--font-size-label);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.delete-drawing-quota-option small {
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 319px) {
   .landing-copy h1 {
     font-size: 1.85rem;

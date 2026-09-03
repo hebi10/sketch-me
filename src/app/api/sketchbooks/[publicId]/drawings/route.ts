@@ -8,6 +8,7 @@ import { getAdminStorage } from '@/lib/firebase/admin';
 import { getDrawingImagePath, getDrawingThumbnailPath } from '@/lib/firebase/storage';
 import { ImageOptimizationError, optimizeDrawingImages } from '@/lib/images/optimize';
 import { enforceAppCheck } from '@/lib/security/app-check-server';
+import { getDrawingSubmissionSourceHash } from '@/lib/security/drawing-submission-source';
 import { enforcePublicMutationLimit } from '@/lib/security/rate-limit';
 import { findSketchbookByPublicId, saveDrawingWithinLimit } from '@/lib/sketchbooks/repository';
 
@@ -100,9 +101,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     message: parsed.data.message,
     createdAt: new Date(),
   });
+  const submissionSourceHash = getDrawingSubmissionSourceHash(request, sketchbook.manageTokenHash);
 
   try {
-    await saveDrawingWithinLimit(sketchbook, drawing);
+    await saveDrawingWithinLimit(sketchbook, drawing, submissionSourceHash);
   } catch (error) {
     await deleteUploadedDrawingFiles(uploadedPaths);
     if (error instanceof Error && error.message === '친구 그림을 더 받을 수 있는 인원이 모두 찼습니다.') {
@@ -110,6 +112,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     }
     if (error instanceof Error && error.message === '스케치북을 찾을 수 없거나 공개되어 있지 않습니다.') {
       return NextResponse.json({ message: '스케치북을 찾을 수 없어요.' }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === '한 친구는 같은 스캐치북에 그림을 2개까지만 남길 수 있어요.') {
+      return NextResponse.json({ message: error.message }, { status: 429 });
     }
     console.error('Drawing persistence failed', error instanceof Error ? error.name : 'UnknownError');
     return NextResponse.json(

@@ -90,9 +90,26 @@ describe('관리 그림 운영 상태 경계', () => {
     const response = await DELETE(new Request('http://localhost'), context);
 
     expect(response.status).toBe(200);
-    expect(deleteDrawingForManagement).toHaveBeenCalledWith('book-1', 'drawing-1');
+    expect(deleteDrawingForManagement).toHaveBeenCalledWith('book-1', 'drawing-1', {
+      restoreSubmissionQuota: false,
+    });
     expect(fileDelete).toHaveBeenCalledTimes(2);
     expect(fileDelete).toHaveBeenNthCalledWith(1, { ignoreNotFound: true });
     expect(fileDelete).toHaveBeenNthCalledWith(2, { ignoreNotFound: true });
+  });
+
+  it('관리자가 선택한 제출 횟수 복구 여부를 삭제 트랜잭션에 전달한다', async () => {
+    const request = new Request('http://localhost', {
+      body: JSON.stringify({ restoreSubmissionQuota: true }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'DELETE',
+    });
+
+    const response = await DELETE(request, context);
+
+    expect(response.status).toBe(200);
+    expect(deleteDrawingForManagement).toHaveBeenCalledWith('book-1', 'drawing-1', {
+      restoreSubmissionQuota: true,
+    });
   });
 });
