@@ -73,7 +73,6 @@ export default async function PublicSketchbookPage({
   const bestDrawings = drawings
     .filter((drawing) => drawing.bestRank)
     .sort((left, right) => (left.bestRank ?? 5) - (right.bestRank ?? 5));
-  const recentDrawing = drawings[0];
   const isFull = isSketchbookFull(sketchbook);
   const hasDrawings = drawings.length > 0;
   const hasOwnerBestDrawing = Boolean(sketchbook.ownerDrawingPath && sketchbook.ownerBestRank);
@@ -115,35 +114,6 @@ export default async function PublicSketchbookPage({
         </section>
       ) : null}
 
-      {hasDrawings ? (
-        <section className="friend-board" aria-labelledby="friend-drawings-heading">
-            <div className="section-title-row">
-              <h2 className="public-section-title" id="friend-drawings-heading">친구들이 그린 나</h2>
-              <span>{sketchbook.participantCount} / {sketchbook.participantLimit}</span>
-            </div>
-            <div className="friend-drawing-grid">
-              {drawings.map((drawing, index) => (
-                <article className="friend-drawing-card" key={drawing.id}>
-                  <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/thumbnail?v=${encodeURIComponent(drawing.publicImageVersion)}`} unoptimized width={255} />
-                  <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{formatTimeAgo(drawing.createdAt)}</span></div>
-                </article>
-              ))}
-            </div>
-            {isFull ? <span aria-disabled="true" className="button button--disabled board-draw-button">친구 그림 접수 마감</span> : <Link className="button button--primary board-draw-button" href={`/s/${publicId}/draw`}>✎ 그림 남기기</Link>}
-            <div className="board-progress"><span>기본 {FREE_PARTICIPANT_LIMIT}개 무료</span><strong>{sketchbook.participantCount} / {sketchbook.participantLimit}</strong></div>
-        </section>
-      ) : (
-        <section className="public-empty-state" aria-labelledby="first-drawing-title">
-          <h2 id="first-drawing-title">첫 그림을 남겨주세요</h2>
-          <p>이 스케치북의 첫 장을 열어 주세요. 기억나는 모습 그대로면 충분해요.</p>
-          {isFull ? <span aria-disabled="true" className="button button--disabled">친구 그림 접수 마감</span> : <Link className="button button--primary" href={`/s/${publicId}/draw`}>첫 그림 남기기</Link>}
-          <div className="public-empty-create">
-            <p>나도 친구들에게 그림을 받아보고 싶다면 ↓</p>
-            <Link className="button button--secondary" href="/create">내 스케치북 만들기</Link>
-          </div>
-        </section>
-      )}
-
       {hasDrawings || hasOwnerBestDrawing ? (
         <section className="public-feed-section" aria-labelledby="best-drawings-heading">
             <div className="section-title-row"><h2 id="best-drawings-heading">♕ 베스트 그림</h2><span>BEST 4</span></div>
@@ -170,15 +140,33 @@ export default async function PublicSketchbookPage({
       ) : null}
 
       {hasDrawings ? (
-          <section className="public-feed-section recent-section" aria-labelledby="recent-drawing-heading">
-            <div className="section-title-row"><h2 id="recent-drawing-heading">◷ 최근 올라온 그림</h2></div>
-            <article className="recent-drawing-card">
-              <Image alt={`${recentDrawing?.authorName}님의 최근 그림`} height={90} src={`/api/sketchbooks/${publicId}/drawings/${recentDrawing?.id}/thumbnail?v=${encodeURIComponent(recentDrawing?.publicImageVersion ?? '')}`} unoptimized width={90} />
-              <div><strong>{recentDrawing?.authorName}</strong><span>{recentDrawing ? formatTimeAgo(recentDrawing.createdAt) : null}</span>{recentDrawing?.message ? <p>{recentDrawing.message}</p> : null}</div>
-            </article>
-            <p className="kind-comment">✎ 따뜻한 말 한마디가 큰 힘이 돼요. 서로 존중하는 댓글을 남겨주세요!</p>
-          </section>
-      ) : null}
+        <section className="friend-board" aria-labelledby="friend-drawings-heading">
+          <div className="section-title-row">
+            <h2 className="public-section-title" id="friend-drawings-heading">친구들이 그린 나</h2>
+            <span>{sketchbook.participantCount} / {sketchbook.participantLimit}</span>
+          </div>
+          <div className="friend-drawing-grid">
+            {drawings.map((drawing, index) => (
+              <article className="friend-drawing-card" key={drawing.id}>
+                <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/thumbnail?v=${encodeURIComponent(drawing.publicImageVersion)}`} unoptimized width={255} />
+                <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{formatTimeAgo(drawing.createdAt)}</span></div>
+              </article>
+            ))}
+          </div>
+          {isFull ? <span aria-disabled="true" className="button button--disabled board-draw-button">친구 그림 접수 마감</span> : <Link className="button button--primary board-draw-button" href={`/s/${publicId}/draw`}>✎ 그림 남기기</Link>}
+          <div className="board-progress"><span>기본 {FREE_PARTICIPANT_LIMIT}개 무료</span><strong>{sketchbook.participantCount} / {sketchbook.participantLimit}</strong></div>
+        </section>
+      ) : (
+        <section className="public-empty-state" aria-labelledby="first-drawing-title">
+          <h2 id="first-drawing-title">첫 그림을 남겨주세요</h2>
+          <p>이 스케치북의 첫 장을 열어 주세요. 기억나는 모습 그대로면 충분해요.</p>
+          {isFull ? <span aria-disabled="true" className="button button--disabled">친구 그림 접수 마감</span> : <Link className="button button--primary" href={`/s/${publicId}/draw`}>첫 그림 남기기</Link>}
+          <div className="public-empty-create">
+            <p>나도 친구들에게 그림을 받아보고 싶다면 ↓</p>
+            <Link className="button button--secondary" href="/create">내 스케치북 만들기</Link>
+          </div>
+        </section>
+      )}
 
     </main>
   );

@@ -80,4 +80,37 @@ describe('공개 스케치북 소유자 그림', () => {
       '/api/sketchbooks/public-1/owner/image',
     );
   });
+
+  it('내 그림, BEST, 친구 그림 순서로 보여주고 최근 그림을 중복 노출하지 않는다', async () => {
+    listVisibleDrawings.mockResolvedValue([{
+      authorName: '친구',
+      bestRank: 1,
+      createdAt: new Date('2026-09-03T01:00:00.000Z'),
+      id: 'drawing-1',
+      imagePath: 'sketchbooks/book-1/drawings/drawing-1.webp',
+      message: '안녕',
+      moderatedAt: null,
+      moderationStatus: 'ACTIVE',
+      publicImageVersion: 'v1',
+      sketchbookId: 'book-1',
+      sketchbookName: '해비',
+      sketchbookPublicId: 'public-1',
+      status: 'VISIBLE',
+      thumbnailPath: 'sketchbooks/book-1/drawings/drawing-1-thumbnail.webp',
+      updatedAt: new Date('2026-09-03T01:00:00.000Z'),
+    }]);
+
+    render(await PublicSketchbookPage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    const ownerHeading = screen.getByRole('heading', { name: '내가 그린 나' });
+    const bestHeading = screen.getByRole('heading', { name: '♕ 베스트 그림' });
+    const friendHeading = screen.getByRole('heading', { name: '친구들이 그린 나' });
+
+    expect(ownerHeading.compareDocumentPosition(bestHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(bestHeading.compareDocumentPosition(friendHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: '◷ 최근 올라온 그림' })).not.toBeInTheDocument();
+  });
 });
