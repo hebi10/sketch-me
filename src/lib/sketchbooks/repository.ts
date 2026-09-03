@@ -15,6 +15,7 @@ import {
 import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
 
 const collectionName = 'sketchbooks';
+const adminDeletionJobCollectionName = 'adminSketchbookDeletionJobs';
 const deletionJobCollectionName = 'sketchbookDeletionJobs';
 const bestRanks = [1, 2, 3, 4] as const;
 
@@ -476,6 +477,49 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
 export async function deleteSketchbookPermanently(sketchbookId: string) {
   const firestore = getAdminFirestore();
   await firestore.recursiveDelete(firestore.collection(collectionName).doc(sketchbookId));
+}
+
+export async function findSketchbookDeletionTargetById(sketchbookId: string) {
+  const firestore = getAdminFirestore();
+  const document = await firestore.collection(collectionName).doc(sketchbookId).get();
+  const publicId = document.data()?.publicId;
+  if (document.exists && typeof publicId === 'string' && publicId.trim()) {
+    return { id: sketchbookId, publicId, source: 'sketchbook' as const };
+  }
+
+  const job = await firestore.collection(adminDeletionJobCollectionName).doc(sketchbookId).get();
+  const jobData = job.data();
+  const jobPublicId = jobData?.publicId;
+  if (
+    !job.exists
+    || String(jobData?.sketchbookId ?? '') !== sketchbookId
+    || typeof jobPublicId !== 'string'
+    || !jobPublicId.trim()
+  ) return null;
+  return { id: sketchbookId, publicId: jobPublicId, source: 'admin-deletion-job' as const };
+}
+
+export async function createAdminSketchbookDeletionJob(input: {
+  adminUid: string;
+  publicId: string;
+  sketchbookId: string;
+}) {
+  await getAdminFirestore()
+    .collection(adminDeletionJobCollectionName)
+    .doc(input.sketchbookId)
+    .set({
+      adminUid: input.adminUid,
+      createdAt: new Date(),
+      publicId: input.publicId,
+      sketchbookId: input.sketchbookId,
+    }, { merge: true });
+}
+
+export async function deleteAdminSketchbookDeletionJob(sketchbookId: string) {
+  await getAdminFirestore()
+    .collection(adminDeletionJobCollectionName)
+    .doc(sketchbookId)
+    .delete();
 }
 
 export async function markSketchbookDeletionStarted(sketchbookId: string) {

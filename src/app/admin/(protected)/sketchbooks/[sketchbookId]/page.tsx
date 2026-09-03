@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getAdminSketchbookDetail } from '@/lib/admin/repository';
 import { getRequiredAdminIdentity } from '@/lib/admin/server-session';
 import type { AdminDrawingListItem } from '@/lib/admin/types';
+import { AdminSketchbookDeleteButton } from './AdminSketchbookDeleteButton';
 import { SketchbookModerationButton } from './SketchbookModerationButton';
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
@@ -115,6 +116,12 @@ export default async function AdminSketchbookDetailPage({
           <p className="admin-detail-empty">아직 친구가 남긴 그림이 없습니다.</p>
         )}
       </section>
+
+      <AdminSketchbookDeleteButton
+        name={sketchbook.name}
+        publicId={sketchbook.publicId}
+        sketchbookId={sketchbook.id}
+      />
     </article>
   );
 }

@@ -2,6 +2,7 @@
 
 import {
   type MouseEvent,
+  type ReactNode,
   type RefObject,
   useEffect,
   useId,
@@ -20,10 +21,15 @@ const focusableSelector = [
 ].join(', ');
 
 type AdminModerationDialogProps = {
+  children?: ReactNode;
+  closeLabel?: string;
+  confirmDisabled?: boolean;
   confirmLabel: string;
   confirmVariant: 'danger' | 'primary';
   description: string;
   error: string | null;
+  eyebrow?: string | null;
+  initialFocusSelector?: string;
   onClose: () => void;
   onConfirm: () => void;
   open: boolean;
@@ -34,10 +40,15 @@ type AdminModerationDialogProps = {
 };
 
 export function AdminModerationDialog({
+  children,
+  closeLabel = '상태 변경 닫기',
+  confirmDisabled = false,
   confirmLabel,
   confirmVariant,
   description,
   error,
+  eyebrow = '운영 상태',
+  initialFocusSelector,
   onClose,
   onConfirm,
   open,
@@ -97,7 +108,10 @@ export function AdminModerationDialog({
     };
 
     dialog.addEventListener('keydown', handleKeyDown);
-    dialog.querySelector<HTMLElement>(focusableSelector)?.focus();
+    const initialFocus = initialFocusSelector
+      ? dialog.querySelector<HTMLElement>(initialFocusSelector)
+      : null;
+    (initialFocus ?? dialog.querySelector<HTMLElement>(focusableSelector))?.focus();
 
     return () => {
       dialog.removeEventListener('keydown', handleKeyDown);
@@ -105,7 +119,7 @@ export function AdminModerationDialog({
       else dialog.removeAttribute('open');
       trigger?.focus();
     };
-  }, [onClose, open, returnFocusRef]);
+  }, [initialFocusSelector, onClose, open, returnFocusRef]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -156,11 +170,11 @@ export function AdminModerationDialog({
     >
       <div className="admin-moderation-dialog-heading">
         <div>
-          <p className="eyebrow">운영 상태</p>
+          {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
           <h2 id={titleId}>{title}</h2>
         </div>
         <button
-          aria-label="상태 변경 닫기"
+          aria-label={closeLabel}
           className="admin-moderation-dialog-close"
           disabled={processing}
           onClick={onClose}
@@ -170,6 +184,7 @@ export function AdminModerationDialog({
         </button>
       </div>
       <p className="admin-moderation-dialog-copy" id={descriptionId}>{description}</p>
+      {children}
       {processing ? (
         <span aria-live="polite" className="sr-only" role="status">
           {pendingLabel}
@@ -182,7 +197,7 @@ export function AdminModerationDialog({
         </Button>
         <Button
           data-admin-dialog-confirm
-          disabled={processing}
+          disabled={processing || confirmDisabled}
           onClick={onConfirm}
           variant={confirmVariant}
         >

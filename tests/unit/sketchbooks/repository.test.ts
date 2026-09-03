@@ -7,10 +7,13 @@ const { getAdminFirestore } = vi.hoisted(() => ({ getAdminFirestore: vi.fn() }))
 vi.mock('@/lib/firebase/admin', () => ({ getAdminFirestore }));
 
 import {
+  createAdminSketchbookDeletionJob,
   createSketchbookDeletionJob,
+  deleteAdminSketchbookDeletionJob,
   deleteDrawingForManagement,
   deleteSketchbookDeletionJob,
   DrawingPublicPromotionBlockedError,
+  findSketchbookDeletionTargetById,
   listVisibleDrawings,
   markSketchbookDeletionStarted,
   saveDrawingWithinLimit,
@@ -505,6 +508,74 @@ describe('공개 그림 저장소 운영자 차단', () => {
       { status: 'DELETED', updatedAt: expect.any(Date) },
       { merge: true },
     );
+  });
+
+  it('관리자 영구 삭제 대상은 문서 ID와 공개 ID, 조회 출처만 반환한다', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: () => ({ managePinHash: 'secret-hash', name: '해비', publicId: 'public-1' }),
+      exists: true,
+    });
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({ doc: vi.fn(() => ({ get })) })),
+    });
+
+    await expect(findSketchbookDeletionTargetById('book-1')).resolves.toEqual({
+      id: 'book-1',
+      publicId: 'public-1',
+      source: 'sketchbook',
+    });
+  });
+
+  it('루트가 지워진 관리자 영구 삭제 대상은 외부 작업 문서에서 복구한다', async () => {
+    const sketchbookGet = vi.fn().mockResolvedValue({ data: () => undefined, exists: false });
+    const jobGet = vi.fn().mockResolvedValue({
+      data: () => ({ publicId: 'public-1', sketchbookId: 'book-1' }),
+      exists: true,
+    });
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn((name: string) => ({
+        doc: vi.fn(() => ({ get: name === 'sketchbooks' ? sketchbookGet : jobGet })),
+      })),
+    });
+
+    await expect(findSketchbookDeletionTargetById('book-1')).resolves.toEqual({
+      id: 'book-1',
+      publicId: 'public-1',
+      source: 'admin-deletion-job',
+    });
+  });
+
+  it('루트와 외부 작업 문서가 없으면 관리자 영구 삭제 대상을 반환하지 않는다', async () => {
+    const get = vi.fn().mockResolvedValue({ data: () => undefined, exists: false });
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({ doc: vi.fn(() => ({ get })) })),
+    });
+
+    await expect(findSketchbookDeletionTargetById('missing')).resolves.toBeNull();
+  });
+
+  it('관리자 삭제 재시도 작업을 보존하고 완료 후 제거한다', async () => {
+    const set = vi.fn();
+    const deleteDocument = vi.fn();
+    const doc = vi.fn(() => ({ delete: deleteDocument, set }));
+    const collection = vi.fn(() => ({ doc }));
+    getAdminFirestore.mockReturnValue({ collection });
+
+    await createAdminSketchbookDeletionJob({
+      adminUid: 'admin-uid',
+      publicId: 'public-1',
+      sketchbookId: 'book-1',
+    });
+    await deleteAdminSketchbookDeletionJob('book-1');
+
+    expect(collection).toHaveBeenCalledWith('adminSketchbookDeletionJobs');
+    expect(set).toHaveBeenCalledWith({
+      adminUid: 'admin-uid',
+      createdAt: expect.any(Date),
+      publicId: 'public-1',
+      sketchbookId: 'book-1',
+    }, { merge: true });
+    expect(deleteDocument).toHaveBeenCalledOnce();
   });
 
   it('스토리 제목과 수정 시각을 스케치북 문서에 함께 저장한다', async () => {

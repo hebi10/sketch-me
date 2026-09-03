@@ -13,6 +13,10 @@ export const moderationPayloadSchema = z.object({
   moderationStatus: z.enum(['ACTIVE', 'BLOCKED']),
 }).strict();
 
+export const sketchbookDeletionPayloadSchema = z.object({
+  confirmation: z.string().min(1).max(1_500),
+}).strict();
+
 export const sketchbookModerationParamsSchema = z.object({
   sketchbookId: firestoreDocumentIdSchema,
 }).strict();
