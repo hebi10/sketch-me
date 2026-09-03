@@ -58,7 +58,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [loupePlacement, setLoupePlacement] = useState<LoupePlacement>('above');
     const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
     const [drawingError, setDrawingError] = useState<string | null>(null);
-    const [drawingImportStatus, setDrawingImportStatus] = useState<string | null>(null);
     const loupeBrushStyle = {
       '--loupe-brush-color': eraser ? '#ffffff' : color,
       '--loupe-brush-opacity': eraser ? '100%' : `${penOpacity}%`,
@@ -105,7 +104,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       setLoupeActive(false);
       setControlsOpen(false);
       setDrawingError(null);
-      setDrawingImportStatus(null);
       setIsFullscreen(false);
     }, [context, currentDrawingHasContent]);
 
@@ -295,50 +293,9 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       snapshot();
     }
 
-    function importDrawing(event: React.ChangeEvent<HTMLInputElement>) {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      setDrawingImportStatus(null);
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-        setDrawingError('PNG, JPG, WEBP 그림만 불러올 수 있어요.');
-        return;
-      }
-      if (file.size > 2 * 1024 * 1024) {
-        setDrawingError('그림 파일은 2MB 이하로 선택해 주세요.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result !== 'string') {
-          setDrawingError('그림 파일을 읽지 못했습니다. 다른 파일을 선택해 주세요.');
-          return;
-        }
-        const image = new window.Image();
-        image.onload = () => {
-          const drawingContext = context();
-          if (!drawingContext || !image.naturalWidth || !image.naturalHeight) return;
-          const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
-          const drawWidth = image.naturalWidth * scale;
-          const drawHeight = image.naturalHeight * scale;
-          drawingContext.globalAlpha = 1;
-          drawingContext.clearRect(0, 0, width, height);
-          drawingContext.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
-          snapshot();
-          setDrawingError(null);
-          setDrawingImportStatus('그림을 불러왔어요. 확인을 누르면 제출할 수 있어요.');
-        };
-        image.onerror = () => setDrawingError('그림 파일을 열지 못했습니다. 다른 파일을 선택해 주세요.');
-        image.src = reader.result;
-      };
-      reader.onerror = () => setDrawingError('그림 파일을 읽지 못했습니다. 다른 파일을 선택해 주세요.');
-      reader.readAsDataURL(file);
-      event.target.value = '';
-    }
-
     function openDrawing() {
       setControlsOpen(false);
       setDrawingError(null);
-      setDrawingImportStatus(null);
       setIsFullscreen(true);
     }
 
@@ -347,7 +304,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       onDrawingChange?.(output);
       setControlsOpen(false);
       setDrawingError(null);
-      setDrawingImportStatus(null);
       setIsFullscreen(false);
     }
 
@@ -412,10 +368,8 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
               <button aria-label="그리기 나가기" className="fullscreen-exit" onClick={requestExit} type="button"><Image alt="" height={30} src="/icons/fullscreen-exit.webp" width={30} /></button>
               <button aria-label="그림 기록 한 단계 이전" className="fullscreen-undo" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button"><Image alt="" height={30} src="/icons/fullscreen-back.webp" width={30} /></button>
               <button aria-expanded={controlsOpen} aria-label={controlsOpen ? '그리기 도구 닫기' : '그리기 도구 열기'} onClick={() => setControlsOpen((current) => !current)} type="button"><Image alt="" height={30} src="/icons/drawing-controls.webp" width={30} /></button>
-              <label className="fullscreen-import" htmlFor="drawing-import"><Image alt="" height={30} src="/icons/drawing-import.webp" width={30} /><input accept="image/jpeg,image/png,image/webp" aria-label="완성된 그림 불러오기" id="drawing-import" onChange={importDrawing} type="file" /></label>
               <button aria-label="확인" className="fullscreen-confirm" onClick={confirmDrawing} ref={fullscreenConfirmRef} type="button"><Image alt="" height={30} src="/icons/fullscreen-confirm.webp" width={30} /></button>
             </div>
-            {drawingImportStatus ? <p className="sr-only" role="status">{drawingImportStatus}</p> : null}
           </div>
         ) : null}
       </section>

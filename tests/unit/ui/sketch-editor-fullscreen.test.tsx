@@ -70,7 +70,7 @@ describe('SketchEditor 전체 화면 모드', () => {
     expect(screen.getByRole('button', { name: '외부 버튼' })).not.toHaveAttribute('inert');
   });
 
-  it('확인, 한 단계 이전, 나가기와 그림 불러오기 동작을 설명 가능한 이미지 아이콘으로 표시한다', () => {
+  it('확인, 한 단계 이전, 나가기 동작만 이미지 아이콘으로 표시한다', () => {
     render(<SketchEditor ariaLabel="그리기 캔버스" />);
 
     fireEvent.click(screen.getByRole('button', { name: '그림 그리기' }));
@@ -78,16 +78,12 @@ describe('SketchEditor 전체 화면 모드', () => {
     const confirmButton = screen.getByRole('button', { name: '확인' });
     const undoButton = screen.getByRole('button', { name: '그림 기록 한 단계 이전' });
     const exitButton = screen.getByRole('button', { name: '그리기 나가기' });
-    const importInput = screen.getByLabelText('완성된 그림 불러오기');
-    const importLabel = importInput.closest('label');
-
     expect(confirmButton).not.toHaveTextContent('확인');
     expect(confirmButton.querySelector('img')).toHaveAttribute('src', expect.stringContaining('fullscreen-confirm.webp'));
     expect(undoButton).not.toHaveTextContent('그림 기록 한 단계 이전');
     expect(undoButton.querySelector('img')).toHaveAttribute('src', expect.stringContaining('fullscreen-back.webp'));
     expect(exitButton).not.toHaveTextContent('그리기 나가기');
     expect(exitButton.querySelector('img')).toHaveAttribute('src', expect.stringContaining('fullscreen-exit.webp'));
-    expect(importLabel).not.toHaveTextContent('그림 불러오기');
-    expect(importLabel?.querySelector('img')).toHaveAttribute('src', expect.stringContaining('drawing-import.webp'));
+    expect(screen.queryByLabelText('완성된 그림 불러오기')).not.toBeInTheDocument();
   });
 });

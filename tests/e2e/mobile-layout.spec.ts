@@ -205,6 +205,7 @@ test('그림 그리기에서 캔버스 아래 아이콘으로 도구를 열고 �
   const fullscreen = page.getByRole('dialog', { name: '전체 화면 그리기' });
   await expect(fullscreen).toBeVisible();
   await expect(page.getByRole('navigation', { name: '그림 편집 단계' })).toBeHidden();
+  await expect(page.getByLabel('완성된 그림 불러오기')).toHaveCount(0);
 
   const canvas = page.getByLabel('내 모습을 그리는 캔버스');
   const canvasBounds = await canvas.boundingBox();
@@ -245,35 +246,4 @@ test('그림 그리기에서 캔버스 아래 아이콘으로 도구를 열고 �
   await expect(page.getByTestId('drawing-loupe')).toHaveAttribute('data-active', 'false');
   await confirmButton.click();
   await expect(fullscreen).toHaveCount(0);
-});
-
-test('파일 오류는 좁은 모바일에서도 캔버스 하단 조작 바와 겹치지 않는다', async ({ page }) => {
-  for (const viewport of [{ width: 280, height: 700 }, { width: 390, height: 844 }]) {
-    await page.setViewportSize(viewport);
-    await page.goto('/create');
-    await page.getByRole('button', { name: '그림 그리기' }).click();
-    await page.getByLabel('완성된 그림 불러오기').setInputFiles({
-      name: 'drawing.gif',
-      mimeType: 'image/gif',
-      buffer: Buffer.from('drawing'),
-    });
-
-    const error = page.locator('.fullscreen-drawing-error');
-    await expect(error).toBeVisible();
-    const overlappingControls = await page.evaluate(() => {
-      const errorRect = document.querySelector<HTMLElement>('.fullscreen-drawing-error')?.getBoundingClientRect();
-      const controls = [...document.querySelectorAll<HTMLElement>('.fullscreen-controls > *')];
-      if (!errorRect) return controls.map((_, index) => index);
-      return controls.flatMap((control, index) => {
-        const controlRect = control.getBoundingClientRect();
-        const overlaps = errorRect.left < controlRect.right
-          && errorRect.right > controlRect.left
-          && errorRect.top < controlRect.bottom
-          && errorRect.bottom > controlRect.top;
-        return overlaps ? [index] : [];
-      });
-    });
-
-    expect(overlappingControls, `${viewport.width}x${viewport.height}에서 오류가 가린 컨트롤`).toEqual([]);
-  }
 });
