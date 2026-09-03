@@ -9,8 +9,10 @@ import {
   deleteSketchbookDeletionJob,
   deleteSketchbookPermanently,
   markSketchbookDeletionStarted,
+  findVisibleBestDrawing,
   setOwnerBestDrawing,
   updateSketchbookStoryHeading,
+  updateSketchbookShareThumbnailMode,
 } from '@/lib/sketchbooks/repository';
 
 export async function PATCH(
@@ -22,6 +24,20 @@ export async function PATCH(
   if (!sketchbook) return NextResponse.json({ message: '관리 권한이 없습니다.' }, { status: 403 });
 
   const payload = await request.json().catch(() => null) as Record<string, unknown> | null;
+  if (payload && Object.hasOwn(payload, 'shareThumbnailMode')) {
+    const shareThumbnailMode = payload.shareThumbnailMode;
+    if (shareThumbnailMode !== 'OWNER' && shareThumbnailMode !== 'BEST_1') {
+      return NextResponse.json({ message: '공유 썸네일을 다시 선택해 주세요.' }, { status: 400 });
+    }
+    if (shareThumbnailMode === 'OWNER' && !sketchbook.ownerDrawingPath) {
+      return NextResponse.json({ message: '내가 그린 그림이 아직 없어요.' }, { status: 409 });
+    }
+    if (shareThumbnailMode === 'BEST_1' && !await findVisibleBestDrawing(sketchbook.id, 1)) {
+      return NextResponse.json({ message: '공개 중인 1위 그림이 아직 없어요.' }, { status: 409 });
+    }
+    await updateSketchbookShareThumbnailMode(sketchbook.id, shareThumbnailMode);
+    return NextResponse.json({ shareThumbnailMode });
+  }
   if (payload && Object.hasOwn(payload, 'ownerBestRank')) {
     if (payload.ownerBestRank === null) {
       await clearOwnerBestDrawing(sketchbook.id);

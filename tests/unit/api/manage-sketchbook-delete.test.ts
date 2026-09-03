@@ -6,11 +6,13 @@ const {
   deleteSketchbookPermanently,
   getAdminStorage,
   getManagedSketchbook,
+  findVisibleBestDrawing,
   markSketchbookDeletionStarted,
   operations,
   prepareSketchbookDeletion,
   clearOwnerBestDrawing,
   setOwnerBestDrawing,
+  updateSketchbookShareThumbnailMode,
   updateSketchbookStoryHeading,
 } = vi.hoisted(() => ({
   deleteFiles: vi.fn(),
@@ -18,11 +20,13 @@ const {
   deleteSketchbookPermanently: vi.fn(),
   getAdminStorage: vi.fn(),
   getManagedSketchbook: vi.fn(),
+  findVisibleBestDrawing: vi.fn(),
   markSketchbookDeletionStarted: vi.fn(),
   operations: [] as string[],
   prepareSketchbookDeletion: vi.fn(),
   clearOwnerBestDrawing: vi.fn(),
   setOwnerBestDrawing: vi.fn(),
+  updateSketchbookShareThumbnailMode: vi.fn(),
   updateSketchbookStoryHeading: vi.fn(),
 }));
 
@@ -33,7 +37,9 @@ vi.mock('@/lib/sketchbooks/repository', () => ({
   deleteSketchbookPermanently,
   markSketchbookDeletionStarted,
   clearOwnerBestDrawing,
+  findVisibleBestDrawing,
   setOwnerBestDrawing,
+  updateSketchbookShareThumbnailMode,
   updateSketchbookStoryHeading,
 }));
 
@@ -151,6 +157,8 @@ describe('PATCH /api/manage/:publicId/sketchbook', () => {
     clearOwnerBestDrawing.mockResolvedValue(undefined);
     setOwnerBestDrawing.mockResolvedValue(undefined);
     updateSketchbookStoryHeading.mockResolvedValue(undefined);
+    updateSketchbookShareThumbnailMode.mockResolvedValue(undefined);
+    findVisibleBestDrawing.mockResolvedValue({ id: 'drawing-1' });
   });
 
   it('관리 중인 사용자가 제목을 저장하면 공백을 정리해 영구 반영한다', async () => {
@@ -183,6 +191,42 @@ describe('PATCH /api/manage/:publicId/sketchbook', () => {
     expect(clearedResponse.status).toBe(200);
     await expect(clearedResponse.json()).resolves.toEqual({ ownerBestRank: null });
     expect(clearOwnerBestDrawing).toHaveBeenCalledWith('book-1');
+  });
+
+  it('존재하는 내 그림 또는 공개 중인 1위 그림을 링크 공유 썸네일로 저장한다', async () => {
+    getManagedSketchbook.mockResolvedValue({
+      id: 'book-1',
+      ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp',
+    });
+
+    for (const shareThumbnailMode of ['OWNER', 'BEST_1']) {
+      const response = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
+        body: JSON.stringify({ shareThumbnailMode }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH',
+      }), context);
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({ shareThumbnailMode });
+      expect(updateSketchbookShareThumbnailMode).toHaveBeenCalledWith('book-1', shareThumbnailMode);
+    }
+    expect(findVisibleBestDrawing).toHaveBeenCalledWith('book-1', 1);
+  });
+
+  it('원본이 없거나 허용되지 않은 링크 공유 썸네일 설정을 거부한다', async () => {
+    getManagedSketchbook.mockResolvedValue({ id: 'book-1', ownerDrawingPath: null });
+    findVisibleBestDrawing.mockResolvedValue(null);
+
+    for (const shareThumbnailMode of ['OWNER', 'BEST_1', 'RECENT']) {
+      const response = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
+        body: JSON.stringify({ shareThumbnailMode }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH',
+      }), context);
+
+      expect([400, 409]).toContain(response.status);
+    }
+    expect(updateSketchbookShareThumbnailMode).not.toHaveBeenCalled();
   });
 
   it('내 그림에는 BEST 1부터 4까지만 지정할 수 있다', async () => {

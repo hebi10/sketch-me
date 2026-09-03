@@ -34,6 +34,72 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.queryByRole('dialog', { name: '상품 선택하기' })).not.toBeInTheDocument();
   });
 
+  it('내 그림과 공개 중인 1위 그림 중 링크 공유 썸네일을 선택해 저장한다', async () => {
+    const createdAt = new Date('2026-08-25T00:00:00.000Z');
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ shareThumbnailMode: 'BEST_1' }),
+      ok: true,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <ManageDashboard
+        drawings={[{
+          authorName: '친구',
+          bestRank: 1,
+          createdAt,
+          id: 'best-drawing',
+          imagePath: 'sketchbooks/book-1/drawings/best.webp',
+          publicImageVersion: 'version-1',
+          thumbnailPath: null,
+          message: null,
+          moderatedAt: null,
+          moderationStatus: 'ACTIVE',
+          sketchbookId: 'book-1',
+          sketchbookName: '내 이름',
+          sketchbookPublicId: 'public-1',
+          status: 'VISIBLE',
+          updatedAt: createdAt,
+        }]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        ownerDrawingPath="sketchbooks/book-1/owner/original.webp"
+        participantCount={1}
+        participantLimit={20}
+        publicId="public-1"
+        shareThumbnailMode="OWNER"
+        shareThumbnailVersion="owner-version"
+      />,
+    );
+
+    expect(screen.getByRole('radio', { name: '내가 그린 그림' })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: '1위 그림' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/manage/public-1/sketchbook', {
+      body: JSON.stringify({ shareThumbnailMode: 'BEST_1' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+    }));
+    expect(screen.getByRole('radio', { name: '1위 그림' })).toBeChecked();
+    expect(screen.getByText('링크 공유 썸네일을 변경했어요.')).toBeVisible();
+  });
+
+  it('원본이 없는 링크 공유 썸네일 선택지는 비활성화한다', () => {
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={0}
+        participantLimit={20}
+        publicId="public-empty"
+      />,
+    );
+
+    expect(screen.getByRole('radio', { name: '내가 그린 그림' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: '1위 그림' })).toBeDisabled();
+  });
+
   it('원본과 친구 그림이 준비될 때까지 개별 로딩 상태를 표시한다', async () => {
     const createdAt = new Date('2026-08-25T00:00:00.000Z');
     render(

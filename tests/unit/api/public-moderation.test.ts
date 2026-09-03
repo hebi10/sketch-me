@@ -5,6 +5,7 @@ const {
   enforcePublicMutationLimit,
   findDrawing,
   findSketchbookByPublicId,
+  findVisibleBestDrawing,
   getAdminStorage,
   getManagedSketchbook,
   listDrawings,
@@ -17,6 +18,7 @@ const {
   enforcePublicMutationLimit: vi.fn(),
   findDrawing: vi.fn(),
   findSketchbookByPublicId: vi.fn(),
+  findVisibleBestDrawing: vi.fn(),
   getAdminStorage: vi.fn(),
   getManagedSketchbook: vi.fn(),
   listDrawings: vi.fn(),
@@ -39,6 +41,7 @@ vi.mock('@/lib/sketchbooks/management', () => ({ getManagedSketchbook }));
 vi.mock('@/lib/sketchbooks/repository', () => ({
   findDrawing,
   findSketchbookByPublicId,
+  findVisibleBestDrawing,
   listDrawings,
   listVisibleDrawings,
   saveDrawingWithinLimit,
@@ -102,6 +105,7 @@ describe('공개 경로 운영자 차단', () => {
     vi.clearAllMocks();
     enforcePublicMutationLimit.mockReturnValue(null);
     findSketchbookByPublicId.mockResolvedValue(sketchbook);
+    findVisibleBestDrawing.mockResolvedValue(null);
     findDrawing.mockResolvedValue(drawing);
     getManagedSketchbook.mockResolvedValue(sketchbook);
     listDrawings.mockResolvedValue([]);
@@ -177,6 +181,66 @@ describe('공개 경로 운영자 차단', () => {
       'src',
       '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
     );
+  });
+
+  it('내 그림을 링크 썸네일로 선택하면 공개 이미지 주소를 Open Graph에 제공한다', async () => {
+    findSketchbookByPublicId.mockResolvedValue({
+      ...sketchbook,
+      shareThumbnailMode: 'OWNER',
+    });
+
+    await expect(generateMetadata({ params: Promise.resolve({ publicId: 'public-1' }) }))
+      .resolves.toMatchObject({
+        openGraph: {
+          images: [{
+            alt: '해비님이 직접 그린 모습',
+            height: 720,
+            url: `/api/sketchbooks/public-1/owner/image?v=${createdAt.getTime().toString(36)}`,
+            width: 720,
+          }],
+        },
+        twitter: {
+          images: [`/api/sketchbooks/public-1/owner/image?v=${createdAt.getTime().toString(36)}`],
+        },
+      });
+  });
+
+  it('1위 그림을 링크 썸네일로 선택하면 현재 공개 중인 1위 썸네일을 사용한다', async () => {
+    findSketchbookByPublicId.mockResolvedValue({
+      ...sketchbook,
+      shareThumbnailMode: 'BEST_1',
+    });
+    findVisibleBestDrawing.mockResolvedValue(drawing);
+
+    await expect(generateMetadata({ params: Promise.resolve({ publicId: 'public-1' }) }))
+      .resolves.toMatchObject({
+        openGraph: {
+          images: [{
+            alt: 'BEST 1, 친구님의 그림',
+            height: 320,
+            url: '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
+            width: 320,
+          }],
+        },
+        twitter: {
+          images: ['/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1'],
+        },
+      });
+    expect(findVisibleBestDrawing).toHaveBeenCalledWith('book-1', 1);
+  });
+
+  it('선택한 링크 썸네일 원본이 없으면 기본 공유 이미지를 유지한다', async () => {
+    findSketchbookByPublicId.mockResolvedValue({
+      ...sketchbook,
+      ownerDrawingPath: null,
+      shareThumbnailMode: 'OWNER',
+    });
+
+    await expect(generateMetadata({ params: Promise.resolve({ publicId: 'public-1' }) }))
+      .resolves.toMatchObject({
+        openGraph: { images: [{ url: '/brand/sketchbook-kakao-share.webp' }] },
+        twitter: { images: ['/brand/sketchbook-kakao-share.webp'] },
+      });
   });
 
   it('공개 페이지는 전달된 BLOCKED 그림을 렌더링하지 않는다', async () => {

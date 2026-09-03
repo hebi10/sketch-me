@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 
-export function ShareSketchbookButton({ publicId, name, menuItem = false }: { publicId: string; name: string; menuItem?: boolean }) {
+export function ShareSketchbookButton({ publicId, name, menuItem = false, previewVersion }: { publicId: string; name: string; menuItem?: boolean; previewVersion?: string | null }) {
   const [status, setStatus] = useState<string | null>(null);
 
   async function share() {
-    const url = `${window.location.origin}/s/${publicId}`;
+    const previewQuery = previewVersion ? `?preview=${encodeURIComponent(previewVersion)}` : '';
+    const url = `${window.location.origin}/s/${publicId}${previewQuery}`;
     setStatus(null);
     try {
       if (navigator.share) {

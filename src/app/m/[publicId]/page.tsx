@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { ManageDashboard } from './ManageDashboard';
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
 import { findSketchbookByPublicId, listDrawings } from '@/lib/sketchbooks/repository';
+import { resolveLinkShareThumbnail } from '@/lib/share/link-thumbnail';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,5 +15,11 @@ export default async function ManagePage({ params }: { params: Promise<{ publicI
     notFound();
   }
   const drawings = await listDrawings(sketchbook.id);
-  return <ManageDashboard drawings={drawings} entitlements={sketchbook.entitlements} moderationStatus={sketchbook.moderationStatus} name={sketchbook.name} ownerBestRank={sketchbook.ownerBestRank} ownerDrawingPath={sketchbook.ownerDrawingPath} participantCount={sketchbook.participantCount} participantLimit={sketchbook.participantLimit} publicId={publicId} />;
+  const bestDrawing = drawings.find((drawing) => (
+    drawing.bestRank === 1
+    && drawing.status === 'VISIBLE'
+    && drawing.moderationStatus === 'ACTIVE'
+  )) ?? null;
+  const shareThumbnail = resolveLinkShareThumbnail(sketchbook, bestDrawing);
+  return <ManageDashboard drawings={drawings} entitlements={sketchbook.entitlements} moderationStatus={sketchbook.moderationStatus} name={sketchbook.name} ownerBestRank={sketchbook.ownerBestRank} ownerDrawingPath={sketchbook.ownerDrawingPath} participantCount={sketchbook.participantCount} participantLimit={sketchbook.participantLimit} publicId={publicId} shareThumbnailMode={sketchbook.shareThumbnailMode} shareThumbnailVersion={shareThumbnail.previewVersion} />;
 }

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
 import { PaymentSuccessDialog } from '@/components/ui/PaymentSuccessDialog';
-import type { Drawing, ModerationStatus, PurchaseProductId, SketchbookEntitlements } from '@/lib/domain/types';
+import type { Drawing, ModerationStatus, PurchaseProductId, ShareThumbnailMode, SketchbookEntitlements } from '@/lib/domain/types';
 import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
 
@@ -21,6 +21,8 @@ interface ManageDashboardProps {
   participantLimit: number;
   drawings: Drawing[];
   entitlements?: SketchbookEntitlements;
+  shareThumbnailMode?: ShareThumbnailMode | null;
+  shareThumbnailVersion?: string | null;
 }
 
 function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) {
@@ -53,7 +55,7 @@ function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) 
   );
 }
 
-export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false } }: ManageDashboardProps) {
+export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false }, shareThumbnailMode: initialShareThumbnailMode = null, shareThumbnailVersion: initialShareThumbnailVersion = null }: ManageDashboardProps) {
   const router = useRouter();
   const [limit, setLimit] = useState(participantLimit);
   const [entitlements, setEntitlements] = useState(initialEntitlements);
@@ -71,6 +73,10 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<PurchaseProductId>('FRIENDS_10');
+  const [shareThumbnailMode, setShareThumbnailMode] = useState<ShareThumbnailMode | null>(initialShareThumbnailMode);
+  const [shareThumbnailVersion, setShareThumbnailVersion] = useState<string | null>(initialShareThumbnailVersion);
+  const [shareThumbnailMessage, setShareThumbnailMessage] = useState<string | null>(null);
+  const [isSavingShareThumbnail, setIsSavingShareThumbnail] = useState(false);
   const manageMainRef = useRef<HTMLElement>(null);
   const purchaseDialogRef = useRef<HTMLDialogElement>(null);
   const purchaseTriggerRef = useRef<HTMLButtonElement>(null);
@@ -80,6 +86,11 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   const isPurchasingRef = useRef(false);
   const isSavingSecurityRef = useRef(false);
   const items = drawings.filter((drawing) => drawing.status !== 'DELETED');
+  const bestDrawing = items.find((drawing) => (
+    drawing.bestRank === 1
+    && drawing.status === 'VISIBLE'
+    && drawing.moderationStatus === 'ACTIVE'
+  ));
 
   useEffect(() => {
     isPurchasingRef.current = isPurchasing;
@@ -215,6 +226,31 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
     window.location.reload();
   }
 
+  async function updateShareThumbnailMode(nextMode: ShareThumbnailMode) {
+    if (isSavingShareThumbnail || nextMode === shareThumbnailMode) return;
+    setIsSavingShareThumbnail(true);
+    setShareThumbnailMessage(null);
+    try {
+      const response = await fetch(`/api/manage/${publicId}/sketchbook`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareThumbnailMode: nextMode }),
+      });
+      const result = await response.json().catch(() => ({})) as { message?: string };
+      if (!response.ok) {
+        setShareThumbnailMessage(result.message ?? '링크 공유 썸네일을 변경하지 못했어요.');
+        return;
+      }
+      setShareThumbnailMode(nextMode);
+      setShareThumbnailVersion(`${nextMode.toLowerCase()}-${Date.now().toString(36)}`);
+      setShareThumbnailMessage('링크 공유 썸네일을 변경했어요.');
+    } catch {
+      setShareThumbnailMessage('연결을 확인하고 다시 시도해 주세요.');
+    } finally {
+      setIsSavingShareThumbnail(false);
+    }
+  }
+
   async function deleteDrawing(drawingId: string) {
     if (!window.confirm('이 그림을 삭제할까요? 삭제하면 되돌릴 수 없습니다.')) return;
     const response = await fetch(`/api/manage/${publicId}/drawings/${drawingId}`, { method: 'DELETE' });
@@ -313,7 +349,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         <HeaderMenu>
           <Link aria-label="친구 페이지 보기" href={`/s/${publicId}`} title="친구 페이지 보기">친구홈</Link>
           <Link aria-label="스토리 이미지 만들기" href={`/m/${publicId}/share`} title="스토리 이미지 만들기">스토리</Link>
-          <ShareSketchbookButton menuItem name={name} publicId={publicId} />
+          <ShareSketchbookButton menuItem name={name} previewVersion={shareThumbnailVersion} publicId={publicId} />
           <button aria-label="관리용 비밀번호 변경" onClick={openSecurityDialog} ref={securityTriggerRef} title="관리용 비밀번호 변경" type="button">비밀번호</button>
           <button aria-label="로그아웃" onClick={logout} title="로그아웃" type="button">로그아웃</button>
         </HeaderMenu>
@@ -331,8 +367,42 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">저장 공간 추가하기</button>
       </section>
       {message ? <p className="submission-success" role="status">{message}</p> : null}
+      <section aria-labelledby="share-thumbnail-title" className="share-thumbnail-settings">
+        <div>
+          <h2 id="share-thumbnail-title">링크 공유 썸네일</h2>
+          <p>카카오톡 등에 링크를 보낼 때 먼저 보여줄 그림을 선택하세요.</p>
+        </div>
+        <fieldset disabled={isSavingShareThumbnail}>
+          <legend>공유 이미지 선택</legend>
+          <label className="share-thumbnail-option">
+            <input
+              aria-label="내가 그린 그림"
+              checked={shareThumbnailMode === 'OWNER'}
+              disabled={!ownerDrawingPath}
+              name="share-thumbnail"
+              onChange={() => updateShareThumbnailMode('OWNER')}
+              type="radio"
+            />
+            <span><strong>내가 그린 그림</strong><small>{ownerDrawingPath ? '직접 그린 내 모습' : '내 그림이 필요해요'}</small></span>
+          </label>
+          <label className="share-thumbnail-option">
+            <input
+              aria-label="1위 그림"
+              checked={shareThumbnailMode === 'BEST_1'}
+              disabled={!bestDrawing}
+              name="share-thumbnail"
+              onChange={() => updateShareThumbnailMode('BEST_1')}
+              type="radio"
+            />
+            <span><strong>1위 그림</strong><small>{bestDrawing ? `${bestDrawing.authorName}님의 그림` : '공개 중인 1위 그림이 필요해요'}</small></span>
+          </label>
+        </fieldset>
+        {shareThumbnailMessage ? (
+          <p aria-live="polite" className="share-thumbnail-message" role="status">{shareThumbnailMessage}</p>
+        ) : null}
+      </section>
       <div className="manage-actions">
-        <ShareSketchbookButton name={name} publicId={publicId} />
+        <ShareSketchbookButton name={name} previewVersion={shareThumbnailVersion} publicId={publicId} />
         <Link className="button button--primary" href={`/m/${publicId}/share`}>스토리 이미지 만들기</Link>
       </div>
       <section aria-labelledby="drawing-ranking-title" className="manage-drawings" id="drawing-ranking">

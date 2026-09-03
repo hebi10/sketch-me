@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { findSketchbookByPublicId, listVisibleDrawings } from '@/lib/sketchbooks/repository';
+import { findSketchbookByPublicId, findVisibleBestDrawing, listVisibleDrawings } from '@/lib/sketchbooks/repository';
+import { resolveLinkShareThumbnail } from '@/lib/share/link-thumbnail';
 import { FREE_PARTICIPANT_LIMIT, isSketchbookFull } from '@/lib/sketchbooks/capacity';
 import { formatTimeAgo } from '@/lib/time/time-ago';
 import { galleryImageLoading } from '@/lib/images/loading';
@@ -32,6 +33,10 @@ export async function generateMetadata({
 
   const title = `${sketchbook.name}의 스케치북`;
   const description = `${sketchbook.name}님을 기억나는 모습대로 그려주세요.`;
+  const bestDrawing = sketchbook.shareThumbnailMode === 'BEST_1'
+    ? await findVisibleBestDrawing(sketchbook.id, 1)
+    : null;
+  const shareThumbnail = resolveLinkShareThumbnail(sketchbook, bestDrawing);
   return {
     title,
     description,
@@ -40,17 +45,17 @@ export async function generateMetadata({
       description,
       type: 'website',
       images: [{
-        url: '/brand/sketchbook-kakao-share.webp',
-        width: 1200,
-        height: 630,
-        alt: `${sketchbook.name}님의 스캐치북`,
+        url: shareThumbnail.url,
+        width: shareThumbnail.width,
+        height: shareThumbnail.height,
+        alt: shareThumbnail.alt,
       }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/brand/sketchbook-kakao-share.webp'],
+      images: [shareThumbnail.url],
     },
   };
 }

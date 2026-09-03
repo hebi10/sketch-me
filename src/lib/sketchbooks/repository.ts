@@ -92,6 +92,9 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     id,
     publicId: String(data.publicId),
     name: String(data.name),
+    shareThumbnailMode: data.shareThumbnailMode === 'OWNER' || data.shareThumbnailMode === 'BEST_1'
+      ? data.shareThumbnailMode
+      : null,
     storyHeading: data.storyHeading ? String(data.storyHeading) : STORY_SHARED_HEADING,
     manageTokenHash: String(data.manageTokenHash),
     managePinHash: data.managePinHash ? String(data.managePinHash) : null,
@@ -120,6 +123,16 @@ export async function saveSketchbook(sketchbook: Sketchbook) {
 export async function updateSketchbookStoryHeading(sketchbookId: string, storyHeading: string) {
   await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
     storyHeading,
+    updatedAt: new Date(),
+  });
+}
+
+export async function updateSketchbookShareThumbnailMode(
+  sketchbookId: string,
+  shareThumbnailMode: NonNullable<Sketchbook['shareThumbnailMode']>,
+) {
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
+    shareThumbnailMode,
     updatedAt: new Date(),
   });
 }
@@ -207,6 +220,23 @@ export async function findDrawing(sketchbookId: string, drawingId: string) {
   }
 
   return toDrawing(document.id, document.data() ?? {});
+}
+
+export async function findVisibleBestDrawing(sketchbookId: string, bestRank: BestRank) {
+  const snapshot = await getAdminFirestore()
+    .collection(collectionName)
+    .doc(sketchbookId)
+    .collection('drawings')
+    .where('bestRank', '==', bestRank)
+    .limit(1)
+    .get();
+  const document = snapshot.docs[0];
+  if (!document) return null;
+
+  const drawing = toDrawing(document.id, document.data());
+  return drawing.status === 'VISIBLE' && drawing.moderationStatus === 'ACTIVE'
+    ? drawing
+    : null;
 }
 
 export async function saveDrawingWithinLimit(sketchbook: Sketchbook, drawing: Drawing) {

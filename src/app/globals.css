@@ -1353,6 +1353,90 @@ main {
   text-align: center;
 }
 
+.share-thumbnail-settings {
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.share-thumbnail-settings h2 {
+  font-size: 1rem;
+  margin: 0 0 4px;
+}
+
+.share-thumbnail-settings > div > p,
+.share-thumbnail-message {
+  color: var(--muted);
+  font-size: .82rem;
+  margin: 0;
+}
+
+.share-thumbnail-settings fieldset {
+  border: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+}
+
+.share-thumbnail-settings legend {
+  color: var(--ink);
+  font-size: .82rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.share-thumbnail-option {
+  align-items: center;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 10px;
+}
+
+.share-thumbnail-option:has(input:checked) {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+}
+
+.share-thumbnail-option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.share-thumbnail-option input {
+  accent-color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.share-thumbnail-option span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.share-thumbnail-option strong,
+.share-thumbnail-option small {
+  overflow-wrap: anywhere;
+}
+
+.share-thumbnail-option small {
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+@media (max-width: 390px) {
+  .share-thumbnail-settings fieldset {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .post-submit-action {
   background: #eaf3eb;
   border: 1px solid var(--success);

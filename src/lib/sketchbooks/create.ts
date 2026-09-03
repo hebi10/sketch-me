@@ -37,6 +37,7 @@ export function createSketchbookDraft({
     participantLimit: FREE_PARTICIPANT_LIMIT,
     participantCount: 0,
     status: 'PUBLIC',
+    shareThumbnailMode: null,
     storyHeading: STORY_SHARED_HEADING,
     moderationStatus: 'ACTIVE',
     moderatedAt: null,

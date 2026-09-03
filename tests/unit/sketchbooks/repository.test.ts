@@ -13,6 +13,8 @@ import {
   deleteDrawingForManagement,
   deleteSketchbookDeletionJob,
   DrawingPublicPromotionBlockedError,
+  findSketchbookByPublicId,
+  findVisibleBestDrawing,
   findSketchbookDeletionTargetById,
   listVisibleDrawings,
   markSketchbookDeletionStarted,
@@ -61,6 +63,41 @@ const drawing = {
 describe('공개 그림 저장소 운영자 차단', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('스케치북 문서의 링크 공유 썸네일 설정을 도메인 값으로 복원한다', async () => {
+    const get = vi.fn().mockResolvedValue({
+      docs: [{ data: () => ({ ...sketchbook, shareThumbnailMode: 'BEST_1' }), id: sketchbook.id }],
+      empty: false,
+    });
+    const limit = vi.fn(() => ({ get }));
+    const where = vi.fn(() => ({ limit }));
+    getAdminFirestore.mockReturnValue({ collection: vi.fn(() => ({ where })) });
+
+    await expect(findSketchbookByPublicId('public-1')).resolves.toEqual(
+      expect.objectContaining({ shareThumbnailMode: 'BEST_1' }),
+    );
+  });
+
+  it('숨김 또는 운영자 차단된 1위 그림은 링크 공유 썸네일 후보에서 제외한다', async () => {
+    for (const unavailableDrawing of [
+      { ...drawing, bestRank: 1, status: 'HIDDEN' as const },
+      { ...drawing, bestRank: 1, moderationStatus: 'BLOCKED' as const },
+    ]) {
+      const get = vi.fn().mockResolvedValue({
+        docs: [{ data: () => unavailableDrawing, id: unavailableDrawing.id }],
+      });
+      const limit = vi.fn(() => ({ get }));
+      const where = vi.fn(() => ({ limit }));
+      getAdminFirestore.mockReturnValue({
+        collection: vi.fn(() => ({
+          doc: vi.fn(() => ({ collection: vi.fn(() => ({ where })) })),
+        })),
+      });
+
+      await expect(findVisibleBestDrawing('book-1', 1)).resolves.toBeNull();
+      expect(where).toHaveBeenCalledWith('bestRank', '==', 1);
+    }
   });
 
   it('VISIBLE 전체 결과에서 BLOCKED 20개 뒤의 ACTIVE 그림도 누락 없이 반환한다', async () => {
