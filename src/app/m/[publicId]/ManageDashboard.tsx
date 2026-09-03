@@ -381,7 +381,6 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
           <p>카카오톡 등에 링크를 보낼 때 먼저 보여줄 그림을 선택하세요.</p>
         </div>
         <fieldset disabled={isSavingShareThumbnail}>
-          <legend>공유 이미지 선택</legend>
           <label className="share-thumbnail-option share-thumbnail-option--default">
             <input
               aria-label="기본 썸네일"
