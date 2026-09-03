@@ -52,13 +52,21 @@ export class PayAppResponseError extends Error {
   }
 }
 
-function isPayAppUrl(value: string): boolean {
+function normalizePayAppUrl(value: string): string | null {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:'
-      && (url.hostname === 'payapp.kr' || url.hostname.endsWith('.payapp.kr'));
+    if (
+      (url.protocol !== 'http:' && url.protocol !== 'https:')
+      || url.username
+      || url.password
+      || (url.hostname !== 'payapp.kr' && !url.hostname.endsWith('.payapp.kr'))
+    ) {
+      return null;
+    }
+    url.protocol = 'https:';
+    return url.toString();
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -163,11 +171,11 @@ export async function requestPayAppPayment(
 
   const values = parseResponseBody(await response.text());
   const providerOrderId = values.get('mul_no') ?? '';
-  const payUrl = values.get('payurl') ?? '';
+  const payUrl = normalizePayAppUrl(values.get('payurl') ?? '');
   if (
     values.get('state') !== '1'
     || !/^\d+$/.test(providerOrderId)
-    || !isPayAppUrl(payUrl)
+    || !payUrl
   ) {
     throw new PayAppResponseError();
   }

@@ -23,9 +23,9 @@ describe('페이앱 서버 연동', () => {
     vi.unstubAllEnvs();
   });
 
-  it('필수 상점명과 서버 상품·구매자 전화번호로 페이앱 결제 요청을 만든다', async () => {
+  it('페이앱 HTTP 결제 URL을 검증한 뒤 HTTPS로 변환한다', async () => {
     const transport = vi.fn().mockResolvedValue(new Response(
-      'state=1&errorMessage=&mul_no=2000&payurl=https%3A%2F%2Fpayapp.kr%2Fpay%2F2000',
+      'state=1&errorMessage=&mul_no=2000&payurl=http%3A%2F%2Fpayapp.kr%2Fpay%2F2000',
     ));
 
     const plan = getPurchasePlan('WATERMARK_FREE');
@@ -91,7 +91,7 @@ describe('페이앱 서버 연동', () => {
 
   it('변조된 결제 URL과 페이앱 실패 응답을 안전한 오류로 거부한다', async () => {
     const insecureTransport = vi.fn().mockResolvedValue(new Response(
-      'state=1&mul_no=2000&payurl=http%3A%2F%2Fpayapp.kr%2Fpay%2F2000',
+      'state=1&mul_no=2000&payurl=https%3A%2F%2Fpayapp.kr.evil.example%2Fpay%2F2000',
     ));
     await expect(requestPayAppPayment({
       buyerPhone: '01012345678',
