@@ -1,5 +1,9 @@
 import { timingSafeEqual } from 'node:crypto';
 
+import { normalizeBuyerPhone } from '@/lib/payments/phone';
+
+export { normalizeBuyerPhone } from '@/lib/payments/phone';
+
 const PAYAPP_API_URL = 'https://api.payapp.kr/oapi/apiLoad.html';
 
 export interface PayAppConfig {
@@ -106,13 +110,6 @@ export function getPayAppConfig(
     }
     throw new PayAppConfigurationError();
   }
-}
-
-export function normalizeBuyerPhone(value: string): string | null {
-  const normalized = value.replace(/[\s-]/g, '');
-  return /^01(?:0\d{8}|[16789]\d{7,8})$/.test(normalized)
-    ? normalized
-    : null;
 }
 
 export function verifyPayAppFeedback(

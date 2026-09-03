@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
-import { PaymentSuccessDialog } from '@/components/ui/PaymentSuccessDialog';
+import { BuyerPhoneField } from '@/components/ui/BuyerPhoneField';
 import type { Drawing, ModerationStatus, PurchaseProductId, ShareThumbnailMode, SketchbookEntitlements } from '@/lib/domain/types';
+import { openPaymentUrl } from '@/lib/payments/browser';
+import { normalizeBuyerPhone } from '@/lib/payments/phone';
 import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
 
@@ -57,13 +59,13 @@ function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) 
 
 export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false }, shareThumbnailMode: initialShareThumbnailMode = 'DEFAULT', shareThumbnailVersion: initialShareThumbnailVersion = null }: ManageDashboardProps) {
   const router = useRouter();
-  const [limit, setLimit] = useState(participantLimit);
-  const [entitlements, setEntitlements] = useState(initialEntitlements);
+  const [limit] = useState(participantLimit);
+  const [entitlements] = useState(initialEntitlements);
   const [message, setMessage] = useState<string | null>(null);
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
-  const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
+  const [buyerPhone, setBuyerPhone] = useState('');
   const [securityOpen, setSecurityOpen] = useState(false);
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -264,6 +266,10 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   async function purchase() {
     const plan = getPurchasePlan(selectedProductId);
     if (!plan) return;
+    if (!normalizeBuyerPhone(buyerPhone)) {
+      setPurchaseError('휴대전화번호를 확인해 주세요.');
+      return;
+    }
     setIsPurchasing(true);
     setMessage(null);
     setPurchaseError(null);
@@ -271,20 +277,14 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       const response = await fetch(`/api/manage/${publicId}/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: plan.productId, requestId: purchaseRequestIdRef.current }),
+        body: JSON.stringify({ buyerPhone, productId: plan.productId, requestId: purchaseRequestIdRef.current }),
       });
-      const result = await response.json().catch(() => ({})) as { entitlements?: SketchbookEntitlements; participantLimit?: number; message?: string };
-      if (!response.ok || typeof result.participantLimit !== 'number' || !result.entitlements) {
+      const result = await response.json().catch(() => ({})) as { message?: string; orderId?: string; payUrl?: string };
+      if (!response.ok || !result.orderId || !result.payUrl) {
         setPurchaseError(result.message ?? '결제를 처리하지 못했습니다.');
         return;
       }
-      setLimit(result.participantLimit);
-      setEntitlements(result.entitlements);
-      setPurchaseSuccess(plan.kind === 'watermark'
-        ? '워터마크 제거가 적용됐어요.'
-        : `친구 그림 ${plan.additionalLimit}명이 추가됐어요.`);
-      setSelectedProductId('FRIENDS_10');
-      setPurchaseOpen(false);
+      openPaymentUrl(result.payUrl);
     } catch {
       setPurchaseError('결제 연결을 확인하고 다시 시도해 주세요.');
     } finally {
@@ -518,7 +518,19 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
               })}
             </fieldset>
             </div>
-            {purchaseError ? <p className="purchase-error" role="alert">{purchaseError}</p> : null}
+            <BuyerPhoneField
+              disabled={isPurchasing}
+              error={purchaseError === '휴대전화번호를 확인해 주세요.' ? purchaseError : null}
+              id="manage-payment-phone"
+              onChange={(value) => {
+                setBuyerPhone(value);
+                if (purchaseError === '휴대전화번호를 확인해 주세요.') setPurchaseError(null);
+              }}
+              value={buyerPhone}
+            />
+            {purchaseError && purchaseError !== '휴대전화번호를 확인해 주세요.'
+              ? <p className="purchase-error" role="alert">{purchaseError}</p>
+              : null}
             <button className="button button--primary purchase-submit" disabled={isPurchasing} onClick={purchase} type="button">
               {isPurchasing ? '결제 처리 중...' : `${getPurchasePlan(selectedProductId)?.amount.toLocaleString('ko-KR')}원 결제하기`}
             </button>
@@ -529,12 +541,6 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
           </dialog>
         </div>
       ) : null}
-      <PaymentSuccessDialog
-        description={purchaseSuccess ?? ''}
-        onClose={() => setPurchaseSuccess(null)}
-        open={purchaseSuccess !== null}
-        returnFocusRef={purchaseTriggerRef}
-      />
       {securityOpen ? (
           <dialog aria-labelledby="manage-security-title" className="manage-security-modal manage-system-sans" onCancel={(event) => { event.preventDefault(); if (!isSavingSecurity) setSecurityOpen(false); }} ref={securityDialogRef}>
           <form className="manage-security-form" onSubmit={updateSecurity}>

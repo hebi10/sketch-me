@@ -588,6 +588,48 @@ a { color: inherit; text-decoration: none; }
   font-weight: 700;
 }
 
+.buyer-phone-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.buyer-phone-field label {
+  color: var(--ink);
+  font-size: .84rem;
+  font-weight: 700;
+}
+
+.buyer-phone-field input {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  min-height: 52px;
+  padding: 0 12px;
+  width: 100%;
+}
+
+.buyer-phone-field input:focus-visible {
+  border-color: var(--accent);
+  outline: 3px solid rgb(80 111 143 / 18%);
+  outline-offset: 1px;
+}
+
+.buyer-phone-field small {
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.45;
+}
+
+.buyer-phone-field p {
+  color: var(--danger);
+  font-size: .8rem;
+  margin: 0;
+}
+
 .purchase-submit {
   margin-top: 16px;
   width: 100%;
@@ -638,6 +680,48 @@ a { color: inherit; text-decoration: none; }
   color: var(--accent-strong);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.payment-result-shell {
+  align-items: center;
+  display: grid;
+  margin: 0 auto;
+  max-width: 650px;
+  min-height: 100dvh;
+  padding: 24px 18px;
+}
+
+.payment-result-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.payment-result-card h1 {
+  font-size: clamp(1.6rem, 7vw, 2rem);
+  line-height: 1.25;
+  margin: 0;
+  word-break: keep-all;
+}
+
+.payment-result-card > p,
+.payment-result-error p {
+  color: var(--muted);
+  line-height: 1.65;
+  margin: 0;
+  word-break: keep-all;
+}
+
+.payment-result-card progress {
+  width: 100%;
+}
+
+.payment-result-error {
+  display: grid;
+  gap: 10px;
 }
 
 @media (min-width: 651px) {

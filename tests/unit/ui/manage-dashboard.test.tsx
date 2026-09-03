@@ -3,15 +3,20 @@ import { vi } from 'vitest';
 
 import { ManageDashboard } from '@/app/m/[publicId]/ManageDashboard';
 
-const { getPublicPaymentMode } = vi.hoisted(() => ({ getPublicPaymentMode: vi.fn() }));
+const { getPublicPaymentMode, openPaymentUrl } = vi.hoisted(() => ({
+  getPublicPaymentMode: vi.fn(),
+  openPaymentUrl: vi.fn(),
+}));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
 }));
 vi.mock('@/lib/purchases/mode', () => ({ getPublicPaymentMode }));
+vi.mock('@/lib/payments/browser', () => ({ openPaymentUrl }));
 
 describe('ManageDashboard 친구 그림 추가 결제', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     getPublicPaymentMode.mockReturnValue('MOCK');
   });
 
@@ -336,9 +341,9 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     );
   });
 
-  it('인원 상품 결제를 완료하면 참여 한도를 갱신하고 모의 결제 완료 팝업을 표시한다', async () => {
+  it('휴대전화번호로 결제 요청 후 페이앱 결제창으로 이동한다', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
-      json: async () => ({ entitlements: { watermarkFree: false }, participantLimit: 70 }),
+      json: async () => ({ orderId: 'order-public-random', payUrl: 'https://payapp.kr/pay/2000' }),
       ok: true,
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -357,60 +362,46 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
     const dialog = screen.getByRole('dialog', { name: '상품 선택하기' });
     expect(dialog).toBeVisible();
-    expect(screen.getByRole('radio', { name: /10명 추가.*990원/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /10명 추가.*1,000원/ })).toBeChecked();
     expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms');
 
     expect(screen.getByRole('group', { name: '친구 인원 추가' })).toBeVisible();
     expect(screen.getByRole('group', { name: '결과 이미지' })).toBeVisible();
     fireEvent.click(screen.getByRole('radio', { name: /50명 추가.*4,490원/ }));
-    expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('결제용 휴대전화번호'), {
+      target: { value: '010-1234-5678' },
+    });
     fireEvent.click(screen.getByRole('button', { name: '4,490원 결제하기' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/manage/public-1/purchase', {
-      body: expect.stringMatching(/"productId":"FRIENDS_50","requestId":"[^"]+"/),
+      body: expect.stringMatching(/"buyerPhone":"010-1234-5678","productId":"FRIENDS_50","requestId":"[^"]+"/),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
     }));
-    const successDialog = await screen.findByRole('dialog', { name: '결제 완료' });
-    expect(within(successDialog).getByText('모의 결제가 완료됐습니다')).toBeVisible();
-    expect(within(successDialog).getByText('친구 그림 50명이 추가됐어요.')).toBeVisible();
-    expect(screen.getByText((_, element) => element?.textContent === '친구 그림 5 / 70')).toBeVisible();
-    fireEvent.click(within(successDialog).getByRole('button', { name: '확인' }));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(openPaymentUrl).toHaveBeenCalledWith('https://payapp.kr/pay/2000');
+    expect(screen.queryByText('모의 결제가 완료됐습니다')).not.toBeInTheDocument();
   });
 
-  it('워터마크 제거 결제는 인원 한도를 유지하고 적용 상태를 즉시 표시한다', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      json: async () => ({ entitlements: { watermarkFree: true }, participantLimit: 20 }),
-      ok: true,
-    });
+  it('전화번호가 올바르지 않으면 결제 요청을 보내지 않는다', async () => {
+    const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
-
     render(
       <ManageDashboard
         drawings={[]}
-        entitlements={{ watermarkFree: false }}
         moderationStatus="ACTIVE"
         name="내 이름"
         participantCount={5}
         participantLimit={20}
-        publicId="watermark-book"
+        publicId="invalid-phone"
       />,
     );
 
     fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
-    fireEvent.click(screen.getByRole('radio', { name: /워터마크 제거.*990원/ }));
-    fireEvent.click(screen.getByRole('button', { name: '990원 결제하기' }));
+    fireEvent.change(screen.getByLabelText('결제용 휴대전화번호'), { target: { value: '02-1234-5678' } });
+    fireEvent.click(screen.getByRole('button', { name: '1,000원 결제하기' }));
 
-    const successDialog = await screen.findByRole('dialog', { name: '결제 완료' });
-    expect(within(successDialog).getByText('모의 결제가 완료됐습니다')).toBeVisible();
-    expect(within(successDialog).getByText('워터마크 제거가 적용됐어요.')).toBeVisible();
-    expect(screen.getByText((_, element) => element?.textContent === '친구 그림 5 / 20')).toBeVisible();
-    fireEvent.click(within(successDialog).getByRole('button', { name: '확인' }));
-
-    fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
-    expect(screen.getByText('적용됨')).toBeVisible();
-    expect(screen.getByRole('radio', { name: /워터마크 제거.*적용됨/ })).toBeDisabled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('휴대전화번호를 확인해 주세요.');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('결제 연결에 실패하면 팝업을 유지하고 다시 시도할 수 있다', async () => {
@@ -428,11 +419,12 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
-    fireEvent.click(screen.getByRole('button', { name: '990원 결제하기' }));
+    fireEvent.change(screen.getByLabelText('결제용 휴대전화번호'), { target: { value: '010-1234-5678' } });
+    fireEvent.click(screen.getByRole('button', { name: '1,000원 결제하기' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('결제 연결을 확인하고 다시 시도해 주세요.');
     expect(screen.getByRole('dialog', { name: '상품 선택하기' })).toBeVisible();
-    expect(screen.getByRole('button', { name: '990원 결제하기' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '1,000원 결제하기' })).toBeEnabled();
   });
 
   it('결제창에 포커스를 두고 닫으면 실행 버튼으로 복귀한다', () => {
