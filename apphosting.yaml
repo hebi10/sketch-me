@@ -1,2 +1,9 @@
 runConfig:
   maxInstances: 1
+env:
+  - variable: ADMIN_UID
+    secret: ADMIN_UID
+  - variable: ADMIN_EMAIL
+    secret: ADMIN_EMAIL
+  - variable: ADMIN_ALLOWED_ORIGIN
+    secret: ADMIN_ALLOWED_ORIGIN
