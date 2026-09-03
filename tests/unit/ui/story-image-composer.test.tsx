@@ -78,9 +78,13 @@ describe('StoryImageComposer', () => {
     );
 
     expect(screen.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
+    expect(screen.queryByRole('textbox', { name: '결제용 휴대전화번호' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' }));
+
+    expect(screen.getByRole('dialog', { name: '워터마크 없이 저장하기' })).toBeVisible();
     expect(screen.getByRole('textbox', { name: '결제용 휴대전화번호' })).toBeVisible();
     expect(screen.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ })).toBeVisible();
-    expect(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' })).toBeDisabled();
-    expect(screen.queryByRole('dialog', { name: '결제 완료' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1,000원 결제하기' })).toBeDisabled();
   });
 });

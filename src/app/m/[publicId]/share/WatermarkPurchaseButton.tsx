@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { BuyerPhoneField } from '@/components/ui/BuyerPhoneField';
 import { PurchaseConsent } from '@/components/ui/PurchaseConsent';
@@ -16,9 +16,52 @@ export function WatermarkPurchaseButton({ publicId }: WatermarkPurchaseButtonPro
   const [buyerPhone, setBuyerPhone] = useState('');
   const [purchaseConsent, setPurchaseConsent] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const requestIdRef = useRef('');
   const isPurchasingRef = useRef(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const dialog = dialogRef.current;
+    const trigger = triggerRef.current;
+    if (!dialog) return;
+
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+
+    const focusableSelector = 'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (!isPurchasingRef.current) setIsOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = [...dialog.querySelectorAll<HTMLElement>(focusableSelector)];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    dialog.addEventListener('keydown', handleKeyDown);
+    dialog.querySelector<HTMLElement>(focusableSelector)?.focus();
+
+    return () => {
+      dialog.removeEventListener('keydown', handleKeyDown);
+      if (dialog.open && typeof dialog.close === 'function') dialog.close();
+      trigger?.focus();
+    };
+  }, [isOpen]);
 
   async function purchase() {
     if (isPurchasingRef.current || !purchaseConsent) return;
@@ -64,33 +107,77 @@ export function WatermarkPurchaseButton({ publicId }: WatermarkPurchaseButtonPro
   }
 
   return (
-    <section aria-label="워터마크 제거" className="watermark-purchase">
-      <div>
-        <strong>결과 이미지를 깔끔하게 저장하고 싶나요?</strong>
-        <p>결제 완료 후 이 스케치북의 공유 이미지에서 워터마크가 빠져요.</p>
-      </div>
-      <BuyerPhoneField
-        disabled={isPurchasing}
-        error={error === '휴대전화번호를 확인해 주세요.' ? error : null}
-        id="watermark-payment-phone"
-        onChange={(value) => {
-          setBuyerPhone(value);
-          if (error === '휴대전화번호를 확인해 주세요.') setError(null);
-        }}
-        value={buyerPhone}
-      />
-      <PurchaseConsent
-        checked={purchaseConsent}
-        disabled={isPurchasing}
-        id="watermark-purchase-consent"
-        onChange={setPurchaseConsent}
-      />
-      <button className="button button--secondary" disabled={isPurchasing || !purchaseConsent} onClick={purchase} type="button">
-        {isPurchasing ? '페이앱 연결 중...' : '워터마크 없이 저장하기 · 1,000원'}
+    <>
+      <button
+        className="button button--secondary watermark-purchase-trigger"
+        onClick={() => setIsOpen(true)}
+        ref={triggerRef}
+        type="button"
+      >
+        워터마크 없이 저장하기 · 1,000원
       </button>
-      {error && error !== '휴대전화번호를 확인해 주세요.'
-        ? <p className="watermark-purchase__error" role="alert">{error}</p>
-        : null}
-    </section>
+      {isOpen ? (
+        <div
+          className="purchase-dialog-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !isPurchasing) setIsOpen(false);
+          }}
+        >
+          <dialog
+            aria-busy={isPurchasing}
+            aria-labelledby="watermark-purchase-title"
+            className="purchase-dialog watermark-purchase-dialog"
+            onCancel={(event) => {
+              event.preventDefault();
+              if (!isPurchasing) setIsOpen(false);
+            }}
+            ref={dialogRef}
+          >
+            <div className="purchase-dialog-heading">
+              <h2 id="watermark-purchase-title">워터마크 없이 저장하기</h2>
+              <button
+                aria-label="결제창 닫기"
+                className="purchase-dialog-close"
+                disabled={isPurchasing}
+                onClick={() => setIsOpen(false)}
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            <p className="purchase-dialog-copy">
+              이미지를 워터마크 없이 저장하고 싶나요? 단돈 1,000원으로 이미지에서 워터마크가 빠져요.
+            </p>
+            <BuyerPhoneField
+              disabled={isPurchasing}
+              error={error === '휴대전화번호를 확인해 주세요.' ? error : null}
+              id="watermark-payment-phone"
+              onChange={(value) => {
+                setBuyerPhone(value);
+                if (error === '휴대전화번호를 확인해 주세요.') setError(null);
+              }}
+              value={buyerPhone}
+            />
+            <PurchaseConsent
+              checked={purchaseConsent}
+              disabled={isPurchasing}
+              id="watermark-purchase-consent"
+              onChange={setPurchaseConsent}
+            />
+            {error && error !== '휴대전화번호를 확인해 주세요.'
+              ? <p className="purchase-error" role="alert">{error}</p>
+              : null}
+            <button
+              className="button button--primary purchase-submit"
+              disabled={isPurchasing || !purchaseConsent}
+              onClick={purchase}
+              type="button"
+            >
+              {isPurchasing ? '페이앱 연결 중...' : '1,000원 결제하기'}
+            </button>
+          </dialog>
+        </div>
+      ) : null}
+    </>
   );
 }

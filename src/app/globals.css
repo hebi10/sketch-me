@@ -247,12 +247,8 @@ a { color: inherit; text-decoration: none; }
 .story-watermark img { height: auto; object-fit: contain; width: 20%; }
 .story-watermark span { color: var(--ink); font-size: clamp(.78rem, 3.6vw, 1.35rem); font-weight: 700; }
 .story-output-meta { color: var(--muted); font-size: .8rem; margin: -4px 0 14px; text-align: center; }
-.watermark-purchase { border: 1px solid var(--line); display: grid; gap: 10px; margin-bottom: 12px; padding: 14px; }
-.watermark-purchase strong { display: block; font-size: 1rem; font-weight: 700; line-height: 1.45; }
-.watermark-purchase p { color: var(--muted); font-size: var(--font-size-label); line-height: 1.55; margin: 4px 0 0; word-break: keep-all; }
-.watermark-purchase .button { width: 100%; }
-.watermark-purchase small { color: var(--muted); font-size: var(--font-size-caption); line-height: 1.45; text-align: center; }
-.watermark-purchase .watermark-purchase__error { color: var(--danger); margin: 0; text-align: center; }
+.watermark-purchase-trigger { margin-bottom: 12px; width: 100%; }
+.watermark-purchase-dialog .purchase-dialog-copy { word-break: keep-all; }
 .watermark-applied { border: 1px solid var(--line); color: var(--success); font-size: var(--font-size-note); margin: 0 0 12px; padding: 12px; text-align: center; }
 .story-download { display: grid; gap: 8px; position: relative; z-index: 1; }
 .story-download .button { width: 100%; }
