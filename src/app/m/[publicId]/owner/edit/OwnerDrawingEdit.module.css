@@ -1,0 +1,48 @@
+.header {
+  align-items: center;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  min-height: 48px;
+  text-align: center;
+}
+
+.backLink {
+  align-items: center;
+  display: inline-flex;
+  justify-content: flex-start;
+  min-height: 44px;
+}
+
+.headerTitle {
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+.content {
+  display: grid;
+  gap: 16px;
+  padding: 28px 0 max(28px, env(safe-area-inset-bottom));
+}
+
+.heading {
+  display: grid;
+  gap: 5px;
+}
+
+.headingTitle {
+  font-size: clamp(1.35rem, 6vw, 1.8rem);
+  margin: 0;
+}
+
+.headingCopy {
+  color: var(--muted);
+  font-size: .84rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+}

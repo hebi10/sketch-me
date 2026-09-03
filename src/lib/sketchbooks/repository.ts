@@ -72,6 +72,13 @@ export async function updateSketchbookStoryHeading(sketchbookId: string, storyHe
   });
 }
 
+export async function updateOwnerDrawingForManagement(sketchbookId: string, ownerDrawingPath: string) {
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
+    ownerDrawingPath,
+    updatedAt: new Date(),
+  });
+}
+
 export async function findSketchbookByPublicId(publicId: string) {
   const snapshot = await getAdminFirestore()
     .collection(collectionName)
@@ -153,7 +160,9 @@ export async function findDrawing(sketchbookId: string, drawingId: string) {
 export async function saveDrawingWithinLimit(sketchbook: Sketchbook, drawing: Drawing) {
   const firestore = getAdminFirestore();
   const sketchbookReference = firestore.collection(collectionName).doc(sketchbook.id);
-  const drawingReference = sketchbookReference.collection('drawings').doc(drawing.id);
+  const drawingsCollection = sketchbookReference.collection('drawings');
+  const drawingReference = drawingsCollection.doc(drawing.id);
+  let savedDrawing = drawing;
 
   await firestore.runTransaction(async (transaction) => {
     const current = await transaction.get(sketchbookReference);
@@ -171,14 +180,26 @@ export async function saveDrawingWithinLimit(sketchbook: Sketchbook, drawing: Dr
       throw new Error('친구 그림을 더 받을 수 있는 인원이 모두 찼습니다.');
     }
 
-    transaction.set(drawingReference, drawing);
+    let automaticBestRank: Drawing['bestRank'] = null;
+    if (Number(currentData.participantCount) < 4) {
+      const ranked = await transaction.get(drawingsCollection.where('bestRank', 'in', [1, 2, 3, 4]));
+      const usedRanks = new Set(
+        ranked.docs
+          .map((document) => Number(document.data().bestRank))
+          .filter((rank): rank is 1 | 2 | 3 | 4 => rank >= 1 && rank <= 4),
+      );
+      automaticBestRank = ([1, 2, 3, 4] as const).find((rank) => !usedRanks.has(rank)) ?? null;
+    }
+    savedDrawing = automaticBestRank ? { ...drawing, bestRank: automaticBestRank } : drawing;
+
+    transaction.set(drawingReference, savedDrawing);
     transaction.update(sketchbookReference, {
       participantCount: Number(currentData.participantCount) + 1,
       updatedAt: new Date(),
     });
   });
 
-  return drawing;
+  return savedDrawing;
 }
 
 export async function updateDrawingForManagement(

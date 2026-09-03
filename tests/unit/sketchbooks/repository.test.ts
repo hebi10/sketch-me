@@ -15,6 +15,7 @@ import {
   markSketchbookDeletionStarted,
   saveDrawingWithinLimit,
   setBestDrawing,
+  updateOwnerDrawingForManagement,
   updateSketchbookStoryHeading,
   updateDrawingForManagement,
 } from '@/lib/sketchbooks/repository';
@@ -124,6 +125,92 @@ describe('공개 그림 저장소 운영자 차단', () => {
     await expect(saveDrawingWithinLimit(sketchbook, drawing)).rejects.toThrow();
     expect(transaction.set).not.toHaveBeenCalled();
     expect(transaction.update).not.toHaveBeenCalled();
+  });
+
+  it('새 친구 그림은 제출 트랜잭션에서 가장 낮은 빈 BEST 순위를 자동으로 받는다', async () => {
+    const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
+    const drawingReference = { id: 'drawing-1', kind: 'drawing' };
+    const rankedQuery = { kind: 'ranked-query' };
+    const drawingsCollection = {
+      doc: vi.fn(() => drawingReference),
+      where: vi.fn(() => rankedQuery),
+    };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => reference.kind === 'sketchbook'
+        ? {
+            data: () => ({
+              moderationStatus: 'ACTIVE',
+              participantCount: 2,
+              participantLimit: 20,
+              status: 'PUBLIC',
+            }),
+            exists: true,
+          }
+        : {
+            docs: [
+              { data: () => ({ bestRank: 1 }) },
+              { data: () => ({ bestRank: 3 }) },
+            ],
+          }),
+      set: vi.fn(),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn(() => drawingsCollection),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await saveDrawingWithinLimit(sketchbook, drawing);
+
+    expect(drawingsCollection.where).toHaveBeenCalledWith('bestRank', 'in', [1, 2, 3, 4]);
+    expect(transaction.set).toHaveBeenCalledWith(drawingReference, {
+      ...drawing,
+      bestRank: 2,
+    });
+  });
+
+  it('다섯 번째 그림부터는 빈 BEST 자리가 있어도 자동 순위를 배정하지 않는다', async () => {
+    const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
+    const drawingReference = { id: 'drawing-1', kind: 'drawing' };
+    const rankedQuery = { kind: 'ranked-query' };
+    const drawingsCollection = {
+      doc: vi.fn(() => drawingReference),
+      where: vi.fn(() => rankedQuery),
+    };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => reference.kind === 'sketchbook'
+        ? {
+            data: () => ({
+              moderationStatus: 'ACTIVE',
+              participantCount: 4,
+              participantLimit: 20,
+              status: 'PUBLIC',
+            }),
+            exists: true,
+          }
+        : { docs: [{ data: () => ({ bestRank: 1 }) }] }),
+      set: vi.fn(),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn(() => drawingsCollection),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await saveDrawingWithinLimit(sketchbook, drawing);
+
+    expect(drawingsCollection.where).not.toHaveBeenCalled();
+    expect(transaction.set).toHaveBeenCalledWith(drawingReference, drawing);
   });
 
   it('차단된 그림은 공개 중이어도 BEST로 지정하지 않는다', async () => {
@@ -261,6 +348,20 @@ describe('공개 그림 저장소 운영자 차단', () => {
 
     expect(update).toHaveBeenCalledWith({
       storyHeading: '우리들의 소중한 추억',
+      updatedAt: expect.any(Date),
+    });
+  });
+
+  it('관리자가 교체한 소유자 그림 경로와 수정 시각을 함께 저장한다', async () => {
+    const update = vi.fn();
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({ doc: vi.fn(() => ({ update })) })),
+    });
+
+    await updateOwnerDrawingForManagement('book-1', 'sketchbooks/book-1/owner/original.webp');
+
+    expect(update).toHaveBeenCalledWith({
+      ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp',
       updatedAt: expect.any(Date),
     });
   });

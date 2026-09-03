@@ -9,6 +9,7 @@ import { formatTimeAgo } from '@/lib/time/time-ago';
 import { galleryImageLoading } from '@/lib/images/loading';
 import { ModerationBlockedNotice } from './ModerationBlockedNotice';
 import { PublicSketchbookHeader } from './PublicSketchbookHeader';
+import styles from './PublicOwnerDrawing.module.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,6 +93,25 @@ export default async function PublicSketchbookPage({
           <p>그림을 남겼어요. 고마워요!</p>
           <Link className="button button--secondary" href="/create">내 스케치북 만들기</Link>
         </div>
+      ) : null}
+
+      {sketchbook.ownerDrawingPath ? (
+        <section className={styles.section} aria-labelledby="owner-drawing-heading">
+          <div className="section-title-row">
+            <h2 id="owner-drawing-heading">내가 그린 나</h2>
+            <span>OWNER</span>
+          </div>
+          <div className={styles.image}>
+            <Image
+              alt={`${sketchbook.name}님이 직접 그린 모습`}
+              height={720}
+              loading="eager"
+              src={`/api/sketchbooks/${publicId}/owner/image`}
+              unoptimized
+              width={720}
+            />
+          </div>
+        </section>
       ) : null}
 
       {hasDrawings ? (

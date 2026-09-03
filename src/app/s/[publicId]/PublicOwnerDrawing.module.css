@@ -1,0 +1,19 @@
+.section {
+  margin-top: clamp(8px, 2vw, 14px);
+}
+
+.image {
+  aspect-ratio: 1;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  margin: 0 auto;
+  max-width: 420px;
+  overflow: hidden;
+}
+
+.image img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}

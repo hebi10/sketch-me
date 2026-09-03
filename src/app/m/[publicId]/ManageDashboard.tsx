@@ -314,6 +314,9 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerDrawing
             <div className="managed-image-frame owner-original-image">
               <ManageImage alt="직접 그린 내 모습" height={600} loading="eager" src={`/api/manage/${publicId}/owner/image`} unoptimized width={600} />
             </div>
+            <div className="share-action-stack">
+              <Link className="button button--secondary" href={`/m/${publicId}/owner/edit`}>내 그림 수정하기</Link>
+            </div>
           </figure>
         ) : null}
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>

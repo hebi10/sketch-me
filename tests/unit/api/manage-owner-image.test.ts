@@ -8,26 +8,34 @@ const {
   getAdminStorage,
   isManagePinSessionValid,
   cookieGet,
+  fileSave,
+  optimizeImageForStorage,
+  updateOwnerDrawingForManagement,
 } = vi.hoisted(() => ({
   bucketFile: vi.fn(),
   cookieGet: vi.fn(),
   fileDownload: vi.fn(),
   fileGetMetadata: vi.fn(),
+  fileSave: vi.fn(),
   findSketchbookByPublicId: vi.fn(),
   getAdminStorage: vi.fn(),
   isManagePinSessionValid: vi.fn(),
+  optimizeImageForStorage: vi.fn(),
+  updateOwnerDrawingForManagement: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => ({ get: cookieGet })),
 }));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminStorage }));
+vi.mock('@/lib/images/optimize', () => ({ optimizeImageForStorage }));
 vi.mock('@/lib/sketchbooks/repository', () => ({
   findSketchbookByPublicId,
   isManagePinSessionValid,
+  updateOwnerDrawingForManagement,
 }));
 
-import { GET } from '@/app/api/manage/[publicId]/owner/image/route';
+import { GET, PUT } from '@/app/api/manage/[publicId]/owner/image/route';
 import type { Sketchbook } from '@/lib/domain/types';
 
 const createdAt = new Date('2026-08-25T00:00:00.000Z');
@@ -65,9 +73,69 @@ describe('관리 세션 보호 소유자 이미지 API', () => {
         file: bucketFile.mockReturnValue({
           download: fileDownload,
           getMetadata: fileGetMetadata,
+          save: fileSave,
         }),
       })),
     });
+  });
+
+  it('인증된 관리자만 최적화된 소유자 그림을 정해진 경로에 교체한다', async () => {
+    optimizeImageForStorage.mockResolvedValue({
+      buffer: Buffer.from('optimized-owner-image'),
+      contentType: 'image/webp',
+    });
+    const updateRequest = new Request(request.url, {
+      body: JSON.stringify({ imageDataUrl: 'data:image/webp;base64,b3duZXI=' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PUT',
+    });
+
+    const response = await PUT(updateRequest, context);
+
+    expect(response.status).toBe(200);
+    expect(optimizeImageForStorage).toHaveBeenCalledWith(Buffer.from('owner'), 'sketch');
+    expect(bucketFile).toHaveBeenCalledWith('sketchbooks/book-1/owner/original.webp');
+    expect(fileSave).toHaveBeenCalledWith(Buffer.from('optimized-owner-image'), {
+      metadata: {
+        cacheControl: 'private, max-age=0',
+        contentType: 'image/webp',
+      },
+    });
+    expect(updateOwnerDrawingForManagement).toHaveBeenCalledWith(
+      'book-1',
+      'sketchbooks/book-1/owner/original.webp',
+    );
+    await expect(response.json()).resolves.toEqual({ ok: true });
+  });
+
+  it('인증되지 않은 소유자 그림 교체 요청은 이미지 처리 전에 401로 거부한다', async () => {
+    cookieGet.mockReturnValue(undefined);
+    const updateRequest = new Request(request.url, {
+      body: JSON.stringify({ imageDataUrl: 'data:image/webp;base64,b3duZXI=' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PUT',
+    });
+
+    const response = await PUT(updateRequest, context);
+
+    expect(response.status).toBe(401);
+    expect(optimizeImageForStorage).not.toHaveBeenCalled();
+    expect(fileSave).not.toHaveBeenCalled();
+  });
+
+  it('잘못된 소유자 그림 데이터는 Storage 접근 전에 400으로 거부한다', async () => {
+    const updateRequest = new Request(request.url, {
+      body: JSON.stringify({ imageDataUrl: 'data:text/html;base64,PHNjcmlwdD4=' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PUT',
+    });
+
+    const response = await PUT(updateRequest, context);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: expect.any(String) });
+    expect(optimizeImageForStorage).not.toHaveBeenCalled();
+    expect(fileSave).not.toHaveBeenCalled();
   });
 
   it('BLOCKED여도 인증된 소유자에게는 안전한 비캐시 이미지를 반환한다', async () => {

@@ -77,6 +77,58 @@ test('모바일 스토리 이미지 제목을 저장하고 다시 방문해도 �
   await expect(page.getByRole('region', { name: '스토리 이미지 미리보기' })).toContainText('우리들의 소중한 추억');
 });
 
+test('모바일에서 소유자 그림 수정과 첫 친구 그림 자동 BEST를 확인한다', async ({ page }, testInfo) => {
+  test.setTimeout(60_000);
+  test.skip(testInfo.project.name !== 'mobile-chrome', '소유자 그림 관리 흐름은 모바일 프로젝트에서 한 번만 실행합니다.');
+
+  const uniqueName = `그림관리${Date.now().toString().slice(-6)}`;
+  await page.goto('/create');
+  await page.getByLabel('이름 또는 애칭').fill(uniqueName);
+  await page.getByLabel('관리 비밀번호').fill('1234');
+  await page.getByRole('button', { name: '그림 그리기' }).click();
+  await drawOnCanvas(page);
+  await page.getByRole('button', { name: '확인' }).click();
+  await page.getByRole('button', { name: '내 스캐치북 만들기' }).click();
+
+  await expect(page.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible({ timeout: 15_000 });
+  await page.getByRole('button', { name: '내 스캐치북 관리하기' }).click();
+  await expect(page.getByText(`${uniqueName}님의 스케치북`)).toBeVisible();
+  const publicId = new URL(page.url()).pathname.split('/')[2];
+  const ownerImagePath = `/api/sketchbooks/${publicId}/owner/image`;
+  const originalOwnerImage = await page.request.get(ownerImagePath);
+  expect(originalOwnerImage.status()).toBe(200);
+  const originalOwnerBytes = await originalOwnerImage.body();
+
+  await page.goto(`/s/${publicId}`);
+  await expect(page.getByRole('heading', { name: '내가 그린 나' })).toBeVisible();
+  await expect(page.getByRole('img', { name: `${uniqueName}님이 직접 그린 모습` })).toBeVisible();
+  await page.getByRole('link', { name: '첫 그림 남기기' }).click();
+  await page.getByRole('button', { name: '그림 그리기' }).click();
+  await drawOnCanvas(page);
+  await page.getByRole('button', { name: '확인' }).click();
+  await page.getByLabel('내 이름').fill('첫 번째 친구');
+  await page.getByRole('button', { name: '그림 남기기' }).click();
+  await expect(page.getByRole('img', { name: 'BEST 1, 첫 번째 친구님의 그림' })).toBeVisible();
+
+  await page.goto(`/m/${publicId}`);
+  await page.getByRole('link', { name: '내 그림 수정하기' }).click();
+  await expect(page).toHaveURL(`/m/${publicId}/owner/edit`);
+  await page.getByRole('button', { name: '그림 편집 열기' }).click();
+  await drawOnCanvas(page);
+  await page.getByRole('button', { name: '확인' }).click();
+  const updateResponse = page.waitForResponse((response) => (
+    response.request().method() === 'PUT'
+      && response.url().endsWith(`/api/manage/${publicId}/owner/image`)
+  ));
+  await page.getByRole('button', { name: '변경 저장하기' }).click();
+  expect((await updateResponse).status()).toBe(200);
+  await expect(page).toHaveURL(`/m/${publicId}`);
+
+  const updatedOwnerImage = await page.request.get(ownerImagePath);
+  expect(updatedOwnerImage.status()).toBe(200);
+  expect(await updatedOwnerImage.body()).not.toEqual(originalOwnerBytes);
+});
+
 test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', async ({ browser }, testInfo) => {
   test.setTimeout(60_000);
   test.skip(testInfo.project.name !== 'mobile-chrome', '전체 모바일 흐름은 모바일 프로젝트에서 한 번만 실행합니다.');

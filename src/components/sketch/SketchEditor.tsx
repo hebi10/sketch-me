@@ -24,6 +24,7 @@ interface SketchEditorProps {
   ariaLabel: string;
   initialDrawingDataUrl?: string | null;
   onDrawingChange?: (dataUrl: string | null) => void;
+  reopenLabel?: string;
 }
 
 type EditorTab = 'draw' | 'guide' | 'edit';
@@ -33,7 +34,7 @@ const loupeSize = 104;
 const loupeHorizontalOffset = 64;
 
 export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
-  function SketchEditor({ ariaLabel, initialDrawingDataUrl = null, onDrawingChange }, ref) {
+  function SketchEditor({ ariaLabel, initialDrawingDataUrl = null, onDrawingChange, reopenLabel }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const loupeCanvasRef = useRef<HTMLCanvasElement>(null);
     const loupeRef = useRef<HTMLDivElement>(null);
@@ -374,6 +375,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       <section aria-label={isFullscreen ? '전체 화면 그리기' : undefined} aria-modal={isFullscreen || undefined} className={`sketch-editor ${isFullscreen ? 'sketch-editor--fullscreen' : ''} ${isFullscreen && controlsOpen ? 'sketch-editor--controls-open' : ''}`} ref={editorRef} role={isFullscreen ? 'dialog' : undefined}>
         {!isFullscreen && !confirmedDrawing ? <button className="button button--primary drawing-entry-button" onClick={openDrawing} ref={fullscreenEntryRef} type="button">그림 그리기</button> : null}
         {!isFullscreen && confirmedDrawing ? <figure className="drawing-preview"><Image alt="그린 그림 미리보기" height={height} src={confirmedDrawing} unoptimized width={width} /></figure> : null}
+        {!isFullscreen && confirmedDrawing && reopenLabel ? <button className="button button--secondary drawing-entry-button drawing-reopen-button" onClick={openDrawing} ref={fullscreenEntryRef} type="button">{reopenLabel}</button> : null}
         <div className="sketch-stage-slot" hidden={!isFullscreen}>
           <div className={`sketch-stage sketch-stage--${tab}`}>
             <canvas aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
