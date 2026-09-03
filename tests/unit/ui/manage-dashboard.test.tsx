@@ -84,6 +84,37 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.getByText('링크 공유 썸네일을 변경했어요.')).toBeVisible();
   });
 
+  it('기본 썸네일을 다시 선택해 저장한다', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ shareThumbnailMode: 'DEFAULT' }),
+      ok: true,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        ownerDrawingPath="sketchbooks/book-1/owner/original.webp"
+        participantCount={0}
+        participantLimit={20}
+        publicId="public-default"
+        shareThumbnailMode="OWNER"
+        shareThumbnailVersion="owner-version"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('radio', { name: '기본 썸네일' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/manage/public-default/sketchbook', {
+      body: JSON.stringify({ shareThumbnailMode: 'DEFAULT' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+    }));
+    expect(screen.getByRole('radio', { name: '기본 썸네일' })).toBeChecked();
+  });
+
   it('원본이 없는 링크 공유 썸네일 선택지는 비활성화한다', () => {
     render(
       <ManageDashboard
@@ -96,6 +127,8 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
+    expect(screen.getByRole('radio', { name: '기본 썸네일' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '기본 썸네일' })).toBeEnabled();
     expect(screen.getByRole('radio', { name: '내가 그린 그림' })).toBeDisabled();
     expect(screen.getByRole('radio', { name: '1위 그림' })).toBeDisabled();
   });

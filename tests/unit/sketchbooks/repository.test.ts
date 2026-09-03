@@ -79,6 +79,20 @@ describe('공개 그림 저장소 운영자 차단', () => {
     );
   });
 
+  it('링크 공유 썸네일 설정이 없는 기존 스케치북은 기본 썸네일로 복원한다', async () => {
+    const get = vi.fn().mockResolvedValue({
+      docs: [{ data: () => sketchbook, id: sketchbook.id }],
+      empty: false,
+    });
+    const limit = vi.fn(() => ({ get }));
+    const where = vi.fn(() => ({ limit }));
+    getAdminFirestore.mockReturnValue({ collection: vi.fn(() => ({ where })) });
+
+    await expect(findSketchbookByPublicId('public-1')).resolves.toEqual(
+      expect.objectContaining({ shareThumbnailMode: 'DEFAULT' }),
+    );
+  });
+
   it('숨김 또는 운영자 차단된 1위 그림은 링크 공유 썸네일 후보에서 제외한다', async () => {
     for (const unavailableDrawing of [
       { ...drawing, bestRank: 1, status: 'HIDDEN' as const },

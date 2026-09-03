@@ -49,5 +49,6 @@ export function resolveLinkShareThumbnail(
   return {
     ...defaultThumbnail,
     alt: `${sketchbook.name}님의 스캐치북`,
+    previewVersion: `default-${sketchbook.updatedAt.getTime().toString(36)}`,
   };
 }

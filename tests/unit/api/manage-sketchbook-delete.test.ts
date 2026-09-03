@@ -193,13 +193,13 @@ describe('PATCH /api/manage/:publicId/sketchbook', () => {
     expect(clearOwnerBestDrawing).toHaveBeenCalledWith('book-1');
   });
 
-  it('존재하는 내 그림 또는 공개 중인 1위 그림을 링크 공유 썸네일로 저장한다', async () => {
+  it('기본 이미지, 존재하는 내 그림 또는 공개 중인 1위 그림을 링크 공유 썸네일로 저장한다', async () => {
     getManagedSketchbook.mockResolvedValue({
       id: 'book-1',
       ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp',
     });
 
-    for (const shareThumbnailMode of ['OWNER', 'BEST_1']) {
+    for (const shareThumbnailMode of ['DEFAULT', 'OWNER', 'BEST_1']) {
       const response = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
         body: JSON.stringify({ shareThumbnailMode }),
         headers: { 'Content-Type': 'application/json' },

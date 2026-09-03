@@ -92,9 +92,9 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     id,
     publicId: String(data.publicId),
     name: String(data.name),
-    shareThumbnailMode: data.shareThumbnailMode === 'OWNER' || data.shareThumbnailMode === 'BEST_1'
+    shareThumbnailMode: data.shareThumbnailMode === 'DEFAULT' || data.shareThumbnailMode === 'OWNER' || data.shareThumbnailMode === 'BEST_1'
       ? data.shareThumbnailMode
-      : null,
+      : 'DEFAULT',
     storyHeading: data.storyHeading ? String(data.storyHeading) : STORY_SHARED_HEADING,
     manageTokenHash: String(data.manageTokenHash),
     managePinHash: data.managePinHash ? String(data.managePinHash) : null,

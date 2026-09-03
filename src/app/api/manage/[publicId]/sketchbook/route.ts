@@ -26,7 +26,7 @@ export async function PATCH(
   const payload = await request.json().catch(() => null) as Record<string, unknown> | null;
   if (payload && Object.hasOwn(payload, 'shareThumbnailMode')) {
     const shareThumbnailMode = payload.shareThumbnailMode;
-    if (shareThumbnailMode !== 'OWNER' && shareThumbnailMode !== 'BEST_1') {
+    if (shareThumbnailMode !== 'DEFAULT' && shareThumbnailMode !== 'OWNER' && shareThumbnailMode !== 'BEST_1') {
       return NextResponse.json({ message: '공유 썸네일을 다시 선택해 주세요.' }, { status: 400 });
     }
     if (shareThumbnailMode === 'OWNER' && !sketchbook.ownerDrawingPath) {

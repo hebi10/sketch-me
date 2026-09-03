@@ -55,7 +55,7 @@ function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) 
   );
 }
 
-export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false }, shareThumbnailMode: initialShareThumbnailMode = null, shareThumbnailVersion: initialShareThumbnailVersion = null }: ManageDashboardProps) {
+export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false }, shareThumbnailMode: initialShareThumbnailMode = 'DEFAULT', shareThumbnailVersion: initialShareThumbnailVersion = null }: ManageDashboardProps) {
   const router = useRouter();
   const [limit, setLimit] = useState(participantLimit);
   const [entitlements, setEntitlements] = useState(initialEntitlements);
@@ -73,7 +73,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<PurchaseProductId>('FRIENDS_10');
-  const [shareThumbnailMode, setShareThumbnailMode] = useState<ShareThumbnailMode | null>(initialShareThumbnailMode);
+  const [shareThumbnailMode, setShareThumbnailMode] = useState<ShareThumbnailMode>(initialShareThumbnailMode ?? 'DEFAULT');
   const [shareThumbnailVersion, setShareThumbnailVersion] = useState<string | null>(initialShareThumbnailVersion);
   const [shareThumbnailMessage, setShareThumbnailMessage] = useState<string | null>(null);
   const [isSavingShareThumbnail, setIsSavingShareThumbnail] = useState(false);
@@ -374,6 +374,16 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         </div>
         <fieldset disabled={isSavingShareThumbnail}>
           <legend>공유 이미지 선택</legend>
+          <label className="share-thumbnail-option share-thumbnail-option--default">
+            <input
+              aria-label="기본 썸네일"
+              checked={shareThumbnailMode === 'DEFAULT'}
+              name="share-thumbnail"
+              onChange={() => updateShareThumbnailMode('DEFAULT')}
+              type="radio"
+            />
+            <span><strong>기본 썸네일</strong><small>스캐치북 기본 공유 이미지</small></span>
+          </label>
           <label className="share-thumbnail-option">
             <input
               aria-label="내가 그린 그림"

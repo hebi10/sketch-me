@@ -1405,6 +1405,10 @@ main {
   outline: 1px solid var(--accent);
 }
 
+.share-thumbnail-option--default {
+  grid-column: 1 / -1;
+}
+
 .share-thumbnail-option:has(input:disabled) {
   cursor: not-allowed;
   opacity: .55;

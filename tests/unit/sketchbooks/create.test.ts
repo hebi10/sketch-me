@@ -28,6 +28,7 @@ describe('createSketchbookDraft', () => {
       entitlements: { watermarkFree: false },
       moderationStatus: 'ACTIVE',
       moderatedAt: null,
+      shareThumbnailMode: 'DEFAULT',
       status: 'PUBLIC',
       storyHeading: '친구들이 그린 내 모습',
     });
