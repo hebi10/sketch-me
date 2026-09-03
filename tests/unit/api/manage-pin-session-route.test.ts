@@ -62,7 +62,7 @@ describe('POST /api/manage/:publicId/session', () => {
     }), context);
 
     expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toEqual({ message: '관리 비밀번호가 맞지 않아요.' });
+    await expect(response.json()).resolves.toEqual({ message: '관리용 비밀번호가 맞지 않아요.' });
     expect(createManagePinSession).not.toHaveBeenCalled();
     expect(consumeManagePinAttempt).toHaveBeenCalledWith('book-1', expect.any(String), false, expect.any(Date));
   });

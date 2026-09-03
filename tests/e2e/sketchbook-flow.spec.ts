@@ -47,7 +47,7 @@ test('모바일 스토리 이미지 제목을 저장하고 다시 방문해도 �
   const uniqueName = `제목테스트${Date.now().toString().slice(-6)}`;
   await page.goto('/create');
   await page.getByLabel('이름 또는 애칭').fill(uniqueName);
-  await page.getByLabel('관리 비밀번호').fill('1234');
+  await page.getByLabel('관리용 비밀번호').fill('1234');
   await page.getByRole('button', { name: '그림 그리기' }).click();
   await drawOnCanvas(page);
   await page.getByRole('button', { name: '확인' }).click();
@@ -84,7 +84,7 @@ test('모바일에서 소유자 그림 수정과 첫 친구 그림 자동 BEST�
   const uniqueName = `그림관리${Date.now().toString().slice(-6)}`;
   await page.goto('/create');
   await page.getByLabel('이름 또는 애칭').fill(uniqueName);
-  await page.getByLabel('관리 비밀번호').fill('1234');
+  await page.getByLabel('관리용 비밀번호').fill('1234');
   await page.getByRole('button', { name: '그림 그리기' }).click();
   await drawOnCanvas(page);
   await page.getByRole('button', { name: '확인' }).click();
@@ -140,7 +140,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
 
   await ownerPage.goto('/create');
   await ownerPage.getByLabel('이름 또는 애칭').fill(uniqueName);
-  await ownerPage.getByLabel('관리 비밀번호').fill('1234');
+  await ownerPage.getByLabel('관리용 비밀번호').fill('1234');
   await ownerPage.getByRole('button', { name: '그림 그리기' }).click();
   await drawOnCanvas(ownerPage);
   await ownerPage.getByRole('button', { name: '확인' }).click();
@@ -204,8 +204,8 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   const managerContext = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': testIp } });
   const managerPage = await managerContext.newPage();
   await managerPage.goto(`/m/${managementPublicId}`);
-  await expect(managerPage.getByRole('heading', { name: '관리 비밀번호를 입력해 주세요' })).toBeVisible();
-  const managePinInput = managerPage.getByLabel('관리 비밀번호', { exact: true });
+  await expect(managerPage.getByRole('heading', { name: '관리용 비밀번호를 입력해 주세요' })).toBeVisible();
+  const managePinInput = managerPage.getByLabel('관리용 비밀번호', { exact: true });
   await managePinInput.fill('1234');
   await managePinInput.blur();
   await expect(managePinInput).toHaveValue('1234');

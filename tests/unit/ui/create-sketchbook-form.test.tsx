@@ -44,16 +44,16 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     render(<CreateSketchbookForm />);
 
     await waitFor(() => expect(screen.getByLabelText('이름 또는 애칭')).toHaveValue('해비'));
-    expect(screen.getByLabelText('관리 비밀번호')).toHaveValue('1234');
+    expect(screen.getByLabelText('관리용 비밀번호')).toHaveValue('1234');
     expect(screen.getByLabelText(/비밀번호 힌트/)).toHaveValue('좋아하는 숫자');
   });
 
   it('숫자 네 자리가 아닌 PIN에는 제품 안내 문구를 표시한다', async () => {
     render(<CreateSketchbookForm />);
 
-    fireEvent.invalid(screen.getByLabelText('관리 비밀번호'));
+    fireEvent.invalid(screen.getByLabelText('관리용 비밀번호'));
 
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('관리 비밀번호는 숫자 4자리로 입력해 주세요.'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('관리용 비밀번호는 숫자 4자리로 입력해 주세요.'));
   });
 
   it('생성에 성공하면 세션 초안을 지운다', async () => {
@@ -64,7 +64,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     } as Response);
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
-    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
 
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
@@ -86,7 +86,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
 
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
-    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
@@ -103,7 +103,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
 
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
-    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
@@ -120,7 +120,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
 
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
-    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
@@ -137,7 +137,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
 
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
-    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());

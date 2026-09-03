@@ -21,7 +21,7 @@ export function ManagePinForm({ publicId, hint }: { publicId: string; hint: stri
       });
       const result = await response.json().catch(() => ({})) as { message?: string };
       if (!response.ok) {
-        setMessage(result.message ?? '관리 비밀번호를 확인하지 못했어요.');
+        setMessage(result.message ?? '관리용 비밀번호를 확인하지 못했어요.');
         return;
       }
       router.replace(`/m/${publicId}`);
@@ -35,7 +35,7 @@ export function ManagePinForm({ publicId, hint }: { publicId: string; hint: stri
 
   return (
     <form className="manage-pin-form" onSubmit={submit}>
-      <label className="field-label" htmlFor="manage-pin">관리 비밀번호</label>
+      <label className="field-label" htmlFor="manage-pin">관리용 비밀번호</label>
       <input
         autoComplete="current-password"
         inputMode="numeric"

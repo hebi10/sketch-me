@@ -20,7 +20,7 @@ export async function POST(
   const pin = typeof payload?.pin === 'string' ? payload.pin : '';
   const sketchbook = await findSketchbookByPublicId(publicId);
   if (!sketchbook?.managePinHash) {
-    return NextResponse.json({ message: '관리 비밀번호가 설정된 스케치북을 찾지 못했어요.' }, { status: 404 });
+    return NextResponse.json({ message: '관리용 비밀번호가 설정된 스케치북을 찾지 못했어요.' }, { status: 404 });
   }
 
   const sourceHash = getManagePinAttemptSource(request);
@@ -40,7 +40,7 @@ export async function POST(
   if (!isCorrectPin) {
     const message = attempt.lockedUntil && attempt.lockedUntil > now
       ? '입력을 여러 번 틀렸어요. 10분 뒤에 다시 시도해 주세요.'
-      : '관리 비밀번호가 맞지 않아요.';
+      : '관리용 비밀번호가 맞지 않아요.';
     return NextResponse.json({ message }, { status: attempt.lockedUntil ? 429 : 401 });
   }
 

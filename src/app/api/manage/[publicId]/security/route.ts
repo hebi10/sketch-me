@@ -24,13 +24,13 @@ export async function PATCH(
   const newPin = typeof payload?.newPin === 'string' ? payload.newPin : '';
   const hint = typeof payload?.hint === 'string' ? payload.hint.trim() : '';
   if (!/^\d{4}$/.test(newPin)) {
-    return NextResponse.json({ message: '새 관리 비밀번호는 숫자 4자리로 입력해 주세요.' }, { status: 400 });
+    return NextResponse.json({ message: '새 관리용 비밀번호는 숫자 4자리로 입력해 주세요.' }, { status: 400 });
   }
   if (hint.length > 40) {
     return NextResponse.json({ message: '비밀번호 힌트는 40자 이내로 입력해 주세요.' }, { status: 400 });
   }
   if (sketchbook.managePinHash && !(await verifyManagePin(currentPin, sketchbook.managePinHash))) {
-    return NextResponse.json({ message: '현재 관리 비밀번호가 맞지 않아요.' }, { status: 401 });
+    return NextResponse.json({ message: '현재 관리용 비밀번호가 맞지 않아요.' }, { status: 401 });
   }
 
   await updateManagePin(sketchbook.id, await hashManagePin(newPin), hint || null);

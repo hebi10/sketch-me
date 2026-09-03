@@ -170,10 +170,10 @@ Expected: FAIL because login/security routes and the PIN page do not exist.
 
 ~~~ts
 if (!sketchbook.managePinHash) {
-  return NextResponse.json({ message: '관리 비밀번호가 아직 설정되지 않았습니다.' }, { status: 409 });
+  return NextResponse.json({ message: '관리용 비밀번호가 아직 설정되지 않았습니다.' }, { status: 409 });
 }
 const result = await verifyManagePinAttempt(sketchbook.id, sourceId, body.pin);
-if (!result.ok) return NextResponse.json({ message: '관리 비밀번호를 다시 확인해 주세요.', lockedUntil: result.lockedUntil?.toISOString() }, { status: 429 });
+if (!result.ok) return NextResponse.json({ message: '관리용 비밀번호를 다시 확인해 주세요.', lockedUntil: result.lockedUntil?.toISOString() }, { status: 429 });
 ~~~
 
 On creation, create the first PIN session and return only publicUrl and manageUrl. Redirect unauthenticated PIN users from management and story routes to /m/<publicId>/login. PIN-enabled recovery routes redirect to login without creating a cookie; legacy recovery remains unchanged.
@@ -209,7 +209,7 @@ fireEvent.keyDown(document, { key: 'Escape' });
 expect(screen.queryByRole('link', { name: '내 스케치북 관리' })).toBeNull();
 
 render(<ManagePinForm publicId="book-1" hint="생일 네 자리" nextPath="/m/book-1" />);
-expect(screen.getByLabelText('관리 비밀번호')).toHaveAttribute('inputmode', 'numeric');
+expect(screen.getByLabelText('관리용 비밀번호')).toHaveAttribute('inputmode', 'numeric');
 expect(screen.getByText('힌트: 생일 네 자리')).toBeVisible();
 ~~~
 
@@ -222,11 +222,11 @@ Expected: FAIL because the new form and menu components do not exist.
 - [ ] **Step 3: Write minimal implementation**
 
 ~~~tsx
-<input aria-label="관리 비밀번호" autoComplete="one-time-code" inputMode="numeric" maxLength={4} pattern="[0-9]*" type="password" />
+<input aria-label="관리용 비밀번호" autoComplete="one-time-code" inputMode="numeric" maxLength={4} pattern="[0-9]*" type="password" />
 <button aria-expanded={open} aria-haspopup="menu" type="button">☰ 메뉴</button>
 ~~~
 
-Add PIN and optional hint before image sections. Replace the completion recovery link with 스케치북이 완성됐어요 and the unrecoverable-PIN notice. Public menu items are 내 스케치북 관리, 친구에게 공유하기, 새 스케치북 만들기; management items are 친구 페이지 보기, 스토리 이미지 만들기, 공유하기, 관리 비밀번호 변경, 로그아웃. Use text rows, a 1px paper-panel border, no shadow, and 44px minimum rows.
+Add PIN and optional hint before image sections. Replace the completion recovery link with 스케치북이 완성됐어요 and the unrecoverable-PIN notice. Public menu items are 내 스케치북 관리, 친구에게 공유하기, 새 스케치북 만들기; management items are 친구 페이지 보기, 스토리 이미지 만들기, 공유하기, 관리용 비밀번호 변경, 로그아웃. Use text rows, a 1px paper-panel border, no shadow, and 44px minimum rows.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -251,7 +251,7 @@ Run: git add src/app/create/CreateSketchbookForm.tsx src/app/m/[publicId]/login/
 
 ~~~ts
 for (let attempt = 0; attempt < 5; attempt += 1) {
-  await loginPage.getByLabel('관리 비밀번호').fill('0000');
+  await loginPage.getByLabel('관리용 비밀번호').fill('0000');
   await loginPage.getByRole('button', { name: '관리하기' }).click();
 }
 await expect(loginPage.getByText(/10분 뒤 다시 시도/)).toBeVisible();

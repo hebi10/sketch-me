@@ -259,7 +259,7 @@ describe('공개 mutation 클라이언트 App Check 헤더', () => {
   it('스케치북 생성 요청에 발급된 App Check 헤더를 한 번 포함한다', async () => {
     render(React.createElement(CreateSketchbookForm));
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
-    fireEvent.change(screen.getByLabelText('관리 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
 
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 

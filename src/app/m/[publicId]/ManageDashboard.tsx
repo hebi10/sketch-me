@@ -289,14 +289,14 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       });
       const result = await response.json().catch(() => ({})) as { message?: string };
       if (!response.ok) {
-        setSecurityMessage(result.message ?? '관리 비밀번호를 변경하지 못했어요.');
+        setSecurityMessage(result.message ?? '관리용 비밀번호를 변경하지 못했어요.');
         return;
       }
       setSecurityOpen(false);
       setCurrentPin('');
       setNewPin('');
       setPinHint('');
-      setMessage('관리 비밀번호를 변경했어요.');
+      setMessage('관리용 비밀번호를 변경했어요.');
     } catch {
       setSecurityMessage('연결을 확인하고 다시 시도해 주세요.');
     } finally {
@@ -314,7 +314,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
           <Link aria-label="친구 페이지 보기" href={`/s/${publicId}`} title="친구 페이지 보기">친구홈</Link>
           <Link aria-label="스토리 이미지 만들기" href={`/m/${publicId}/share`} title="스토리 이미지 만들기">스토리</Link>
           <ShareSketchbookButton menuItem name={name} publicId={publicId} />
-          <button aria-label="관리 비밀번호 변경" onClick={openSecurityDialog} ref={securityTriggerRef} title="관리 비밀번호 변경" type="button">비밀번호</button>
+          <button aria-label="관리용 비밀번호 변경" onClick={openSecurityDialog} ref={securityTriggerRef} title="관리용 비밀번호 변경" type="button">비밀번호</button>
           <button aria-label="로그아웃" onClick={logout} title="로그아웃" type="button">로그아웃</button>
         </HeaderMenu>
       </header>
@@ -457,7 +457,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       {securityOpen ? (
           <dialog aria-labelledby="manage-security-title" className="manage-security-modal manage-system-sans" onCancel={(event) => { event.preventDefault(); if (!isSavingSecurity) setSecurityOpen(false); }} ref={securityDialogRef}>
           <form className="manage-security-form" onSubmit={updateSecurity}>
-            <div className="dialog-heading"><h2 id="manage-security-title">관리 비밀번호 변경</h2><button aria-label="비밀번호 변경 닫기" className="icon-button" disabled={isSavingSecurity} onClick={() => setSecurityOpen(false)} type="button">×</button></div>
+            <div className="dialog-heading"><h2 id="manage-security-title">관리용 비밀번호 변경</h2><button aria-label="비밀번호 변경 닫기" className="icon-button" disabled={isSavingSecurity} onClick={() => setSecurityOpen(false)} type="button">×</button></div>
             <p>새 비밀번호는 숫자 4자리예요. 비밀번호는 복구할 수 없어요.</p>
             <label className="field-label" htmlFor="current-manage-pin">현재 비밀번호</label>
             <input autoComplete="current-password" id="current-manage-pin" inputMode="numeric" maxLength={4} onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, ''))} pattern="[0-9]{4}" required type="password" value={currentPin} />

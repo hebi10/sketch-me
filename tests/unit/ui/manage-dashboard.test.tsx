@@ -125,7 +125,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       ['친구 페이지 보기', '친구홈'],
       ['스토리 이미지 만들기', '스토리'],
       ['친구에게 공유하기', '공유'],
-      ['관리 비밀번호 변경', '비밀번호'],
+      ['관리용 비밀번호 변경', '비밀번호'],
       ['로그아웃', '로그아웃'],
     ] as const;
 
@@ -343,7 +343,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(trigger).toHaveFocus();
   });
 
-  it('관리 비밀번호 변경을 네이티브 dialog로 열고 Escape 뒤 실행 버튼에 포커스를 되돌린다', () => {
+  it('관리용 비밀번호 변경을 네이티브 dialog로 열고 Escape 뒤 실행 버튼에 포커스를 되돌린다', () => {
     render(
       <ManageDashboard
         drawings={[]}
@@ -355,10 +355,10 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    const trigger = screen.getByRole('button', { name: '관리 비밀번호 변경' });
+    const trigger = screen.getByRole('button', { name: '관리용 비밀번호 변경' });
     fireEvent.click(trigger);
 
-    const dialog = screen.getByRole('dialog', { name: '관리 비밀번호 변경' });
+    const dialog = screen.getByRole('dialog', { name: '관리용 비밀번호 변경' });
     expect(dialog.tagName).toBe('DIALOG');
     expect(dialog.querySelector('form')).toHaveClass('manage-security-form');
     expect(screen.getByRole('main')).toHaveAttribute('inert');
@@ -366,7 +366,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
 
     fireEvent.keyDown(dialog, { key: 'Escape' });
 
-    expect(screen.queryByRole('dialog', { name: '관리 비밀번호 변경' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '관리용 비밀번호 변경' })).not.toBeInTheDocument();
     expect(screen.getByRole('main')).not.toHaveAttribute('inert');
     expect(trigger).toHaveFocus();
   });

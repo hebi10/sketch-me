@@ -47,7 +47,7 @@ export default function PrivacyPage() {
           <dl className="legal-data-list">
             <div>
               <dt>스케치북 생성</dt>
-              <dd>이름 또는 애칭, 관리 비밀번호의 일방향 해시, 선택한 비밀번호 힌트, 공개·관리 ID와 생성 시각을 처리합니다.</dd>
+              <dd>이름 또는 애칭, 관리용 비밀번호의 일방향 해시, 선택한 비밀번호 힌트, 공개·관리 ID와 생성 시각을 처리합니다.</dd>
             </div>
             <div>
               <dt>선택 정보</dt>
@@ -66,7 +66,7 @@ export default function PrivacyPage() {
               <dd>요청 IP는 생성·제출 횟수 제한을 위해 서버 메모리에서 최대 1시간 처리합니다. 관리 로그인 실패 시 접속정보를 해시한 값과 실패 횟수를 스케치북 삭제 시까지 저장할 수 있습니다.</dd>
             </div>
           </dl>
-          <p>입력한 관리 비밀번호 원문은 서버에 저장하지 않습니다. 다만 생성 중에는 브라우저의 sessionStorage 초안에 임시 저장되며, 생성에 성공하거나 탭 또는 브라우저 세션이 끝나면 사라집니다.</p>
+          <p>입력한 관리용 비밀번호 원문은 서버에 저장하지 않습니다. 다만 생성 중에는 브라우저의 sessionStorage 초안에 임시 저장되며, 생성에 성공하거나 탭 또는 브라우저 세션이 끝나면 사라집니다.</p>
         </section>
 
         <section id="privacy-public">
@@ -108,8 +108,8 @@ export default function PrivacyPage() {
 
         <section id="privacy-storage">
           <h2>쿠키와 브라우저 저장소</h2>
-          <p>스케치북 관리 권한을 유지하기 위해 필수 관리 쿠키를 최대 30일간 사용합니다. 이 쿠키는 HTTP 전용으로 설정하며 광고나 이용자 추적에 사용하지 않습니다. 쿠키를 삭제하거나 차단하면 관리 비밀번호로 다시 로그인해야 합니다.</p>
-          <p>생성 화면의 입력 유실을 줄이기 위해 이름, 관리 비밀번호, 힌트와 직접 그린 그림 초안을 sessionStorage에 임시 저장합니다.</p>
+          <p>스케치북 관리 권한을 유지하기 위해 필수 관리 쿠키를 최대 30일간 사용합니다. 이 쿠키는 HTTP 전용으로 설정하며 광고나 이용자 추적에 사용하지 않습니다. 쿠키를 삭제하거나 차단하면 관리용 비밀번호로 다시 로그인해야 합니다.</p>
+          <p>생성 화면의 입력 유실을 줄이기 위해 이름, 관리용 비밀번호, 힌트와 직접 그린 그림 초안을 sessionStorage에 임시 저장합니다.</p>
         </section>
 
         <section id="privacy-rights">
@@ -120,7 +120,7 @@ export default function PrivacyPage() {
         <section id="privacy-safety">
           <h2>안전성 확보 조치</h2>
           <ul>
-            <li>관리 비밀번호와 관리 토큰의 일방향 해시 저장</li>
+            <li>관리용 비밀번호와 관리 토큰의 일방향 해시 저장</li>
             <li>HTTP 전용·보안·SameSite 속성을 적용한 관리 쿠키</li>
             <li>Firestore·Storage 보안 규칙과 서버 권한 검증</li>
             <li>App Check, 요청 횟수 제한과 관리 로그인 잠금</li>
