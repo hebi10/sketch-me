@@ -24,7 +24,7 @@ function createCanvasContext() {
 }
 
 describe('SketchEditor 그리기 돋보기', () => {
-  it('그리는 동안 손가락 왼쪽의 현재 지점을 확대하고 손을 떼면 숨긴다', () => {
+  it('기본 모드에서는 손가락 왼쪽 위의 현재 지점을 확대하고 상단 공간과 관계없이 위치를 유지한다', () => {
     const drawingContext = createCanvasContext();
     const loupeContext = createCanvasContext();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function getContext(this: HTMLCanvasElement) {
@@ -80,7 +80,7 @@ describe('SketchEditor 그리기 돋보기', () => {
     );
 
     fireEvent(canvas, new MouseEvent('pointermove', { bubbles: true, clientX: 180, clientY: 20 }));
-    expect(loupe).toHaveAttribute('data-placement', 'below');
+    expect(loupe).toHaveAttribute('data-placement', 'above');
 
     fireEvent(canvas, new MouseEvent('pointerup', { bubbles: true }));
     expect(loupe).toHaveAttribute('data-active', 'false');
@@ -122,5 +122,44 @@ describe('SketchEditor 그리기 돋보기', () => {
 
     expect(screen.getByTestId('drawing-loupe')).toHaveAttribute('data-active', 'false');
     expect(loupeContext.drawImage).not.toHaveBeenCalled();
+  });
+
+  it('왼손 모드를 켜면 돋보기를 손가락 오른쪽 위에 표시한다', () => {
+    const drawingContext = createCanvasContext();
+    const loupeContext = createCanvasContext();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function getContext(this: HTMLCanvasElement) {
+      return (this.dataset.loupe === 'true' ? loupeContext : drawingContext) as unknown as CanvasRenderingContext2D;
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,blank');
+
+    render(<SketchEditor ariaLabel="그리기 캔버스" />);
+    fireEvent.click(screen.getByRole('button', { name: '그림 그리기' }));
+    fireEvent.click(screen.getByRole('button', { name: '그리기 도구 열기' }));
+    fireEvent.click(screen.getByRole('button', { name: '가이드' }));
+
+    const leftHandModeToggle = screen.getByRole('checkbox', { name: '왼손 모드' });
+    expect(leftHandModeToggle).not.toBeChecked();
+    fireEvent.click(leftHandModeToggle);
+    fireEvent.click(screen.getByRole('button', { name: '그리기' }));
+
+    const canvas = screen.getByLabelText('그리기 캔버스');
+    Object.defineProperty(canvas, 'setPointerCapture', { value: vi.fn() });
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+      bottom: 360,
+      height: 360,
+      left: 0,
+      right: 360,
+      toJSON: () => ({}),
+      top: 0,
+      width: 360,
+      x: 0,
+      y: 0,
+    });
+
+    fireEvent(canvas, new MouseEvent('pointerdown', { bubbles: true, clientX: 180, clientY: 20 }));
+
+    const loupe = screen.getByTestId('drawing-loupe');
+    expect(loupe).toHaveAttribute('data-placement', 'above');
+    expect(Number.parseFloat(loupe.style.left)).toBeGreaterThan(50);
   });
 });

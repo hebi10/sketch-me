@@ -161,12 +161,12 @@ export function StoryImageComposer({
               left: `50%`,
               transform: `translateX(-50%)`,
               opacity: storyWatermark.opacity,
-              top: `55%`,
+              top: `65%`,
               width: `50%`,
             }}
           >
-            <Image alt="스캐치북 워터마크" height={48} src="/brand/sketchbook-watermark.webp" unoptimized width={48} />
-            <span>스캐치북</span>
+            <Image alt="스캐치북 워터마크" height={30} src="/brand/sketchbook-watermark.webp" unoptimized width={30} />
+            <span>https://sketch.msgnote.kr/</span>
           </div>
         ) : null}
       </section>
