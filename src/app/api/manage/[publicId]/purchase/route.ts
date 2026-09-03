@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { normalizeBuyerPhone, requestPayAppPayment } from '@/lib/payments/payapp';
+import {
+  normalizeBuyerPhone,
+  PayAppConfigurationError,
+  PayAppResponseError,
+  requestPayAppPayment,
+} from '@/lib/payments/payapp';
 import {
   attachProviderPayment,
   createPendingPurchase,
@@ -78,7 +83,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
       providerOrderId: payment.providerOrderId,
     });
     return NextResponse.json({ orderId: pending.orderId, payUrl: payment.payUrl });
-  } catch {
+  } catch (error) {
+    if (error instanceof PayAppResponseError) {
+      console.error('PayApp payment request failed', {
+        providerErrorCode: error.providerErrorCode,
+        reason: error.reason,
+      });
+    } else if (error instanceof PayAppConfigurationError) {
+      console.error('PayApp payment request failed', { reason: 'CONFIGURATION' });
+    } else {
+      console.error('PayApp payment request failed', { reason: 'UNKNOWN' });
+    }
     try {
       await failPendingPurchase(pending.orderId);
     } catch {

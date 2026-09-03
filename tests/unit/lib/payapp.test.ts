@@ -110,6 +110,8 @@ describe('페이앱 서버 연동', () => {
       requestId: 'request-1',
     }, failedTransport)).rejects.toMatchObject({
       message: '결제창을 열지 못했습니다.',
+      providerErrorCode: '70010',
+      reason: 'PROVIDER_REJECTED',
     });
   });
 

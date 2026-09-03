@@ -45,10 +45,30 @@ export class PayAppConfigurationError extends Error {
   }
 }
 
+export type PayAppFailureReason =
+  | 'HTTP_RESPONSE'
+  | 'INVALID_PAY_URL'
+  | 'INVALID_PHONE'
+  | 'INVALID_PROVIDER_ORDER'
+  | 'PROVIDER_REJECTED'
+  | 'TRANSPORT'
+  | 'UNKNOWN';
+
 export class PayAppResponseError extends Error {
-  constructor(message = '결제창을 열지 못했습니다.') {
+  readonly providerErrorCode?: string;
+  readonly reason: PayAppFailureReason;
+
+  constructor(
+    message = '결제창을 열지 못했습니다.',
+    reason: PayAppFailureReason = 'UNKNOWN',
+    providerErrorCode?: string,
+  ) {
     super(message);
     this.name = 'PayAppResponseError';
+    this.reason = reason;
+    this.providerErrorCode = /^\d{5}$/.test(providerErrorCode ?? '')
+      ? providerErrorCode
+      : undefined;
   }
 }
 
@@ -136,7 +156,7 @@ export async function requestPayAppPayment(
   const config = getPayAppConfig();
   const buyerPhone = normalizeBuyerPhone(input.buyerPhone);
   if (!buyerPhone) {
-    throw new PayAppResponseError('휴대전화번호를 확인해 주세요.');
+    throw new PayAppResponseError('휴대전화번호를 확인해 주세요.', 'INVALID_PHONE');
   }
 
   const body = new URLSearchParams({
@@ -162,22 +182,30 @@ export async function requestPayAppPayment(
       signal: AbortSignal.timeout(10_000),
     });
   } catch {
-    throw new PayAppResponseError();
+    throw new PayAppResponseError(undefined, 'TRANSPORT');
   }
 
   if (!response.ok) {
-    throw new PayAppResponseError();
+    throw new PayAppResponseError(undefined, 'HTTP_RESPONSE');
   }
 
   const values = parseResponseBody(await response.text());
+  if (values.get('state') !== '1') {
+    throw new PayAppResponseError(
+      undefined,
+      'PROVIDER_REJECTED',
+      values.get('errno') ?? undefined,
+    );
+  }
+
   const providerOrderId = values.get('mul_no') ?? '';
+  if (!/^\d+$/.test(providerOrderId)) {
+    throw new PayAppResponseError(undefined, 'INVALID_PROVIDER_ORDER');
+  }
+
   const payUrl = normalizePayAppUrl(values.get('payurl') ?? '');
-  if (
-    values.get('state') !== '1'
-    || !/^\d+$/.test(providerOrderId)
-    || !payUrl
-  ) {
-    throw new PayAppResponseError();
+  if (!payUrl) {
+    throw new PayAppResponseError(undefined, 'INVALID_PAY_URL');
   }
 
   return { payUrl, providerOrderId };

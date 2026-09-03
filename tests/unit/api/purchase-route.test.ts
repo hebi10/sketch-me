@@ -21,6 +21,7 @@ vi.mock('@/lib/payments/payapp', async (importOriginal) => ({
 }));
 
 import { POST } from '@/app/api/manage/[publicId]/purchase/route';
+import { PayAppResponseError } from '@/lib/payments/payapp';
 import { PurchaseConflictError } from '@/lib/purchases/orders';
 
 const sketchbook = {
@@ -124,7 +125,12 @@ describe('POST /api/manage/:publicId/purchase', () => {
   });
 
   it('페이앱 요청 실패 시 READY 주문을 실패 처리하고 안전한 오류만 반환한다', async () => {
-    mocks.requestPayAppPayment.mockRejectedValue(new Error('provider secret'));
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mocks.requestPayAppPayment.mockRejectedValue(new PayAppResponseError(
+      '결제창을 열지 못했습니다.',
+      'PROVIDER_REJECTED',
+      '70010',
+    ));
     const response = await POST(paymentRequest({
       buyerPhone: '01012345678',
       digitalContentConsent: true,
@@ -135,6 +141,10 @@ describe('POST /api/manage/:publicId/purchase', () => {
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({ message: '결제창을 열지 못했습니다.' });
     expect(mocks.failPendingPurchase).toHaveBeenCalledWith('order-public-random');
+    expect(errorLog).toHaveBeenCalledWith('PayApp payment request failed', {
+      providerErrorCode: '70010',
+      reason: 'PROVIDER_REJECTED',
+    });
   });
 
   it('같은 요청 ID를 다른 상품에 재사용하면 외부 결제 전에 충돌로 거부한다', async () => {
