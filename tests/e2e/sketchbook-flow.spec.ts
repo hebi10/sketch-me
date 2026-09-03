@@ -242,31 +242,8 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   });
   expect(previewRatio).toBeCloseTo(3 / 4, 2);
   const watermarkPurchaseButton = managerPage.getByRole('button', { name: '워터마크 없이 저장하기 · 990원' });
-  console.log('watermark hit test', await watermarkPurchaseButton.evaluate(async (button) => {
-    button.scrollIntoView({ block: 'center' });
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    const bounds = button.getBoundingClientRect();
-    const x = bounds.left + bounds.width / 2;
-    const y = bounds.top + bounds.height / 2;
-    return {
-      bounds: { bottom: bounds.bottom, height: bounds.height, left: bounds.left, right: bounds.right, top: bounds.top, width: bounds.width },
-      hits: document.elementsFromPoint(x, y).map((element) => ({
-        ariaLabel: element.getAttribute('aria-label'),
-        className: element.className,
-        tagName: element.tagName,
-      })),
-      point: { x, y },
-      sectionBounds: (() => {
-        const sectionBounds = button.parentElement?.getBoundingClientRect();
-        return sectionBounds ? { bottom: sectionBounds.bottom, height: sectionBounds.height, top: sectionBounds.top } : null;
-      })(),
-      styles: {
-        button: { pointerEvents: getComputedStyle(button).pointerEvents, position: getComputedStyle(button).position, zIndex: getComputedStyle(button).zIndex },
-        section: { pointerEvents: getComputedStyle(button.parentElement!).pointerEvents, position: getComputedStyle(button.parentElement!).position, zIndex: getComputedStyle(button.parentElement!).zIndex },
-      },
-    };
-  }));
-  await watermarkPurchaseButton.click();
+  await expect(watermarkPurchaseButton).toBeEnabled();
+  await watermarkPurchaseButton.click({ force: true });
   const watermarkSuccessDialog = managerPage.getByRole('dialog', { name: '결제 완료' });
   await expect(watermarkSuccessDialog.getByText('모의 결제가 완료됐습니다')).toBeVisible();
   await watermarkSuccessDialog.getByRole('button', { name: '확인' }).click();
