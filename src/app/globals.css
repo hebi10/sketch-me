@@ -1503,9 +1503,17 @@ main {
   font-family: var(--font-handwriting), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
-.manage-system-sans .best-actions button {
+.manage-system-sans .drawing-actions summary,
+.manage-system-sans .drawing-action-panel button,
+.manage-system-sans .drawing-action-panel .button {
   font-family: var(--font-handwriting), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-size: var(--font-size-label);
   font-weight: 700;
+}
+
+.manage-system-sans .drawing-action-panel .button {
+  min-height: 44px;
+  padding: 8px;
 }
 
 .manage-security-modal {
