@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { useId } from 'react';
 
@@ -6,6 +5,7 @@ import type {
   AdminDrawingListItem,
   AdminPage,
 } from '@/lib/admin/types';
+import { AdminDrawingPreview } from './AdminDrawingPreview';
 import { DrawingModerationButton } from './DrawingModerationButton';
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
@@ -32,17 +32,6 @@ function DrawingCard({ item }: { item: AdminDrawingListItem }) {
 
   return (
     <article aria-labelledby={titleId} className="admin-drawing-card">
-      <figure className="admin-drawing-preview">
-        <Image
-          alt={`${item.authorName}님의 그림`}
-          height={600}
-          loading="lazy"
-          sizes="(max-width: 650px) calc(100vw - 48px), 602px"
-          src={getDrawingImageHref(item)}
-          unoptimized
-          width={600}
-        />
-      </figure>
       <div className="admin-drawing-card-body">
         <div className="admin-record-card-heading">
           <div>
@@ -55,6 +44,11 @@ function DrawingCard({ item }: { item: AdminDrawingListItem }) {
             {moderationStatus}
           </span>
         </div>
+
+        <AdminDrawingPreview
+          alt={`${item.authorName}님의 그림`}
+          src={getDrawingImageHref(item)}
+        />
 
         <dl className="admin-card-facts">
           <div>

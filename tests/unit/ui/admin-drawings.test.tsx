@@ -76,7 +76,7 @@ afterEach(() => {
 });
 
 describe('AdminDrawingList', () => {
-  it('보호 API의 원본 이미지를 최적화 캐시 없이 표시하고 소유자·운영 상태를 함께 설명한다', () => {
+  it('보호 이미지는 처음에 요청하지 않고 펼친 카드에만 표시한 뒤 다시 접는다', () => {
     const page: AdminPage<AdminDrawingListItem> = {
       items: [
         createDrawing(),
@@ -93,6 +93,14 @@ describe('AdminDrawingList', () => {
     render(<AdminDrawingList page={page} />);
 
     const firstCard = screen.getByRole('article', { name: '친구1님의 그림' });
+    const firstToggle = within(firstCard).getByRole('button', { name: '그림 펼치기' });
+    expect(firstToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(within(firstCard).queryByRole('img')).not.toBeInTheDocument();
+
+    fireEvent.click(firstToggle);
+
+    expect(within(firstCard).getByRole('button', { name: '그림 접기' }))
+      .toHaveAttribute('aria-expanded', 'true');
     expect(within(firstCard).getByRole('img', { name: '친구1님의 그림' })).toHaveAttribute(
       'src',
       '/api/admin/sketchbooks/book-1/drawings/draw-1/image',
@@ -103,9 +111,16 @@ describe('AdminDrawingList', () => {
     expect(within(firstCard).getAllByText('운영 정상')).toHaveLength(2);
 
     const secondCard = screen.getByRole('article', { name: '친구2님의 그림' });
+    expect(within(secondCard).queryByRole('img')).not.toBeInTheDocument();
     expect(within(secondCard).getByText('소유자 숨김')).toBeVisible();
     expect(within(secondCard).getAllByText('운영자 숨김')).toHaveLength(2);
     expect(within(secondCard).getByRole('button', { name: '숨김 해제' })).toBeVisible();
+
+    fireEvent.click(within(firstCard).getByRole('button', { name: '그림 접기' }));
+
+    expect(within(firstCard).queryByRole('img')).not.toBeInTheDocument();
+    expect(within(firstCard).getByRole('button', { name: '그림 펼치기' }))
+      .toHaveAttribute('aria-expanded', 'false');
   });
 
   it('커서를 URLSearchParams로 인코딩한 다음 20개 링크를 표시한다', () => {

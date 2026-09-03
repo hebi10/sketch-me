@@ -2301,6 +2301,16 @@ main {
   width: 100%;
 }
 
+.admin-drawing-disclosure {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-drawing-disclosure > .button {
+  width: 100%;
+}
+
 .admin-drawing-card-body {
   padding: 12px 6px 6px;
 }
