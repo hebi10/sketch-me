@@ -139,6 +139,7 @@ export async function requestPayAppPayment(
     price: String(input.plan.amount),
     recvphone: buyerPhone,
     returnurl: `${config.appOrigin}/api/payments/payapp/return?orderId=${encodeURIComponent(input.orderId)}`,
+    shopname: '스캐치북',
     smsuse: 'n',
     userid: config.userId,
     var1: input.orderId,

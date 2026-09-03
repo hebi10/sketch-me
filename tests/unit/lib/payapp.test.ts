@@ -23,7 +23,7 @@ describe('페이앱 서버 연동', () => {
     vi.unstubAllEnvs();
   });
 
-  it('서버 상품과 구매자 전화번호로 페이앱 결제 요청을 만든다', async () => {
+  it('필수 상점명과 서버 상품·구매자 전화번호로 페이앱 결제 요청을 만든다', async () => {
     const transport = vi.fn().mockResolvedValue(new Response(
       'state=1&errorMessage=&mul_no=2000&payurl=https%3A%2F%2Fpayapp.kr%2Fpay%2F2000',
     ));
@@ -53,6 +53,7 @@ describe('페이앱 서버 연동', () => {
       price: '1000',
       recvphone: '01012345678',
       returnurl: 'https://sketch.example.com/api/payments/payapp/return?orderId=order_public_random',
+      shopname: '스캐치북',
       smsuse: 'n',
       userid: 'seller-id',
       var1: 'order_public_random',
