@@ -1460,10 +1460,6 @@ main {
   }
 }
 
-.manage-actions {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .share-action-stack {
   display: grid;
   gap: 6px;

@@ -34,13 +34,13 @@ export function ShareSketchbookButton({ publicId, name, menuItem = false, previe
 
   if (menuItem) {
     return (
-      <button aria-label="친구에게 공유하기" onClick={share} title="친구에게 공유하기" type="button">공유</button>
+      <button aria-label="공유하기" onClick={share} title="공유하기" type="button">공유</button>
     );
   }
 
   return (
     <div className="share-action-stack">
-      <button className="button button--secondary" onClick={share} type="button">친구에게 공유하기</button>
+      <button className="button button--secondary" onClick={share} type="button">공유하기</button>
       {status ? <p aria-live="polite" role="status">{status}</p> : null}
     </div>
   );

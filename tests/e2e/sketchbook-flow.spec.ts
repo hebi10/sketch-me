@@ -237,7 +237,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await expect(managerPage.locator('.best-badge')).toHaveText('BEST 1');
 
   await managerPage.getByLabel('메뉴', { exact: true }).click();
-  await managerPage.getByLabel('메뉴 항목').getByRole('link', { name: '스토리 이미지 만들기' }).click();
+  await managerPage.getByLabel('메뉴 항목').getByRole('link', { name: '베스트 이미지 제작' }).click();
   await expect(managerPage).toHaveURL(/\/share$/);
   await expect(managerPage.getByAltText('BEST 1 그림')).toBeVisible();
   const storyPreview = managerPage.getByRole('region', { name: '스토리 이미지 미리보기' });

@@ -226,7 +226,7 @@ Expected: FAIL because the new form and menu components do not exist.
 <button aria-expanded={open} aria-haspopup="menu" type="button">☰ 메뉴</button>
 ~~~
 
-Add PIN and optional hint before image sections. Replace the completion recovery link with 스케치북이 완성됐어요 and the unrecoverable-PIN notice. Public menu items are 내 스케치북 관리, 친구에게 공유하기, 새 스케치북 만들기; management items are 친구 페이지 보기, 스토리 이미지 만들기, 공유하기, 관리용 비밀번호 변경, 로그아웃. Use text rows, a 1px paper-panel border, no shadow, and 44px minimum rows.
+Add PIN and optional hint before image sections. Replace the completion recovery link with 스케치북이 완성됐어요 and the unrecoverable-PIN notice. Public menu items are 내 스케치북 관리, 공유하기, 새 스케치북 만들기; management items are 친구 페이지 보기, 베스트 이미지 제작, 공유하기, 관리용 비밀번호 변경, 로그아웃. Use text rows, a 1px paper-panel border, no shadow, and 44px minimum rows.
 
 - [ ] **Step 4: Run test to verify it passes**
 

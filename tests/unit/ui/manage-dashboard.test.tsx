@@ -227,14 +227,14 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
 
     const items = [
       ['친구 페이지 보기', '친구홈'],
-      ['스토리 이미지 만들기', '스토리'],
-      ['친구에게 공유하기', '공유'],
+      ['베스트 이미지 제작', '스토리'],
+      ['공유하기', '공유'],
       ['관리용 비밀번호 변경', '비밀번호'],
       ['로그아웃', '로그아웃'],
     ] as const;
 
     items.forEach(([name, shortLabel]) => {
-      const control = within(menu).getByRole(name === '친구 페이지 보기' || name === '스토리 이미지 만들기' ? 'link' : 'button', { name });
+      const control = within(menu).getByRole(name === '친구 페이지 보기' || name === '베스트 이미지 제작' ? 'link' : 'button', { name });
       expect(control).toHaveTextContent(shortLabel);
     });
     expect(menu.querySelector('img')).not.toBeInTheDocument();

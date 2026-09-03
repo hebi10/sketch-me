@@ -33,7 +33,7 @@ export function PublicSketchbookHeader({ name, publicId }: { name: string; publi
         <span className="header-title">{name}의 스캐치북</span>
         <HeaderMenu>
           <Link href={`/m/${publicId}`}>내 스케치북 관리</Link>
-          <button onClick={share} type="button">친구에게 공유하기</button>
+          <button onClick={share} type="button">공유하기</button>
           <Link href="/create">새 스케치북 만들기</Link>
         </HeaderMenu>
       </header>

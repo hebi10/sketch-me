@@ -10,7 +10,7 @@ describe('ShareSketchbookButton', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
 
     render(<ShareSketchbookButton name="테스트" publicId="public-1" />);
-    fireEvent.click(screen.getByRole('button', { name: '친구에게 공유하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '공유하기' }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/s/public-1`));
     expect(screen.getByRole('status')).toHaveTextContent('링크를 복사했어요.');
@@ -22,7 +22,7 @@ describe('ShareSketchbookButton', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
 
     render(<ShareSketchbookButton name="테스트" previewVersion="drawing-1-version-1" publicId="public-1" />);
-    fireEvent.click(screen.getByRole('button', { name: '친구에게 공유하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '공유하기' }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(
       `${window.location.origin}/s/public-1?preview=drawing-1-version-1`,
@@ -36,7 +36,7 @@ describe('ShareSketchbookButton', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
 
     render(<ShareSketchbookButton name="테스트" publicId="public-2" />);
-    fireEvent.click(screen.getByRole('button', { name: '친구에게 공유하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '공유하기' }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/s/public-2`));
     expect(screen.getByRole('status')).toHaveTextContent('공유창을 열지 못해 링크를 복사했어요.');
