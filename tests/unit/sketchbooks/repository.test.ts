@@ -176,15 +176,21 @@ describe('공개 그림 저장소 운영자 차단', () => {
     });
   });
 
-  it('소유자 그림을 BEST로 지정하면 같은 순위의 친구 그림을 해제한다', async () => {
+  it('순위가 없는 소유자 그림을 1위로 지정하면 기존 친구 그림을 아래로 밀고 4위를 해제한다', async () => {
     const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
-    const friendReference = { id: 'friend-1' };
+    const friendReferences = [1, 2, 3, 4].map((rank) => ({ id: `friend-${rank}` }));
     const rankedQuery = { kind: 'ranked' };
     const drawingsCollection = { where: vi.fn(() => rankedQuery) };
     const transaction = {
       get: vi.fn(async (reference: { kind: string }) => reference.kind === 'sketchbook'
-        ? { data: () => ({ ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp' }), exists: true }
-        : { docs: [{ ref: friendReference }] }),
+        ? { data: () => ({ ownerBestRank: null, ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp' }), exists: true }
+        : {
+            docs: friendReferences.map((ref, index) => ({
+              data: () => ({ bestRank: index + 1 }),
+              id: ref.id,
+              ref,
+            })),
+          }),
       update: vi.fn(),
     };
     getAdminFirestore.mockReturnValue({
@@ -197,20 +203,20 @@ describe('공개 그림 저장소 운영자 차단', () => {
       runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
     });
 
-    await setOwnerBestDrawing('book-1', 2);
+    await setOwnerBestDrawing('book-1', 1);
 
-    expect(drawingsCollection.where).toHaveBeenCalledWith('bestRank', '==', 2);
-    expect(transaction.update).toHaveBeenCalledWith(friendReference, {
-      bestRank: null,
-      updatedAt: expect.any(Date),
-    });
+    expect(drawingsCollection.where).toHaveBeenCalledWith('bestRank', 'in', [1, 2, 3, 4]);
+    expect(transaction.update).toHaveBeenCalledWith(friendReferences[0], { bestRank: 2, updatedAt: expect.any(Date) });
+    expect(transaction.update).toHaveBeenCalledWith(friendReferences[1], { bestRank: 3, updatedAt: expect.any(Date) });
+    expect(transaction.update).toHaveBeenCalledWith(friendReferences[2], { bestRank: 4, updatedAt: expect.any(Date) });
+    expect(transaction.update).toHaveBeenCalledWith(friendReferences[3], { bestRank: null, updatedAt: expect.any(Date) });
     expect(transaction.update).toHaveBeenCalledWith(expect.objectContaining(sketchbookReference), {
-      ownerBestRank: 2,
+      ownerBestRank: 1,
       updatedAt: expect.any(Date),
     });
   });
 
-  it('친구 그림을 BEST로 지정하면 같은 순위의 소유자 그림을 해제한다', async () => {
+  it('친구 그림을 BEST로 지정하면 같은 순위의 소유자 그림을 다음 순위로 민다', async () => {
     const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
     const target = { id: 'drawing-1', kind: 'target' };
     const rankedQuery = { kind: 'ranked' };
@@ -239,13 +245,102 @@ describe('공개 그림 저장소 운영자 차단', () => {
     await setBestDrawing('book-1', 'drawing-1', 3);
 
     expect(transaction.update).toHaveBeenCalledWith(expect.objectContaining(sketchbookReference), {
-      ownerBestRank: null,
+      ownerBestRank: 4,
       updatedAt: expect.any(Date),
     });
     expect(transaction.update).toHaveBeenCalledWith(target, {
       bestRank: 3,
       updatedAt: expect.any(Date),
     });
+  });
+
+  it('기존 1위 친구 그림을 3위로 옮기면 중간 순위를 위로 당긴다', async () => {
+    const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
+    const target = { id: 'drawing-1', kind: 'target' };
+    const friend2 = { id: 'drawing-2' };
+    const friend3 = { id: 'drawing-3' };
+    const friend4 = { id: 'drawing-4' };
+    const rankedQuery = { kind: 'ranked' };
+    const drawingsCollection = {
+      doc: vi.fn(() => target),
+      where: vi.fn(() => rankedQuery),
+    };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => {
+        if (reference.kind === 'sketchbook') return { data: () => ({ ownerBestRank: null }), exists: true };
+        if (reference.kind === 'target') return { data: () => ({ bestRank: 1, moderationStatus: 'ACTIVE', status: 'VISIBLE' }), exists: true };
+        return {
+          docs: [
+            { data: () => ({ bestRank: 1 }), id: target.id, ref: target },
+            { data: () => ({ bestRank: 2 }), id: friend2.id, ref: friend2 },
+            { data: () => ({ bestRank: 3 }), id: friend3.id, ref: friend3 },
+            { data: () => ({ bestRank: 4 }), id: friend4.id, ref: friend4 },
+          ],
+        };
+      }),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn(() => drawingsCollection),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await setBestDrawing('book-1', target.id, 3);
+
+    expect(drawingsCollection.where).toHaveBeenCalledWith('bestRank', 'in', [1, 2, 3, 4]);
+    expect(transaction.update).toHaveBeenCalledWith(friend2, { bestRank: 1, updatedAt: expect.any(Date) });
+    expect(transaction.update).toHaveBeenCalledWith(friend3, { bestRank: 2, updatedAt: expect.any(Date) });
+    expect(transaction.update).not.toHaveBeenCalledWith(friend4, expect.anything());
+    expect(transaction.update).toHaveBeenCalledWith(target, { bestRank: 3, updatedAt: expect.any(Date) });
+  });
+
+  it('기존 3위 친구 그림을 1위로 옮기면 중간 순위를 아래로 민다', async () => {
+    const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
+    const target = { id: 'drawing-3', kind: 'target' };
+    const friend1 = { id: 'drawing-1' };
+    const friend2 = { id: 'drawing-2' };
+    const friend4 = { id: 'drawing-4' };
+    const rankedQuery = { kind: 'ranked' };
+    const drawingsCollection = {
+      doc: vi.fn(() => target),
+      where: vi.fn(() => rankedQuery),
+    };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => {
+        if (reference.kind === 'sketchbook') return { data: () => ({ ownerBestRank: null }), exists: true };
+        if (reference.kind === 'target') return { data: () => ({ bestRank: 3, moderationStatus: 'ACTIVE', status: 'VISIBLE' }), exists: true };
+        return {
+          docs: [
+            { data: () => ({ bestRank: 1 }), id: friend1.id, ref: friend1 },
+            { data: () => ({ bestRank: 2 }), id: friend2.id, ref: friend2 },
+            { data: () => ({ bestRank: 3 }), id: target.id, ref: target },
+            { data: () => ({ bestRank: 4 }), id: friend4.id, ref: friend4 },
+          ],
+        };
+      }),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn(() => drawingsCollection),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await setBestDrawing('book-1', target.id, 1);
+
+    expect(transaction.update).toHaveBeenCalledWith(friend1, { bestRank: 2, updatedAt: expect.any(Date) });
+    expect(transaction.update).toHaveBeenCalledWith(friend2, { bestRank: 3, updatedAt: expect.any(Date) });
+    expect(transaction.update).not.toHaveBeenCalledWith(friend4, expect.anything());
+    expect(transaction.update).toHaveBeenCalledWith(target, { bestRank: 1, updatedAt: expect.any(Date) });
   });
 
   it('다섯 번째 그림부터는 빈 BEST 자리가 있어도 자동 순위를 배정하지 않는다', async () => {

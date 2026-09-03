@@ -16,6 +16,51 @@ import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
 
 const collectionName = 'sketchbooks';
 const deletionJobCollectionName = 'sketchbookDeletionJobs';
+const bestRanks = [1, 2, 3, 4] as const;
+
+type BestRank = (typeof bestRanks)[number];
+
+function toBestRank(value: unknown): BestRank | null {
+  const rank = Number(value);
+  return bestRanks.includes(rank as BestRank) ? rank as BestRank : null;
+}
+
+function planBestRankUpdates(
+  occupiedSlots: Map<BestRank, string>,
+  targetKey: string,
+  currentRank: BestRank | null,
+  nextRank: BestRank,
+) {
+  const updates = new Map<string, BestRank | null>();
+
+  if (currentRank === null) {
+    const emptyRank = bestRanks.find((rank) => rank >= nextRank && !occupiedSlots.has(rank));
+    const lastShiftRank = emptyRank ?? 4;
+
+    if (emptyRank === undefined) {
+      const lastEntry = occupiedSlots.get(4);
+      if (lastEntry) updates.set(lastEntry, null);
+    }
+
+    for (let destination = lastShiftRank; destination > nextRank; destination -= 1) {
+      const entry = occupiedSlots.get((destination - 1) as BestRank);
+      if (entry) updates.set(entry, destination as BestRank);
+    }
+  } else if (currentRank > nextRank) {
+    for (let destination = currentRank; destination > nextRank; destination -= 1) {
+      const entry = occupiedSlots.get((destination - 1) as BestRank);
+      if (entry) updates.set(entry, destination as BestRank);
+    }
+  } else if (currentRank < nextRank) {
+    for (let destination = currentRank; destination < nextRank; destination += 1) {
+      const entry = occupiedSlots.get((destination + 1) as BestRank);
+      if (entry) updates.set(entry, destination as BestRank);
+    }
+  }
+
+  updates.set(targetKey, nextRank);
+  return updates;
+}
 
 export interface SketchbookDeletionJob {
   publicId: string;
@@ -288,7 +333,7 @@ export async function setBestDrawing(sketchbookId: string, drawingId: string, be
     const [sketchbookDocument, targetDocument, ranked] = await Promise.all([
       transaction.get(sketchbookReference),
       transaction.get(target),
-      transaction.get(collection.where('bestRank', '==', bestRank)),
+      transaction.get(collection.where('bestRank', 'in', bestRanks)),
     ]);
     if (!targetDocument.exists) {
       throw new Error('공개 중인 그림만 BEST로 선정할 수 있습니다.');
@@ -299,12 +344,37 @@ export async function setBestDrawing(sketchbookId: string, drawingId: string, be
     if (targetDocument.data()?.status !== 'VISIBLE') {
       throw new Error('공개 중인 그림만 BEST로 선정할 수 있습니다.');
     }
+
+    const targetKey = `drawing:${drawingId}`;
+    const references = new Map<string, typeof target>([[targetKey, target]]);
+    const occupiedSlots = new Map<BestRank, string>();
+    const ownerBestRank = toBestRank(sketchbookDocument.data()?.ownerBestRank);
+    if (ownerBestRank !== null) occupiedSlots.set(ownerBestRank, 'owner');
+
+    ranked.docs.forEach((document) => {
+      if (document.id === drawingId) return;
+      const rank = toBestRank(document.data().bestRank);
+      if (rank === null) return;
+      const key = `drawing:${document.id}`;
+      occupiedSlots.set(rank, key);
+      references.set(key, document.ref);
+    });
+
+    const updates = planBestRankUpdates(
+      occupiedSlots,
+      targetKey,
+      toBestRank(targetDocument.data()?.bestRank),
+      bestRank,
+    );
     const updatedAt = new Date();
-    ranked.docs.forEach((document) => transaction.update(document.ref, { bestRank: null, updatedAt }));
-    if (sketchbookDocument.exists && sketchbookDocument.data()?.ownerBestRank === bestRank) {
-      transaction.update(sketchbookReference, { ownerBestRank: null, updatedAt });
-    }
-    transaction.update(target, { bestRank, updatedAt });
+    updates.forEach((rank, key) => {
+      if (key === 'owner') {
+        transaction.update(sketchbookReference, { ownerBestRank: rank, updatedAt });
+        return;
+      }
+      const reference = references.get(key);
+      if (reference) transaction.update(reference, { bestRank: rank, updatedAt });
+    });
   });
 }
 
@@ -316,14 +386,36 @@ export async function setOwnerBestDrawing(sketchbookId: string, bestRank: 1 | 2 
   await firestore.runTransaction(async (transaction) => {
     const [sketchbookDocument, ranked] = await Promise.all([
       transaction.get(sketchbookReference),
-      transaction.get(drawingsCollection.where('bestRank', '==', bestRank)),
+      transaction.get(drawingsCollection.where('bestRank', 'in', bestRanks)),
     ]);
     if (!sketchbookDocument.exists || !sketchbookDocument.data()?.ownerDrawingPath) {
       throw new Error('순위를 지정할 내 그림을 찾을 수 없습니다.');
     }
+
+    const references = new Map<string, (typeof ranked.docs)[number]['ref']>();
+    const occupiedSlots = new Map<BestRank, string>();
+    ranked.docs.forEach((document) => {
+      const rank = toBestRank(document.data().bestRank);
+      if (rank === null) return;
+      const key = `drawing:${document.id}`;
+      occupiedSlots.set(rank, key);
+      references.set(key, document.ref);
+    });
+    const updates = planBestRankUpdates(
+      occupiedSlots,
+      'owner',
+      toBestRank(sketchbookDocument.data()?.ownerBestRank),
+      bestRank,
+    );
     const updatedAt = new Date();
-    ranked.docs.forEach((document) => transaction.update(document.ref, { bestRank: null, updatedAt }));
-    transaction.update(sketchbookReference, { ownerBestRank: bestRank, updatedAt });
+    updates.forEach((rank, key) => {
+      if (key === 'owner') {
+        transaction.update(sketchbookReference, { ownerBestRank: rank, updatedAt });
+        return;
+      }
+      const reference = references.get(key);
+      if (reference) transaction.update(reference, { bestRank: rank, updatedAt });
+    });
   });
 }
 
