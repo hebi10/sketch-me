@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "deploy:firebase": "npm run build && firebase apphosting:rollouts:create sketch-me --git-branch main --project sketch-me-31e13 --location asia-east1 --force",
+    "deploy:firebase": "npm run build && firebase apphosting:rollouts:create sketch-me --git-branch main --project sketch-me-31e13 --force",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
