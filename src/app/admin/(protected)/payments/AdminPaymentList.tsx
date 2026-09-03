@@ -115,7 +115,7 @@ export function AdminPaymentList({
     <section aria-labelledby="admin-payments-title" className="admin-page">
       <div className="admin-page-heading">
         <h1 id="admin-payments-title">결제 목록</h1>
-        <p>페이앱 결제 상태와 적용된 상품 혜택을 최신 순서로 확인하고 전체 취소를 요청할 수 있습니다.</p>
+        <p>정산 전 거래는 즉시 전체 취소를 요청할 수 있습니다. 정산 완료 거래는 페이앱 판매자 사이트에서 별도 취소 요청이 필요합니다.</p>
       </div>
 
       {page.items.length > 0 ? (

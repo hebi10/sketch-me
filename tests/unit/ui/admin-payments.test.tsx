@@ -62,6 +62,7 @@ describe('AdminPaymentList', () => {
     render(<AdminPaymentList page={page} />);
 
     expect(screen.getByRole('heading', { name: '결제 목록' })).toBeVisible();
+    expect(screen.getByText(/정산 완료 거래는 페이앱 판매자 사이트에서 별도 취소 요청/)).toBeVisible();
     expect(screen.queryByText(/조회 전용/)).not.toBeInTheDocument();
     const card = screen.getByRole('article', { name: 'ORDER-1 결제' });
     expect(within(card).getByText('페이앱')).toBeVisible();

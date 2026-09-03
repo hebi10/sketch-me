@@ -53,7 +53,9 @@ export async function POST(
     return NextResponse.json({ cancelRequested: true });
   } catch {
     return NextResponse.json(
-      { message: '페이앱 전체 취소 요청을 처리하지 못했습니다.' },
+      {
+        message: '페이앱에서 즉시 취소할 수 없습니다. 정산 완료 여부를 확인하고 판매자 사이트에서 취소 요청해 주세요.',
+      },
       { status: 502 },
     );
   }

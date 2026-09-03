@@ -9,7 +9,12 @@ export function AdminPaymentCancelButton({ orderId }: { orderId: string }) {
   const [message, setMessage] = useState<string | null>(null);
 
   async function cancelPayment() {
-    if (isSubmitting || !window.confirm('이 결제를 전체 취소할까요? 적용된 혜택은 자동 회수되지 않습니다.')) return;
+    if (
+      isSubmitting
+      || !window.confirm(
+        '페이앱에 즉시 전체 취소를 요청할까요? 정산 완료 거래는 판매자 사이트에서 별도 취소 요청과 반환금 입금이 필요합니다. 적용된 혜택은 자동 회수되지 않습니다.',
+      )
+    ) return;
     setIsSubmitting(true);
     setMessage(null);
     try {
