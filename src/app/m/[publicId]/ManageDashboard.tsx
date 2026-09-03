@@ -416,6 +416,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
               </div>
               <p>내 그림</p>
               <span>직접 그린 내 모습</span>
+              <span aria-hidden="true" className="drawing-status drawing-card-placeholder">&nbsp;</span>
               <details className="drawing-actions">
                 <summary>순위 선택</summary>
                 <div className="drawing-action-panel">
@@ -437,7 +438,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
                 <ManageImage alt={`${drawing.authorName}님의 그림`} height={255} loading={index === 0 ? 'eager' : 'lazy'} src={`/api/manage/${publicId}/drawings/${drawing.id}/image`} unoptimized width={255} />
               </div>
               <p>{drawing.authorName}</p>
-              {drawing.message ? <span>{drawing.message}</span> : null}
+              {drawing.message ? <span>{drawing.message}</span> : <span aria-hidden="true" className="drawing-card-placeholder">&nbsp;</span>}
               <span className="drawing-status">
                 {drawing.moderationStatus === 'BLOCKED'
                   ? '운영자 숨김'
