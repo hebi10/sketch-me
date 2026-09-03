@@ -368,7 +368,7 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
       sketchbookId: sketchbook.id,
       sketchbookPublicId: sketchbook.publicId,
       sketchbookName: sketchbook.name,
-      orderId: `mock_${requestId}`,
+      orderId: `order_${requestId}`,
       provider: 'MOCK',
       productType: plan.productId,
       amount: plan.amount,

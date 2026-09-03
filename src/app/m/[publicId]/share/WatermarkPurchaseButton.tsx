@@ -2,8 +2,8 @@
 
 import { useRef, useState } from 'react';
 
+import { PaymentSuccessDialog } from '@/components/ui/PaymentSuccessDialog';
 import type { SketchbookEntitlements } from '@/lib/domain/types';
-import { getPublicPaymentMode } from '@/lib/purchases/mode';
 
 interface WatermarkPurchaseButtonProps {
   onPurchased: () => void;
@@ -11,9 +11,10 @@ interface WatermarkPurchaseButtonProps {
 }
 
 export function WatermarkPurchaseButton({ onPurchased, publicId }: WatermarkPurchaseButtonProps) {
-  const paymentMode = getPublicPaymentMode();
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const purchaseButtonRef = useRef<HTMLButtonElement>(null);
   const isPurchasingRef = useRef(false);
 
   async function purchase() {
@@ -36,7 +37,7 @@ export function WatermarkPurchaseButton({ onPurchased, publicId }: WatermarkPurc
       if (!response.ok || !result.entitlements?.watermarkFree) {
         throw new Error(result.message ?? '결제를 처리하지 못했어요.');
       }
-      onPurchased();
+      setSuccessOpen(true);
     } catch (purchaseError) {
       const message = purchaseError instanceof Error ? purchaseError.message : '결제를 처리하지 못했어요.';
       setError(`${message} 다시 시도해 주세요.`);
@@ -46,26 +47,29 @@ export function WatermarkPurchaseButton({ onPurchased, publicId }: WatermarkPurc
     }
   }
 
-  if (paymentMode !== 'MOCK') {
-    return (
-      <section aria-label="워터마크 제거 결제 준비 중" className="watermark-purchase purchase-preparing" role="status">
-        <strong>워터마크 제거 결제 준비 중</strong>
-        <p>결제 기능을 준비하고 있어요. 준비가 끝나면 워터마크 없이 저장할 수 있어요.</p>
-      </section>
-    );
+  function completePurchase() {
+    setSuccessOpen(false);
+    onPurchased();
   }
 
   return (
-    <section aria-label="워터마크 제거" className="watermark-purchase">
-      <div>
-        <strong>결과 이미지를 깔끔하게 저장하고 싶나요?</strong>
-        <p>한 번 적용하면 이 스케치북의 공유 이미지에서 워터마크가 빠져요.</p>
-      </div>
-      <button className="button button--secondary" disabled={isPurchasing} onClick={purchase} type="button">
-        {isPurchasing ? '모의 결제 처리 중...' : '워터마크 없이 저장하기 · 990원'}
-      </button>
-      <small>현재는 실제 금액이 청구되지 않는 모의 결제입니다.</small>
-      {error ? <p className="watermark-purchase__error" role="alert">{error}</p> : null}
-    </section>
+    <>
+      <section aria-label="워터마크 제거" className="watermark-purchase">
+        <div>
+          <strong>결과 이미지를 깔끔하게 저장하고 싶나요?</strong>
+          <p>한 번 적용하면 이 스케치북의 공유 이미지에서 워터마크가 빠져요.</p>
+        </div>
+        <button className="button button--secondary" disabled={isPurchasing} onClick={purchase} ref={purchaseButtonRef} type="button">
+          {isPurchasing ? '결제 처리 중...' : '워터마크 없이 저장하기 · 990원'}
+        </button>
+        {error ? <p className="watermark-purchase__error" role="alert">{error}</p> : null}
+      </section>
+      <PaymentSuccessDialog
+        description="워터마크 제거가 적용됐어요."
+        onClose={completePurchase}
+        open={successOpen}
+        returnFocusRef={purchaseButtonRef}
+      />
+    </>
   );
 }

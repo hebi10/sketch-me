@@ -30,7 +30,7 @@ function createPurchase(
     amount: 4_490,
     createdAt,
     id: 'purchase-1',
-    orderId: 'mock_order_1',
+    orderId: 'ORDER-1',
     paidAt: createdAt,
     paymentStatus: 'SUCCEEDED',
     productType: 'FRIENDS_50',
@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 
 describe('AdminPaymentList', () => {
-  it('모의 결제임과 조회 전용임을 화면과 카드에서 명확히 표시한다', () => {
+  it('결제 내역과 조회 전용 상태를 화면과 카드에서 명확히 표시한다', () => {
     const page: AdminPage<AdminPurchaseListItem> = {
       items: [createPurchase()],
       nextCursor: null,
@@ -60,16 +60,17 @@ describe('AdminPaymentList', () => {
 
     render(<AdminPaymentList page={page} />);
 
-    expect(screen.getByRole('heading', { name: '모의 결제 목록' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: '결제 목록' })).toBeVisible();
     expect(screen.getByText(/조회 전용/)).toBeVisible();
-    const card = screen.getByRole('article', { name: 'mock_order_1 결제' });
-    expect(within(card).getByText('모의 결제')).toBeVisible();
+    const card = screen.getByRole('article', { name: 'ORDER-1 결제' });
+    expect(within(card).getByText('결제')).toBeVisible();
     expect(within(card).getByText('내 이름')).toBeVisible();
     expect(within(card).getByText('public-1')).toBeVisible();
     expect(within(card).getByText('친구 그림 50명 추가')).toBeVisible();
     expect(within(card).getByText('+50명')).toBeVisible();
     expect(within(card).getByText('4,490원')).toBeVisible();
     expect(within(card).getByText('성공')).toBeVisible();
+    expect(within(card).queryByText(/모의 결제/)).not.toBeInTheDocument();
     expect(within(card).queryByRole('button')).not.toBeInTheDocument();
   });
 
@@ -83,7 +84,7 @@ describe('AdminPaymentList', () => {
       nextCursor: null,
     }} />);
 
-    const card = screen.getByRole('article', { name: 'mock_order_1 결제' });
+    const card = screen.getByRole('article', { name: 'ORDER-1 결제' });
     expect(within(card).getByText('워터마크 제거')).toBeVisible();
     expect(within(card).getByText('결과 이미지 워터마크 제거')).toBeVisible();
     expect(within(card).queryByText('+0명')).not.toBeInTheDocument();
@@ -94,7 +95,7 @@ describe('AdminPaymentList', () => {
       <AdminPaymentList page={{ items: [], nextCursor: 'next+/= cursor' }} />,
     );
 
-    expect(screen.getByRole('status')).toHaveTextContent('아직 모의 결제 내역이 없습니다.');
+    expect(screen.getByRole('status')).toHaveTextContent('아직 결제 내역이 없습니다.');
     expect(screen.getByRole('link', { name: '다음 20개' })).toHaveAttribute(
       'href',
       '/admin/payments?cursor=next%2B%2F%3D+cursor',

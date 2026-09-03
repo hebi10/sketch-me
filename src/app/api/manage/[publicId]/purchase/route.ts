@@ -2,13 +2,9 @@ import { NextResponse } from 'next/server';
 
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
 import { addMockPurchase } from '@/lib/sketchbooks/repository';
-import { getServerPaymentMode } from '@/lib/purchases/mode';
 import { getPurchasePlan } from '@/lib/purchases/plans';
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
-  if (getServerPaymentMode() !== 'MOCK') {
-    return NextResponse.json({ message: '결제 기능을 준비하고 있어요. 현재는 결제를 진행할 수 없습니다.' }, { status: 503 });
-  }
   const { publicId } = await params;
   const sketchbook = await getManagedSketchbook(publicId);
   if (!sketchbook) return NextResponse.json({ message: '관리 권한이 없습니다.' }, { status: 403 });

@@ -85,7 +85,7 @@ test('관리자가 공개 노출을 차단하고 복구한 뒤 로그아웃한�
 
   await page.getByRole('link', { name: '결제', exact: true }).click();
   const fixturePayment = page.getByRole('article', { name: 'ADMIN-E2E-ORDER 결제' });
-  await expect(fixturePayment.getByText('모의 결제')).toBeVisible();
+  await expect(fixturePayment.getByText('결제', { exact: true })).toBeVisible();
   await expect(fixturePayment.getByText('4,490원')).toBeVisible();
   await expect(fixturePayment.getByRole('button')).toHaveCount(0);
 

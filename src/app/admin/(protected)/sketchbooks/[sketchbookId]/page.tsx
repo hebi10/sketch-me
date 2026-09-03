@@ -82,7 +82,7 @@ export default async function AdminSketchbookDetailPage({
 
       <section aria-labelledby="admin-sketchbook-purchases" className="admin-detail-section">
         <div className="admin-detail-section-heading">
-          <h2 id="admin-sketchbook-purchases">모의 결제 요약</h2>
+          <h2 id="admin-sketchbook-purchases">결제 요약</h2>
           <span>성공 건만 표시</span>
         </div>
         <dl className="admin-purchase-summary">

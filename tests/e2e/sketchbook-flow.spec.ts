@@ -150,11 +150,14 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await ownerPage.getByRole('button', { name: '내 스캐치북 관리하기' }).click();
   await expect(ownerPage.getByText(`${uniqueName}님의 스케치북`)).toBeVisible();
   await expect(ownerPage.getByRole('heading', { name: '친구들이 그린 나' }).first()).toBeVisible();
-  await ownerPage.getByRole('button', { name: '친구 그림 더 추가하기' }).click();
+  await ownerPage.getByRole('button', { name: '저장 공간 추가하기' }).click();
   await expect(ownerPage.getByRole('dialog', { name: '상품 선택하기' })).toBeVisible();
   await ownerPage.getByRole('radio', { name: /50명 추가.*4,490원/ }).check();
-  await ownerPage.getByRole('button', { name: '4,490원 모의 결제하기' }).click();
-  await expect(ownerPage.getByText('모의 결제가 완료되어 친구 그림 50개가 추가됐어요.')).toBeVisible();
+  await ownerPage.getByRole('button', { name: '4,490원 결제하기' }).click();
+  const paymentSuccessDialog = ownerPage.getByRole('dialog', { name: '결제 완료' });
+  await expect(paymentSuccessDialog.getByText('모의 결제가 완료됐습니다')).toBeVisible();
+  await expect(paymentSuccessDialog.getByText('친구 그림 50명이 추가됐어요.')).toBeVisible();
+  await paymentSuccessDialog.getByRole('button', { name: '확인' }).click();
   await expect(ownerPage.locator('.manage-summary p')).toContainText(/친구 그림\s*0\s*\/\s*60/);
   const managePath = new URL(ownerPage.url()).pathname;
   const managementPublicId = managePath.split('/')[2];
@@ -179,7 +182,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await friendPage.getByLabel('한마디 (선택)').fill('멋진 스케치북이야');
   await friendPage.getByRole('button', { name: '그림 남기기' }).click();
   await expect(friendPage.getByText('그림을 남겼어요. 고마워요!')).toBeVisible();
-  const publicDrawingImage = friendPage.getByRole('img', { name: '모바일 친구님의 그림' });
+  const publicDrawingImage = friendPage.getByRole('img', { exact: true, name: '모바일 친구님의 그림' });
   await expect(publicDrawingImage).toHaveAttribute('src', /\/api\/sketchbooks\/[^/]+\/drawings\/[^/]+\/thumbnail\?v=[^&]+$/);
   const publicDrawingImagePath = await publicDrawingImage.getAttribute('src');
   const publicDrawingImageResponse = await friendPage.request.get(
@@ -214,10 +217,14 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   expect((await manageSessionResponse).status()).toBe(200);
   await expect(managerPage).toHaveURL(`/m/${managementPublicId}`);
   await expect(managerPage.getByText('모바일 친구')).toBeVisible();
-  await managerPage.getByText('순위 정하기').click();
+  const friendDrawingCard = managerPage.locator('article.manage-drawing-card').filter({ hasText: '모바일 친구' });
+  await friendDrawingCard.getByText('순위 선택').click();
   await Promise.all([
-    managerPage.waitForNavigation(),
-    managerPage.locator('.best-actions button').first().click(),
+    managerPage.waitForResponse((response) => (
+      response.request().method() === 'PATCH'
+        && response.url().includes(`/api/manage/${managementPublicId}/drawings/`)
+    )),
+    friendDrawingCard.locator('.best-actions button').first().click(),
   ]);
   await expect(managerPage.locator('.best-badge')).toHaveText('BEST 1');
 
@@ -234,7 +241,35 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
     return bounds.width / bounds.height;
   });
   expect(previewRatio).toBeCloseTo(3 / 4, 2);
-  await managerPage.getByRole('button', { name: '워터마크 없이 저장하기 · 990원' }).click();
+  const watermarkPurchaseButton = managerPage.getByRole('button', { name: '워터마크 없이 저장하기 · 990원' });
+  console.log('watermark hit test', await watermarkPurchaseButton.evaluate(async (button) => {
+    button.scrollIntoView({ block: 'center' });
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    const bounds = button.getBoundingClientRect();
+    const x = bounds.left + bounds.width / 2;
+    const y = bounds.top + bounds.height / 2;
+    return {
+      bounds: { bottom: bounds.bottom, height: bounds.height, left: bounds.left, right: bounds.right, top: bounds.top, width: bounds.width },
+      hits: document.elementsFromPoint(x, y).map((element) => ({
+        ariaLabel: element.getAttribute('aria-label'),
+        className: element.className,
+        tagName: element.tagName,
+      })),
+      point: { x, y },
+      sectionBounds: (() => {
+        const sectionBounds = button.parentElement?.getBoundingClientRect();
+        return sectionBounds ? { bottom: sectionBounds.bottom, height: sectionBounds.height, top: sectionBounds.top } : null;
+      })(),
+      styles: {
+        button: { pointerEvents: getComputedStyle(button).pointerEvents, position: getComputedStyle(button).position, zIndex: getComputedStyle(button).zIndex },
+        section: { pointerEvents: getComputedStyle(button.parentElement!).pointerEvents, position: getComputedStyle(button.parentElement!).position, zIndex: getComputedStyle(button.parentElement!).zIndex },
+      },
+    };
+  }));
+  await watermarkPurchaseButton.click();
+  const watermarkSuccessDialog = managerPage.getByRole('dialog', { name: '결제 완료' });
+  await expect(watermarkSuccessDialog.getByText('모의 결제가 완료됐습니다')).toBeVisible();
+  await watermarkSuccessDialog.getByRole('button', { name: '확인' }).click();
   await expect(managerPage.getByText('워터마크 제거가 적용되어 있어요.')).toBeVisible();
   await expect(managerPage.getByRole('img', { name: '스캐치북 워터마크' })).toHaveCount(0);
   const downloadPromise = managerPage.waitForEvent('download', { timeout: 15_000 });

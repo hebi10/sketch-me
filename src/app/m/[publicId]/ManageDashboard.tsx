@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import { HeaderMenu } from '@/components/ui/HeaderMenu';
+import { PaymentSuccessDialog } from '@/components/ui/PaymentSuccessDialog';
 import type { Drawing, ModerationStatus, PurchaseProductId, SketchbookEntitlements } from '@/lib/domain/types';
-import { getPublicPaymentMode } from '@/lib/purchases/mode';
 import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
-import { HeaderMenu } from '@/components/ui/HeaderMenu';
 
 interface ManageDashboardProps {
   publicId: string;
@@ -55,13 +55,13 @@ function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) 
 
 export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false } }: ManageDashboardProps) {
   const router = useRouter();
-  const paymentMode = getPublicPaymentMode();
   const [limit, setLimit] = useState(participantLimit);
   const [entitlements, setEntitlements] = useState(initialEntitlements);
   const [message, setMessage] = useState<string | null>(null);
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
   const [securityOpen, setSecurityOpen] = useState(false);
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -244,9 +244,9 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       }
       setLimit(result.participantLimit);
       setEntitlements(result.entitlements);
-      setMessage(plan.kind === 'watermark'
+      setPurchaseSuccess(plan.kind === 'watermark'
         ? '워터마크 제거가 적용됐어요.'
-        : `모의 결제가 완료되어 친구 그림 ${plan.additionalLimit}개가 추가됐어요.`);
+        : `친구 그림 ${plan.additionalLimit}명이 추가됐어요.`);
       setSelectedProductId('FRIENDS_10');
       setPurchaseOpen(false);
     } catch {
@@ -328,14 +328,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       <section className="manage-summary">
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
         <progress max={limit} value={participantCount} />
-        {paymentMode === 'MOCK' ? (
-          <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">친구 그림 더 추가하기</button>
-        ) : (
-          <section aria-label="결제 기능 준비 중" className="purchase-preparing" role="status">
-            <strong>결제 기능 준비 중</strong>
-            <p>결제 기능을 준비하고 있어요. 친구 그림 추가와 워터마크 제거는 준비가 끝나면 이용할 수 있어요.</p>
-          </section>
-        )}
+        <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">저장 공간 추가하기</button>
       </section>
       {message ? <p className="submission-success" role="status">{message}</p> : null}
       <div className="manage-actions">
@@ -343,7 +336,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         <Link className="button button--primary" href={`/m/${publicId}/share`}>스토리 이미지 만들기</Link>
       </div>
       <section className="manage-drawings">
-        <h2>그림 순위 정하기</h2>
+        <h2>그림 순위 선택</h2>
         <div className="friend-drawing-grid">
           {ownerDrawingPath ? (
             <article className="friend-drawing-card manage-drawing-card owner-original-card">
@@ -354,7 +347,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
               <p>내 그림</p>
               <span>직접 그린 내 모습</span>
               <details className="drawing-actions">
-                <summary>순위 정하기</summary>
+                <summary>순위 선택</summary>
                 <div className="drawing-action-panel">
                   <div className="best-actions" aria-label="내 그림 BEST 순위 지정">
                     {[1, 2, 3, 4].map((rank) => (
@@ -381,7 +374,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
                   : drawing.status === 'VISIBLE' ? '공개 중' : '숨김'}
               </span>
               <details className="drawing-actions">
-                <summary>순위 정하기</summary>
+                <summary>순위 선택</summary>
                 <div className="drawing-action-panel">
                   <button disabled={drawing.moderationStatus === 'BLOCKED'} onClick={() => updateDrawing(drawing.id, { action: drawing.status === 'VISIBLE' ? 'hide' : 'show' })} type="button">
                     {drawing.status === 'VISIBLE' ? '친구 페이지에서 숨기기' : '친구 페이지에 공개하기'}
@@ -417,7 +410,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         <div className="purchase-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isPurchasing) setPurchaseOpen(false); }}>
           <dialog aria-labelledby="purchase-dialog-title" className="purchase-dialog" onCancel={(event) => { event.preventDefault(); if (!isPurchasing) setPurchaseOpen(false); }} ref={purchaseDialogRef}>
             <div className="purchase-dialog-heading">
-              <div><p className="eyebrow">모의 결제</p><h2 id="purchase-dialog-title">상품 선택하기</h2></div>
+              <div><p className="eyebrow">결제</p><h2 id="purchase-dialog-title">상품 선택하기</h2></div>
               <button aria-label="결제창 닫기" className="purchase-dialog-close" disabled={isPurchasing} onClick={() => setPurchaseOpen(false)} type="button">×</button>
             </div>
             <p className="purchase-dialog-copy">친구 그림을 더 받거나 결과 이미지의 워터마크를 제거할 수 있어요.</p>
@@ -446,16 +439,21 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
             </div>
             {purchaseError ? <p className="purchase-error" role="alert">{purchaseError}</p> : null}
             <button className="button button--primary purchase-submit" disabled={isPurchasing} onClick={purchase} type="button">
-              {isPurchasing ? '모의 결제 처리 중...' : `${getPurchasePlan(selectedProductId)?.amount.toLocaleString('ko-KR')}원 모의 결제하기`}
+              {isPurchasing ? '결제 처리 중...' : `${getPurchasePlan(selectedProductId)?.amount.toLocaleString('ko-KR')}원 결제하기`}
             </button>
-            <p className="purchase-mock-note">현재는 실제 금액이 청구되지 않는 모의 결제입니다.</p>
             <p className="purchase-policy-note">
-              추가 인원은 서비스 운영 중 만료되지 않으며, 실제 결제 시 구매일로부터 1년간 서비스를 보장합니다.{' '}
+              추가 인원은 서비스 운영 중 만료되지 않으며, 구매일로부터 1년간 서비스를 보장합니다.{' '}
               <Link href="/terms">서비스 이용 및 결제 안내</Link>
             </p>
           </dialog>
         </div>
       ) : null}
+      <PaymentSuccessDialog
+        description={purchaseSuccess ?? ''}
+        onClose={() => setPurchaseSuccess(null)}
+        open={purchaseSuccess !== null}
+        returnFocusRef={purchaseTriggerRef}
+      />
       {securityOpen ? (
           <dialog aria-labelledby="manage-security-title" className="manage-security-modal manage-system-sans" onCancel={(event) => { event.preventDefault(); if (!isSavingSecurity) setSecurityOpen(false); }} ref={securityDialogRef}>
           <form className="manage-security-form" onSubmit={updateSecurity}>

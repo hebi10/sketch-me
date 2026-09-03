@@ -32,7 +32,7 @@ beforeEach(() => {
 });
 
 describe('AdminDashboard', () => {
-  it('운영에 필요한 여섯 개 통계와 모의 결제 안내를 표시한다', () => {
+  it('운영에 필요한 여섯 개 통계와 결제 안내를 표시한다', () => {
     render(<AdminDashboard stats={stats} />);
 
     expect(screen.getByText('전체 스케치북')).toBeVisible();
@@ -43,11 +43,12 @@ describe('AdminDashboard', () => {
     expect(screen.getByText('9,876')).toBeVisible();
     expect(screen.getByText('오늘 제출')).toBeVisible();
     expect(screen.getByText('18')).toBeVisible();
-    expect(screen.getByText('모의 결제 건수')).toBeVisible();
+    expect(screen.getByText('결제 건수')).toBeVisible();
     expect(screen.getByText('3건')).toBeVisible();
-    expect(screen.getByText('모의 결제 누적')).toBeVisible();
+    expect(screen.getByText('결제 누적')).toBeVisible();
     expect(screen.getByText('12,870원')).toBeVisible();
-    expect(screen.getByText('결제 통계는 모의 결제 성공 건만 포함합니다.')).toBeVisible();
+    expect(screen.getByText('결제 통계는 성공 건만 포함합니다.')).toBeVisible();
+    expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
   });
 
   it('세 관리 화면으로 바로 이동할 수 있다', () => {

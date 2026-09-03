@@ -34,6 +34,14 @@ describe('PrivacyPage', () => {
     expect(screen.getByText(/생성 중에는 브라우저의 sessionStorage 초안에 임시 저장되며, 생성에 성공하거나 탭 또는 브라우저 세션이 끝나면 사라집니다/)).toBeVisible();
   });
 
+  it('결제 기록과 결제수단 정보의 저장 범위를 안내한다', () => {
+    render(<PrivacyPage />);
+
+    expect(screen.getByText(/결제에 따른 참여 가능 인원·워터마크 제거 권한과 구매 기록 관리/)).toBeVisible();
+    expect(screen.getByText(/카드번호 등 결제수단 정보는 직접 저장하지 않습니다/)).toBeVisible();
+    expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
+  });
+
   it('갤러리 썸네일과 공개 캐시, 직접 삭제 동작을 안내한다', () => {
     render(<PrivacyPage />);
 

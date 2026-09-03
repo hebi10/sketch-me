@@ -3,18 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { resolvePaymentMode } from '@/lib/purchases/mode';
 
 describe('resolvePaymentMode', () => {
-  it('설정이 없으면 모든 환경에서 결제를 비활성화한다', () => {
-    expect(resolvePaymentMode({ environment: 'development' })).toBe('DISABLED');
-    expect(resolvePaymentMode({ environment: 'test' })).toBe('DISABLED');
-    expect(resolvePaymentMode({ environment: 'production' })).toBe('DISABLED');
+  it('설정이 없어도 모든 환경에서 심사용 결제를 활성화한다', () => {
+    expect(resolvePaymentMode({ environment: 'development' })).toBe('MOCK');
+    expect(resolvePaymentMode({ environment: 'test' })).toBe('MOCK');
+    expect(resolvePaymentMode({ environment: 'production' })).toBe('MOCK');
   });
 
-  it('개발과 테스트 환경에서는 명시적으로 설정한 MOCK만 허용한다', () => {
-    expect(resolvePaymentMode({ configuredMode: 'MOCK', environment: 'development' })).toBe('MOCK');
-    expect(resolvePaymentMode({ configuredMode: 'MOCK', environment: 'test' })).toBe('MOCK');
-  });
-
-  it('운영 환경에서는 MOCK을 설정해도 결제를 비활성화한다', () => {
-    expect(resolvePaymentMode({ configuredMode: 'MOCK', environment: 'production' })).toBe('DISABLED');
+  it('기존 비활성 환경 변수가 남아 있어도 결제 동작을 제공한다', () => {
+    expect(resolvePaymentMode({ configuredMode: 'DISABLED', environment: 'production' })).toBe('MOCK');
   });
 });

@@ -168,6 +168,7 @@ describe('addMockPurchase', () => {
     expect(transaction.set).toHaveBeenCalledTimes(1);
     expect(sketchbookReference.collection).toHaveBeenCalledWith('purchases');
     expect(savedPurchase).toMatchObject({
+      orderId: 'order_purchase-attempt-1234',
       sketchbookId: 'book-1',
       sketchbookPublicId: 'public-1',
       sketchbookName: '내 이름',

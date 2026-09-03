@@ -15,7 +15,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     getPublicPaymentMode.mockReturnValue('MOCK');
   });
 
-  it('결제가 비활성화되면 결제 준비 안내만 표시하고 구매 행동은 제공하지 않는다', () => {
+  it('기존 비활성 설정이 남아 있어도 구매 행동을 제공한다', () => {
     getPublicPaymentMode.mockReturnValue('DISABLED');
 
     render(
@@ -29,8 +29,8 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    expect(screen.getByRole('status', { name: '결제 기능 준비 중' })).toHaveTextContent('결제 기능을 준비하고 있어요.');
-    expect(screen.queryByRole('button', { name: '친구 그림 더 추가하기' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '저장 공간 추가하기' })).toBeEnabled();
+    expect(screen.queryByRole('status', { name: '결제 기능 준비 중' })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: '상품 선택하기' })).not.toBeInTheDocument();
   });
 
@@ -166,7 +166,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     );
 
     expect(screen.getByText('운영자 숨김')).toBeVisible();
-    fireEvent.click(screen.getByText('순위 정하기'));
+    fireEvent.click(screen.getByText('순위 선택'));
     expect(screen.getByRole('button', { name: '친구 페이지에서 숨기기' })).toBeDisabled();
     screen.getAllByRole('button', { name: /^[1-4]위$/ }).forEach((button) => {
       expect(button).toBeDisabled();
@@ -198,7 +198,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(ownerCard).not.toBeNull();
     expect(within(ownerCard as HTMLElement).getByText('내 그림')).toBeVisible();
     expect(within(ownerCard as HTMLElement).getByText('BEST 2')).toBeVisible();
-    fireEvent.click(within(ownerCard as HTMLElement).getByText('순위 정하기'));
+    fireEvent.click(within(ownerCard as HTMLElement).getByText('순위 선택'));
     expect(within(ownerCard as HTMLElement).getByRole('button', { name: '2위' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(ownerCard as HTMLElement).getByRole('button', { name: 'BEST 해제' })).toBeEnabled();
   });
@@ -219,7 +219,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.queryByRole('img', { name: '직접 그린 내 모습' })).not.toBeInTheDocument();
   });
 
-  it('인원 상품을 선택해 새 가격으로 모의 결제하고 참여 한도를 갱신한다', async () => {
+  it('인원 상품 결제를 완료하면 참여 한도를 갱신하고 모의 결제 완료 팝업을 표시한다', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({ entitlements: { watermarkFree: false }, participantLimit: 70 }),
       ok: true,
@@ -237,7 +237,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
     const dialog = screen.getByRole('dialog', { name: '상품 선택하기' });
     expect(dialog).toBeVisible();
     expect(screen.getByRole('radio', { name: /10명 추가.*990원/ })).toBeChecked();
@@ -246,15 +246,19 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.getByRole('group', { name: '친구 인원 추가' })).toBeVisible();
     expect(screen.getByRole('group', { name: '결과 이미지' })).toBeVisible();
     fireEvent.click(screen.getByRole('radio', { name: /50명 추가.*4,490원/ }));
-    fireEvent.click(screen.getByRole('button', { name: '4,490원 모의 결제하기' }));
+    expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '4,490원 결제하기' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/manage/public-1/purchase', {
       body: expect.stringMatching(/"productId":"FRIENDS_50","requestId":"[^"]+"/),
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
     }));
-    expect(await screen.findByText('모의 결제가 완료되어 친구 그림 50개가 추가됐어요.')).toBeVisible();
+    const successDialog = await screen.findByRole('dialog', { name: '결제 완료' });
+    expect(within(successDialog).getByText('모의 결제가 완료됐습니다')).toBeVisible();
+    expect(within(successDialog).getByText('친구 그림 50명이 추가됐어요.')).toBeVisible();
     expect(screen.getByText((_, element) => element?.textContent === '친구 그림 5 / 70')).toBeVisible();
+    fireEvent.click(within(successDialog).getByRole('button', { name: '확인' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -277,14 +281,17 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
     fireEvent.click(screen.getByRole('radio', { name: /워터마크 제거.*990원/ }));
-    fireEvent.click(screen.getByRole('button', { name: '990원 모의 결제하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '990원 결제하기' }));
 
-    expect(await screen.findByText('워터마크 제거가 적용됐어요.')).toBeVisible();
+    const successDialog = await screen.findByRole('dialog', { name: '결제 완료' });
+    expect(within(successDialog).getByText('모의 결제가 완료됐습니다')).toBeVisible();
+    expect(within(successDialog).getByText('워터마크 제거가 적용됐어요.')).toBeVisible();
     expect(screen.getByText((_, element) => element?.textContent === '친구 그림 5 / 20')).toBeVisible();
+    fireEvent.click(within(successDialog).getByRole('button', { name: '확인' }));
 
-    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
     expect(screen.getByText('적용됨')).toBeVisible();
     expect(screen.getByRole('radio', { name: /워터마크 제거.*적용됨/ })).toBeDisabled();
   });
@@ -303,12 +310,12 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '친구 그림 더 추가하기' }));
-    fireEvent.click(screen.getByRole('button', { name: '990원 모의 결제하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '저장 공간 추가하기' }));
+    fireEvent.click(screen.getByRole('button', { name: '990원 결제하기' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('결제 연결을 확인하고 다시 시도해 주세요.');
     expect(screen.getByRole('dialog', { name: '상품 선택하기' })).toBeVisible();
-    expect(screen.getByRole('button', { name: '990원 모의 결제하기' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '990원 결제하기' })).toBeEnabled();
   });
 
   it('결제창에 포커스를 두고 닫으면 실행 버튼으로 복귀한다', () => {
@@ -323,7 +330,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    const trigger = screen.getByRole('button', { name: '친구 그림 더 추가하기' });
+    const trigger = screen.getByRole('button', { name: '저장 공간 추가하기' });
     fireEvent.click(trigger);
 
     expect(screen.getByRole('main')).toHaveAttribute('inert');

@@ -5,21 +5,15 @@ interface PaymentModeInput {
   environment?: string;
 }
 
-export function resolvePaymentMode({ configuredMode, environment }: PaymentModeInput = {}): PaymentMode {
-  if (environment === 'production') return 'DISABLED';
-  return configuredMode === 'MOCK' ? 'MOCK' : 'DISABLED';
+export function resolvePaymentMode(input: PaymentModeInput = {}): PaymentMode {
+  void input;
+  return 'MOCK';
 }
 
 export function getServerPaymentMode(): PaymentMode {
-  return resolvePaymentMode({
-    configuredMode: process.env.PAYMENT_MODE,
-    environment: process.env.NODE_ENV,
-  });
+  return resolvePaymentMode();
 }
 
 export function getPublicPaymentMode(): PaymentMode {
-  return resolvePaymentMode({
-    configuredMode: process.env.NEXT_PUBLIC_PAYMENT_MODE,
-    environment: process.env.NODE_ENV,
-  });
+  return resolvePaymentMode();
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { WatermarkPurchaseButton } from '@/app/m/[publicId]/share/WatermarkPurchaseButton';
@@ -16,16 +16,16 @@ describe('WatermarkPurchaseButton', () => {
     vi.unstubAllGlobals();
   });
 
-  it('결제가 비활성화되면 금액이 있는 구매 버튼 대신 준비 안내를 표시한다', () => {
+  it('기존 비활성 설정이 남아 있어도 워터마크 구매 버튼을 제공한다', () => {
     getPublicPaymentMode.mockReturnValue('DISABLED');
 
     render(<WatermarkPurchaseButton onPurchased={vi.fn()} publicId="book-disabled" />);
 
-    expect(screen.getByRole('status', { name: '워터마크 제거 결제 준비 중' })).toHaveTextContent('결제 기능을 준비하고 있어요.');
-    expect(screen.queryByRole('button', { name: /990원/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 990원' })).toBeEnabled();
+    expect(screen.queryByRole('status', { name: '워터마크 제거 결제 준비 중' })).not.toBeInTheDocument();
   });
 
-  it('워터마크 제거 상품을 모의 결제하고 적용 콜백을 실행한다', async () => {
+  it('워터마크 제거 결제를 완료하면 적용 콜백과 모의 결제 완료 팝업을 제공한다', async () => {
     const onPurchased = vi.fn();
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({ entitlements: { watermarkFree: true }, participantLimit: 20 }),
@@ -41,7 +41,12 @@ describe('WatermarkPurchaseButton', () => {
       headers: { 'Content-Type': 'application/json' },
       method: 'POST',
     }));
+    const successDialog = await screen.findByRole('dialog', { name: '결제 완료' });
+    expect(onPurchased).not.toHaveBeenCalled();
+    expect(within(successDialog).getByText('모의 결제가 완료됐습니다')).toBeVisible();
+    fireEvent.click(within(successDialog).getByRole('button', { name: '확인' }));
     expect(onPurchased).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('dialog', { name: '결제 완료' })).not.toBeInTheDocument();
   });
 
   it('결제 실패 이유와 재시도 방법을 안내한다', async () => {

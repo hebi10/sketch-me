@@ -13,12 +13,14 @@ describe('TermsPage', () => {
     expect(screen.getByText(/1년 안에 운영자 사유로 서비스를 종료하면 해당 구매 금액을 전액 환불/)).toBeVisible();
   });
 
-  it('서비스 종료 공지와 환불 기한, 모의 결제를 구분한다', () => {
+  it('서비스 종료 공지와 환불 기한, 결제 완료 혜택을 안내한다', () => {
     render(<TermsPage />);
 
     expect(screen.getByText(/종료일 최소 30일 전/)).toBeVisible();
     expect(screen.getByText(/환불 대상을 확인한 날부터 3영업일 이내/)).toBeVisible();
-    expect(screen.getByText(/현재는 실제 금액이 청구되지 않는 모의 결제/)).toBeVisible();
+    expect(screen.getByRole('heading', { name: '2. 결제 상품' })).toBeVisible();
+    expect(screen.getByText(/결제가 완료되면 선택한 상품의 혜택이 즉시 적용/)).toBeVisible();
+    expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
   });
 
   it('현재 인원 추가 가격과 워터마크 제거 상품을 정확히 안내한다', () => {
