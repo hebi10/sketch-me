@@ -20,6 +20,7 @@ export interface PendingPurchaseResult {
   isNew: boolean;
   orderId: string;
   paymentStatus: Purchase['paymentStatus'];
+  payUrl: string | null;
   providerOrderId: string | null;
 }
 
@@ -123,6 +124,7 @@ export async function createPendingPurchase(
         isNew: false,
         orderId: String(existing.orderId),
         paymentStatus: existing.paymentStatus as Purchase['paymentStatus'],
+        payUrl: existing.providerPayUrl ? String(existing.providerPayUrl) : null,
         providerOrderId: existing.providerOrderId ? String(existing.providerOrderId) : null,
       };
     }
@@ -152,6 +154,7 @@ export async function createPendingPurchase(
       isNew: true,
       orderId,
       paymentStatus: 'READY',
+      payUrl: null,
       providerOrderId: null,
     };
   });
@@ -172,6 +175,7 @@ export async function getManagedPurchase(
 
 export async function attachProviderPayment(input: {
   orderId: string;
+  payUrl: string;
   providerOrderId: string;
 }): Promise<void> {
   const document = await findPurchaseDocumentByOrderId(input.orderId);
@@ -185,6 +189,7 @@ export async function attachProviderPayment(input: {
       throw new PurchaseConflictError('이미 다른 페이앱 주문번호가 연결되어 있습니다.');
     }
     transaction.update(document.ref, {
+      providerPayUrl: input.payUrl,
       providerOrderId: input.providerOrderId,
       updatedAt: new Date(),
     });

@@ -163,6 +163,7 @@ describe('페이앱 주문 저장', () => {
 
     await attachProviderPayment({
       orderId: 'order-public-random',
+      payUrl: 'https://payapp.kr/pay/2000',
       providerOrderId: '2000',
     });
 
@@ -181,7 +182,11 @@ describe('페이앱 주문 저장', () => {
       requestId: 'request-1234',
       sketchbook,
     });
-    await attachProviderPayment({ orderId: 'order-public-random', providerOrderId: '2000' });
+    await attachProviderPayment({
+      orderId: 'order-public-random',
+      payUrl: 'https://payapp.kr/pay/2000',
+      providerOrderId: '2000',
+    });
 
     const feedback = {
       amount: 1000,
@@ -207,7 +212,11 @@ describe('페이앱 주문 저장', () => {
       requestId: 'request-1234',
       sketchbook,
     });
-    await attachProviderPayment({ orderId: 'order-public-random', providerOrderId: '2000' });
+    await attachProviderPayment({
+      orderId: 'order-public-random',
+      payUrl: 'https://payapp.kr/pay/2000',
+      providerOrderId: '2000',
+    });
 
     await expect(applyPayAppFeedback({
       amount: 1,
