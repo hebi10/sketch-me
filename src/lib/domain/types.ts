@@ -67,6 +67,7 @@ export interface Purchase {
   paymentStatus: PurchaseStatus;
   paidAt: Date | null;
   benefitAppliedAt?: Date | null;
+  cancelRequestedAt?: Date | null;
   cancelledAt?: Date | null;
   createdAt: Date;
   updatedAt?: Date;

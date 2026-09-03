@@ -103,13 +103,20 @@ function toAdminPurchase(
     sketchbookPublicId: String(data.sketchbookPublicId ?? ''),
     sketchbookName: String(data.sketchbookName ?? ''),
     orderId: String(data.orderId ?? ''),
-    provider: data.provider as Purchase['provider'],
+    provider: data.provider === 'PAYAPP' || data.provider === 'TOSS' ? data.provider : 'MOCK',
+    providerOrderId: data.providerOrderId ? String(data.providerOrderId) : null,
+    providerPayType: data.providerPayType ? String(data.providerPayType) : null,
+    buyerPhoneLast4: data.buyerPhoneLast4 ? String(data.buyerPhoneLast4) : null,
     productType: data.productType as Purchase['productType'],
     amount: Number(data.amount) as Purchase['amount'],
     additionalLimit: Number(data.additionalLimit) as Purchase['additionalLimit'],
     paymentStatus: data.paymentStatus as Purchase['paymentStatus'],
     paidAt: toOptionalDate(data.paidAt),
+    benefitAppliedAt: toOptionalDate(data.benefitAppliedAt),
+    cancelRequestedAt: toOptionalDate(data.cancelRequestedAt),
+    cancelledAt: toOptionalDate(data.cancelledAt),
     createdAt: toDate(data.createdAt),
+    updatedAt: toOptionalDate(data.updatedAt) ?? undefined,
   };
 }
 
@@ -264,8 +271,7 @@ export async function getAdminSketchbookDetail(
     .limit(5);
   const purchasesQuery = reference
     .collection('purchases')
-    .where('paymentStatus', '==', 'SUCCEEDED')
-    .where('provider', '==', 'MOCK');
+    .where('paymentStatus', '==', 'SUCCEEDED');
   const [drawings, purchases] = await Promise.all([
     drawingsQuery.get(),
     purchasesQuery.aggregate({
@@ -318,8 +324,7 @@ export async function listAdminPurchases(
   const firestore = getAdminFirestore();
   const snapshot = await withPagination(
     firestore
-      .collectionGroup('purchases')
-      .where('provider', '==', 'MOCK'),
+      .collectionGroup('purchases'),
     firestore,
     cursor,
   ).get();
@@ -360,8 +365,7 @@ async function loadAdminStats(): Promise<AdminDashboardStats> {
     .where('status', 'in', ['VISIBLE', 'HIDDEN']);
   const purchases = firestore
     .collectionGroup('purchases')
-    .where('paymentStatus', '==', 'SUCCEEDED')
-    .where('provider', '==', 'MOCK');
+    .where('paymentStatus', '==', 'SUCCEEDED');
   const todaySketchbooks = sketchbooks
     .where('createdAt', '>=', start)
     .where('createdAt', '<', end);

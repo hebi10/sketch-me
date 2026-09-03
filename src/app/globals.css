@@ -2532,6 +2532,24 @@ main {
   border-radius: 6px;
 }
 
+.admin-payment-cancel {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.admin-payment-cancel .button {
+  width: 100%;
+}
+
+.admin-payment-cancel p,
+.admin-payment-cancel-state {
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  margin: 0;
+  text-align: center;
+}
+
 .admin-drawing-card {
   overflow: hidden;
   padding: 8px;

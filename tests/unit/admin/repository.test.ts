@@ -104,7 +104,6 @@ const activePurchaseIndexes: FirestoreIndex[] = [
     collectionGroup: 'purchases',
     queryScope: 'COLLECTION_GROUP',
     fields: [
-      { fieldPath: 'provider', order: 'ASCENDING' },
       { fieldPath: 'createdAt', order: 'DESCENDING' },
       { fieldPath: '__name__', order: 'DESCENDING' },
     ],
@@ -114,7 +113,6 @@ const activePurchaseIndexes: FirestoreIndex[] = [
     queryScope: 'COLLECTION_GROUP',
     fields: [
       { fieldPath: 'paymentStatus', order: 'ASCENDING' },
-      { fieldPath: 'provider', order: 'ASCENDING' },
       { fieldPath: 'amount', order: 'ASCENDING' },
     ],
   },
@@ -123,7 +121,6 @@ const activePurchaseIndexes: FirestoreIndex[] = [
     queryScope: 'COLLECTION',
     fields: [
       { fieldPath: 'paymentStatus', order: 'ASCENDING' },
-      { fieldPath: 'provider', order: 'ASCENDING' },
       { fieldPath: 'amount', order: 'ASCENDING' },
     ],
   },
@@ -131,34 +128,37 @@ const activePurchaseIndexes: FirestoreIndex[] = [
 
 const obsoletePurchaseIndexes: Array<{ name: string; index: FirestoreIndex }> = [
   {
-    name: 'provider 없는 collection-group 목록',
+    name: 'provider 고정 collection-group 목록',
     index: {
       collectionGroup: 'purchases',
       queryScope: 'COLLECTION_GROUP',
       fields: [
+        { fieldPath: 'provider', order: 'ASCENDING' },
         { fieldPath: 'createdAt', order: 'DESCENDING' },
         { fieldPath: '__name__', order: 'DESCENDING' },
       ],
     },
   },
   {
-    name: 'provider 없는 collection-group aggregate',
+    name: 'provider 고정 collection-group aggregate',
     index: {
       collectionGroup: 'purchases',
       queryScope: 'COLLECTION_GROUP',
       fields: [
         { fieldPath: 'paymentStatus', order: 'ASCENDING' },
+        { fieldPath: 'provider', order: 'ASCENDING' },
         { fieldPath: 'amount', order: 'ASCENDING' },
       ],
     },
   },
   {
-    name: 'provider 없는 collection aggregate',
+    name: 'provider 고정 collection aggregate',
     index: {
       collectionGroup: 'purchases',
       queryScope: 'COLLECTION',
       fields: [
         { fieldPath: 'paymentStatus', order: 'ASCENDING' },
+        { fieldPath: 'provider', order: 'ASCENDING' },
         { fieldPath: 'amount', order: 'ASCENDING' },
       ],
     },
@@ -176,7 +176,7 @@ describe('admin repository Firestore indexes', () => {
     ]));
   });
 
-  it('purchase 인덱스는 현재 provider-aware 쿼리 3개와 정확히 일치한다', () => {
+  it('purchase 인덱스는 모든 결제 공급자를 조회하는 쿼리 3개와 정확히 일치한다', () => {
     const purchaseIndexes = firestoreIndexes.indexes.filter((index) => (
       index.collectionGroup === 'purchases'
     ));
@@ -276,7 +276,7 @@ function createPurchaseDocument(
   overrides: {
     amount?: number;
     paymentStatus?: 'READY' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
-    provider?: 'MOCK' | 'TOSS' | null;
+    provider?: 'MOCK' | 'PAYAPP' | 'TOSS' | null;
   } = {},
 ) {
   const id = `purchase-${index}`;
@@ -452,17 +452,15 @@ describe('admin repository pagination and search', () => {
     await expect(listAdminDrawings({ cursor: 'invalid' })).rejects.toThrow('유효하지 않은 관리자 커서입니다.');
   });
 
-  it('모의 결제만 21개 조회해 20개와 다음 커서를 반환하고 TOSS와 provider 없는 legacy 결제를 제외한다', async () => {
+  it('공급자와 관계없이 결제 21개를 조회해 20개와 다음 커서를 반환한다', async () => {
     const parent = { path: 'sketchbooks/book-1' };
     const mockDocuments = Array.from(
       { length: 21 },
       (_, index) => createPurchaseDocument(20 - index, parent),
     );
-    const purchasesQuery = createFilteredPurchaseQuery([
-      createPurchaseDocument(59, parent, undefined, true, { provider: 'TOSS' }),
-      createPurchaseDocument(58, parent, undefined, true, { provider: null }),
-      ...mockDocuments,
-    ]);
+    mockDocuments[0] = createPurchaseDocument(20, parent, undefined, true, { provider: 'PAYAPP' });
+    mockDocuments[1] = createPurchaseDocument(19, parent, undefined, true, { provider: 'TOSS' });
+    const purchasesQuery = createFilteredPurchaseQuery(mockDocuments);
     const getAll = vi.fn();
     getAdminFirestore.mockReturnValue({
       collectionGroup: vi.fn(() => purchasesQuery),
@@ -472,12 +470,12 @@ describe('admin repository pagination and search', () => {
     const result = await listAdminPurchases({});
 
     expect(result.items).toHaveLength(20);
-    expect(result.items.every((item) => item.provider === 'MOCK')).toBe(true);
+    expect(result.items.map((item) => item.provider)).toEqual(expect.arrayContaining(['PAYAPP', 'TOSS', 'MOCK']));
     expect(decodeAdminCursor(result.nextCursor ?? undefined)).toEqual({
       createdAt: '2026-08-25T00:01:00.000Z',
       path: 'sketchbooks/book-1/purchases/purchase-1',
     });
-    expect(purchasesQuery.where).toHaveBeenCalledWith('provider', '==', 'MOCK');
+    expect(purchasesQuery.where).not.toHaveBeenCalledWith('provider', '==', 'MOCK');
     expect(purchasesQuery.limit).toHaveBeenCalledWith(21);
     expect(purchasesQuery.get).toHaveBeenCalledTimes(1);
     expect(getAll).not.toHaveBeenCalled();
@@ -585,7 +583,7 @@ describe('admin repository detail and stats', () => {
     vi.useRealTimers();
   });
 
-  it('스케치북 상세에 최근 그림과 모의 성공 결제만 합산한 요약을 포함한다', async () => {
+  it('스케치북 상세에 공급자와 관계없이 성공 결제를 합산한 요약을 포함한다', async () => {
     const parent = { path: 'sketchbooks/book-1' };
     const drawingQuery = createQuery([createDrawingDocument(1, parent)]);
     const purchaseQuery = createFilteredPurchaseQuery([
@@ -608,11 +606,11 @@ describe('admin repository detail and stats', () => {
     expect(drawingQuery.where).toHaveBeenCalledWith('status', 'in', ['VISIBLE', 'HIDDEN']);
     expect(drawingQuery.limit).toHaveBeenCalledWith(5);
     expect(purchaseQuery.where).toHaveBeenCalledWith('paymentStatus', '==', 'SUCCEEDED');
-    expect(purchaseQuery.where).toHaveBeenCalledWith('provider', '==', 'MOCK');
+    expect(purchaseQuery.where).not.toHaveBeenCalledWith('provider', '==', 'MOCK');
     expect(purchaseQuery.aggregate).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({
       id: 'book-1',
-      purchaseSummary: { amount: 3_900, count: 1 },
+      purchaseSummary: { amount: 14_700, count: 3 },
       recentDrawings: [expect.objectContaining({ id: 'draw-01' })],
     });
   });
@@ -656,8 +654,8 @@ describe('admin repository detail and stats', () => {
     });
 
     await expect(getCachedAdminStats()).resolves.toEqual({
-      succeededPurchaseAmount: 4_890,
-      succeededPurchaseCount: 2,
+      succeededPurchaseAmount: 15_690,
+      succeededPurchaseCount: 4,
       todayDrawings: 4,
       todaySketchbooks: 2,
       totalDrawings: 20,
@@ -667,7 +665,7 @@ describe('admin repository detail and stats', () => {
     expect(sketchbooksCollection.where).toHaveBeenCalledWith('status', 'in', ['PUBLIC', 'PRIVATE']);
     expect(drawingsCollection.where).toHaveBeenCalledWith('status', 'in', ['VISIBLE', 'HIDDEN']);
     expect(purchasesCollection.where).toHaveBeenCalledWith('paymentStatus', '==', 'SUCCEEDED');
-    expect(purchasesCollection.where).toHaveBeenCalledWith('provider', '==', 'MOCK');
+    expect(purchasesCollection.where).not.toHaveBeenCalledWith('provider', '==', 'MOCK');
     expect(sketchbookCounts.baseQuery.where).toHaveBeenCalledWith(
       'createdAt',
       '>=',

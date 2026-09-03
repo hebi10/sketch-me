@@ -135,10 +135,6 @@
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "provider",
-          "order": "ASCENDING"
-        },
-        {
           "fieldPath": "createdAt",
           "order": "DESCENDING"
         },
@@ -157,10 +153,6 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "provider",
-          "order": "ASCENDING"
-        },
-        {
           "fieldPath": "amount",
           "order": "ASCENDING"
         }
@@ -172,10 +164,6 @@
       "fields": [
         {
           "fieldPath": "paymentStatus",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "provider",
           "order": "ASCENDING"
         },
         {

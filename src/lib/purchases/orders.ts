@@ -68,6 +68,7 @@ function toPurchaseRecord(id: string, data: Record<string, unknown>): PurchaseRe
     amount: Number(data.amount) as Purchase['amount'],
     benefitAppliedAt: toDate(data.benefitAppliedAt),
     buyerPhoneLast4: data.buyerPhoneLast4 ? String(data.buyerPhoneLast4) : null,
+    cancelRequestedAt: toDate(data.cancelRequestedAt),
     cancelledAt: toDate(data.cancelledAt),
     createdAt: toDate(data.createdAt) ?? new Date(0),
     id,

@@ -6,6 +6,7 @@ import type {
   AdminPurchaseListItem,
 } from '@/lib/admin/types';
 import { getPurchasePlan } from '@/lib/purchases/plans';
+import { AdminPaymentCancelButton } from './AdminPaymentCancelButton';
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
   dateStyle: 'medium',
@@ -18,6 +19,12 @@ const paymentStatusLabels: Record<AdminPurchaseListItem['paymentStatus'], string
   FAILED: '실패',
   READY: '대기',
   SUCCEEDED: '성공',
+};
+
+const providerLabels: Record<AdminPurchaseListItem['provider'], string> = {
+  MOCK: '이전 결제',
+  PAYAPP: '페이앱',
+  TOSS: '토스페이먼츠',
 };
 
 function getNextPageHref(cursor: string) {
@@ -38,7 +45,7 @@ function PaymentCard({ item }: { item: AdminPurchaseListItem }) {
           <p>{item.sketchbookName}</p>
         </div>
         <span className="admin-status admin-status--mock">
-          결제
+          {providerLabels[item.provider]}
         </span>
       </div>
 
@@ -47,6 +54,12 @@ function PaymentCard({ item }: { item: AdminPurchaseListItem }) {
           <dt>주문번호</dt>
           <dd>{item.orderId}</dd>
         </div>
+        {item.providerOrderId ? (
+          <div>
+            <dt>PG 주문번호</dt>
+            <dd>{item.providerOrderId}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>공개 ID</dt>
           <dd>{item.sketchbookPublicId}</dd>
@@ -80,6 +93,15 @@ function PaymentCard({ item }: { item: AdminPurchaseListItem }) {
           </dd>
         </div>
       </dl>
+      {item.provider === 'PAYAPP'
+        && item.paymentStatus === 'SUCCEEDED'
+        && item.providerOrderId
+        && !item.cancelRequestedAt
+        ? <AdminPaymentCancelButton orderId={item.orderId} />
+        : null}
+      {item.cancelRequestedAt && item.paymentStatus !== 'CANCELLED'
+        ? <p className="admin-payment-cancel-state">전체 취소 처리 중</p>
+        : null}
     </article>
   );
 }
@@ -92,9 +114,8 @@ export function AdminPaymentList({
   return (
     <section aria-labelledby="admin-payments-title" className="admin-page">
       <div className="admin-page-heading">
-        <p className="eyebrow">조회 전용</p>
         <h1 id="admin-payments-title">결제 목록</h1>
-        <p>완료된 결제와 적용된 상품 혜택을 최신 순서로 확인합니다.</p>
+        <p>페이앱 결제 상태와 적용된 상품 혜택을 최신 순서로 확인하고 전체 취소를 요청할 수 있습니다.</p>
       </div>
 
       {page.items.length > 0 ? (

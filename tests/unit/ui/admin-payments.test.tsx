@@ -11,6 +11,7 @@ const {
 
 vi.mock('@/lib/admin/repository', () => ({ listAdminPurchases }));
 vi.mock('@/lib/admin/server-session', () => ({ getRequiredAdminIdentity }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 import { AdminPaymentList } from '@/app/admin/(protected)/payments/AdminPaymentList';
 import AdminPaymentsPage from '@/app/admin/(protected)/payments/page';
@@ -52,18 +53,18 @@ beforeEach(() => {
 });
 
 describe('AdminPaymentList', () => {
-  it('결제 내역과 조회 전용 상태를 화면과 카드에서 명확히 표시한다', () => {
+  it('페이앱 결제 내역과 전체 취소 기능을 표시한다', () => {
     const page: AdminPage<AdminPurchaseListItem> = {
-      items: [createPurchase()],
+      items: [createPurchase({ provider: 'PAYAPP', providerOrderId: '2000' })],
       nextCursor: null,
     };
 
     render(<AdminPaymentList page={page} />);
 
     expect(screen.getByRole('heading', { name: '결제 목록' })).toBeVisible();
-    expect(screen.getByText(/조회 전용/)).toBeVisible();
+    expect(screen.queryByText(/조회 전용/)).not.toBeInTheDocument();
     const card = screen.getByRole('article', { name: 'ORDER-1 결제' });
-    expect(within(card).getByText('결제')).toBeVisible();
+    expect(within(card).getByText('페이앱')).toBeVisible();
     expect(within(card).getByText('내 이름')).toBeVisible();
     expect(within(card).getByText('public-1')).toBeVisible();
     expect(within(card).getByText('친구 그림 50명 추가')).toBeVisible();
@@ -71,7 +72,20 @@ describe('AdminPaymentList', () => {
     expect(within(card).getByText('4,490원')).toBeVisible();
     expect(within(card).getByText('성공')).toBeVisible();
     expect(within(card).queryByText(/모의 결제/)).not.toBeInTheDocument();
-    expect(within(card).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(card).getByText('2000')).toBeVisible();
+    expect(within(card).getByRole('button', { name: '전체 취소' })).toBeEnabled();
+  });
+
+  it('모의 결제와 완료되지 않은 페이앱 주문에는 취소 버튼을 표시하지 않는다', () => {
+    render(<AdminPaymentList page={{
+      items: [
+        createPurchase(),
+        createPurchase({ id: 'purchase-2', orderId: 'ORDER-2', paymentStatus: 'READY', provider: 'PAYAPP' }),
+      ],
+      nextCursor: null,
+    }} />);
+
+    expect(screen.queryByRole('button', { name: '전체 취소' })).not.toBeInTheDocument();
   });
 
   it('워터마크 상품은 사람 수 대신 제거 권한으로 설명한다', () => {
