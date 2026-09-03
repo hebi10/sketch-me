@@ -240,7 +240,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }
 
     function pointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
-      if (tab !== 'draw') return;
       const point = canvasPoint(event);
       if (!point) return;
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -254,7 +253,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }
 
     function pointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
-      if (!drawingRef.current || tab !== 'draw') return;
+      if (!drawingRef.current) return;
       const point = canvasPoint(event);
       if (!point || !lastPointRef.current) return;
       drawLine(lastPointRef.current, point);

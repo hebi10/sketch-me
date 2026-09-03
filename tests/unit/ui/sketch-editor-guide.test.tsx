@@ -62,4 +62,33 @@ describe('SketchEditor 가이드', () => {
     expect(screen.queryByRole('button', { name: '편집' })).not.toBeInTheDocument();
   });
 
+  it('가이드 탭을 연 상태에서도 캔버스에 그림을 그린다', () => {
+    const drawingContext = createCanvasContext();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      drawingContext as unknown as CanvasRenderingContext2D,
+    );
+
+    render(<SketchEditor ariaLabel="그리기 캔버스" />);
+    openGuide();
+
+    const canvas = screen.getByLabelText('그리기 캔버스');
+    Object.defineProperty(canvas, 'setPointerCapture', { value: vi.fn() });
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+      bottom: 360,
+      height: 360,
+      left: 0,
+      right: 360,
+      toJSON: () => ({}),
+      top: 0,
+      width: 360,
+      x: 0,
+      y: 0,
+    });
+
+    fireEvent(canvas, new MouseEvent('pointerdown', { bubbles: true, clientX: 120, clientY: 120 }));
+    fireEvent(canvas, new MouseEvent('pointermove', { bubbles: true, clientX: 180, clientY: 180 }));
+
+    expect(drawingContext.stroke).toHaveBeenCalled();
+  });
+
 });
