@@ -82,6 +82,9 @@ describe('SketchEditor 그리기 돋보기', () => {
     fireEvent(canvas, new MouseEvent('pointermove', { bubbles: true, clientX: 180, clientY: 20 }));
     expect(loupe).toHaveAttribute('data-placement', 'above');
 
+    fireEvent(canvas, new MouseEvent('pointermove', { bubbles: true, clientX: 10, clientY: 180 }));
+    expect(Number.parseFloat(loupe.style.left)).toBeLessThan(0);
+
     fireEvent(canvas, new MouseEvent('pointerup', { bubbles: true }));
     expect(loupe).toHaveAttribute('data-active', 'false');
   });
@@ -156,10 +159,10 @@ describe('SketchEditor 그리기 돋보기', () => {
       y: 0,
     });
 
-    fireEvent(canvas, new MouseEvent('pointerdown', { bubbles: true, clientX: 180, clientY: 20 }));
+    fireEvent(canvas, new MouseEvent('pointerdown', { bubbles: true, clientX: 350, clientY: 20 }));
 
     const loupe = screen.getByTestId('drawing-loupe');
     expect(loupe).toHaveAttribute('data-placement', 'above');
-    expect(Number.parseFloat(loupe.style.left)).toBeGreaterThan(50);
+    expect(Number.parseFloat(loupe.style.left)).toBeGreaterThan(100);
   });
 });

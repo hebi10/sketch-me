@@ -210,10 +210,8 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       const sourceX = Math.min(width - sourceSize, Math.max(0, point.x - sourceSize / 2));
       const sourceY = Math.min(height - sourceSize, Math.max(0, point.y - sourceSize / 2));
       const canvasPixelsPerCssPixel = width / bounds.width;
-      const edgePadding = ((loupeSize / 2) + 4) * canvasPixelsPerCssPixel;
       const horizontalDirection = leftHandMode ? 1 : -1;
-      const preferredDisplayX = point.x + horizontalDirection * loupeHorizontalOffset * canvasPixelsPerCssPixel;
-      const displayX = Math.min(width - edgePadding, Math.max(edgePadding, preferredDisplayX));
+      const displayX = point.x + horizontalDirection * loupeHorizontalOffset * canvasPixelsPerCssPixel;
 
       loupe.style.left = `${(displayX / width) * 100}%`;
       loupe.style.top = `${(point.y / height) * 100}%`;
