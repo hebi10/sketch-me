@@ -13,6 +13,7 @@ const contentSecurityPolicy = [
   [
     "script-src 'self' 'unsafe-inline'",
     ...(!isProduction ? ["'unsafe-eval'"] : []),
+    'https://apis.google.com',
     'https://www.google.com/recaptcha/',
     'https://www.gstatic.com/recaptcha/',
     'https://www.recaptcha.net/recaptcha/',
@@ -29,7 +30,7 @@ const contentSecurityPolicy = [
     'https://www.google.com',
     'https://www.recaptcha.net',
   ].join(' '),
-  "frame-src https://www.google.com/recaptcha/ https://www.recaptcha.net/recaptcha/",
+  "frame-src https://sketch-me-31e13.firebaseapp.com https://www.google.com/recaptcha/ https://www.recaptcha.net/recaptcha/",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
 ].join('; ');
