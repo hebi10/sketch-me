@@ -38,6 +38,9 @@ describe('repository moderation compatibility', () => {
       moderatedAt: null,
       moderationStatus: 'ACTIVE',
       ownerDrawingPath: null,
+      retentionExpiresAt: null,
+      retentionGuaranteedUntil: null,
+      retentionTier: 'LEGACY',
       storyHeading: '친구들이 그린 내 모습',
     });
   });
@@ -173,6 +176,11 @@ describe('addMockPurchase', () => {
       sketchbookPublicId: 'public-1',
       sketchbookName: '내 이름',
     });
+    expect(transaction.update).toHaveBeenCalledWith(sketchbookReference, expect.objectContaining({
+      retentionExpiresAt: null,
+      retentionGuaranteedUntil: expect.any(Date),
+      retentionTier: 'PAID',
+    }));
   });
 
   it('워터마크 제거 결제는 참여 한도를 바꾸지 않고 권한과 구매 기록을 함께 저장한다', async () => {
@@ -218,6 +226,9 @@ describe('addMockPurchase', () => {
     });
     expect(transaction.update).toHaveBeenCalledWith(sketchbookReference, expect.objectContaining({
       entitlements: { watermarkFree: true },
+      retentionExpiresAt: null,
+      retentionGuaranteedUntil: expect.any(Date),
+      retentionTier: 'PAID',
     }));
     expect(transaction.update.mock.calls[0]?.[1]).not.toHaveProperty('participantLimit');
     expect(transaction.set).toHaveBeenCalledWith(purchaseReference, expect.objectContaining({

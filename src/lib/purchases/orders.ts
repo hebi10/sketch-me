@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { Purchase, Sketchbook } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
 import type { PurchasePlan } from '@/lib/purchases/plans';
+import { paidRetentionUpdate } from '@/lib/sketchbooks/retention';
 
 export interface PurchaseRecord extends Purchase {
   requestId: string;
@@ -264,6 +265,7 @@ export async function applyPayAppFeedback(
       if (Number(purchase.additionalLimit) > 0) {
         transaction.update(sketchbookReference, {
           participantLimit: Number(sketchbookData.participantLimit) + Number(purchase.additionalLimit),
+          ...paidRetentionUpdate(now),
           updatedAt: now,
         });
       } else if (purchase.productType === 'WATERMARK_FREE') {
@@ -272,6 +274,7 @@ export async function applyPayAppFeedback(
           : {};
         transaction.update(sketchbookReference, {
           entitlements: { ...entitlements, watermarkFree: true },
+          ...paidRetentionUpdate(now),
           updatedAt: now,
         });
       } else {

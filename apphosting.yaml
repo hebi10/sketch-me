@@ -22,3 +22,11 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  - variable: PUBLIC_MUTATION_RATE_LIMIT_SECRET
+    secret: PUBLIC_MUTATION_RATE_LIMIT_SECRET
+    availability:
+      - RUNTIME
+  - variable: RETENTION_CLEANUP_SECRET
+    secret: RETENTION_CLEANUP_SECRET
+    availability:
+      - RUNTIME

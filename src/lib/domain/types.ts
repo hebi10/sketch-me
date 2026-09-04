@@ -6,6 +6,7 @@ export type PurchaseProductId = 'FRIENDS_10' | 'FRIENDS_50' | 'FRIENDS_100' | 'W
 export type ShareType = 'SELF_VS_FRIENDS' | 'FRIENDS_BEST';
 export type ShareThumbnailMode = 'DEFAULT' | 'OWNER' | 'BEST_1';
 export type BestRank = 1 | 2 | 3 | 4 | null;
+export type SketchbookRetentionTier = 'FREE' | 'PAID' | 'LEGACY';
 
 export interface SketchbookEntitlements {
   watermarkFree: boolean;
@@ -27,6 +28,9 @@ export interface Sketchbook {
   entitlements: SketchbookEntitlements;
   participantLimit: number;
   participantCount: number;
+  retentionExpiresAt?: Date | null;
+  retentionGuaranteedUntil?: Date | null;
+  retentionTier?: SketchbookRetentionTier;
   status: SketchbookStatus;
   moderationStatus: ModerationStatus;
   moderatedAt: Date | null;

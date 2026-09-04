@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const appCheckResponse = await enforceAppCheck(request);
   if (appCheckResponse) return appCheckResponse;
 
-  const rateLimitResponse = enforcePublicMutationLimit(request, 'createSketchbook');
+  const rateLimitResponse = await enforcePublicMutationLimit(request, 'createSketchbook');
   if (rateLimitResponse) return rateLimitResponse;
 
   const payload = await request.json().catch(() => null);

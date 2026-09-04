@@ -7,15 +7,23 @@ describe('PrivacyPage', () => {
     render(<PrivacyPage />);
 
     expect(screen.getByRole('heading', { name: '개인정보 처리방침' })).toBeVisible();
-    expect(screen.getByText('시행일: 2026년 9월 3일')).toBeVisible();
+    expect(screen.getByText('시행일: 2026년 9월 4일')).toBeVisible();
     expect(screen.getByRole('heading', { name: '처리하는 개인정보' })).toBeVisible();
     expect(screen.getByText(/이름 또는 애칭, 관리용 비밀번호의 일방향 해시/)).toBeVisible();
-    expect(screen.getByText(/스케치북을 삭제할 때까지/)).toBeVisible();
+    expect(screen.getByText(/무료 스케치북은 생성일로부터 6개월/)).toBeVisible();
     expect(screen.getByRole('heading', { name: '처리위탁 및 국외 이전' })).toBeVisible();
     expect(screen.getByText(/Cloud Firestore.*대한민국 서울/)).toBeVisible();
     expect(screen.getByText(/Cloud Storage.*미국 버지니아/)).toBeVisible();
     expect(screen.getByText(/Firebase App Hosting.*대만/)).toBeVisible();
     expect(screen.queryByText(/참고 사진/)).not.toBeInTheDocument();
+  });
+
+  it('72시간 생성 제한 해시와 콘텐츠·거래 기록의 분리 보관을 안내한다', () => {
+    render(<PrivacyPage />);
+
+    expect(screen.getByText(/IP 원문은 저장하지 않고.*복원하기 어려운 해시.*최대 72시간/)).toBeVisible();
+    expect(screen.getByText(/계약.*대금결제.*5년/)).toBeVisible();
+    expect(screen.getByText(/무료 스케치북의 Firestore 기록과 Storage 파일을 자동 삭제/)).toBeVisible();
   });
 
   it('결제 처리위탁과 권리 행사 연락처를 안내한다', () => {

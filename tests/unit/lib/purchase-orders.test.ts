@@ -203,6 +203,8 @@ describe('페이앱 주문 저장', () => {
   });
 
   it('동일 완료 통보가 반복되어도 혜택은 한 번만 적용한다', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-04T00:00:00.000Z'));
     const state = createFirestoreDouble();
     getAdminFirestore.mockReturnValue(state.firestore);
     await createPendingPurchase({
@@ -227,10 +229,19 @@ describe('페이앱 주문 저장', () => {
       providerOrderId: '2000',
     };
     await expect(applyPayAppFeedback(feedback)).resolves.toBe('APPLIED');
+    expect(state.books.get('book-1')).toMatchObject({
+      retentionExpiresAt: null,
+      retentionGuaranteedUntil: new Date('2027-09-04T00:00:00.000Z'),
+      retentionTier: 'PAID',
+    });
+    vi.setSystemTime(new Date('2026-10-04T00:00:00.000Z'));
     await expect(applyPayAppFeedback(feedback)).resolves.toBe('DUPLICATE');
 
     expect(state.books.get('book-1')?.participantLimit).toBe(30);
+    expect(state.books.get('book-1')?.retentionGuaranteedUntil)
+      .toEqual(new Date('2027-09-04T00:00:00.000Z'));
     expect(state.purchases.get('sketchbooks/book-1/purchases/request-1234')?.benefitAppliedAt).toBeInstanceOf(Date);
+    vi.useRealTimers();
   });
 
   it('금액 또는 페이앱 주문번호가 다른 완료 통보를 거부한다', async () => {

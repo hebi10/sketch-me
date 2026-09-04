@@ -14,6 +14,8 @@ describe('TermsPage', () => {
     expect(screen.getByRole('heading', { name: '서비스 이용 및 결제 안내' })).toBeVisible();
     expect(screen.getByText(/구매한 추가 인원과 워터마크 제거 권한은 서비스 운영 중 만료되지 않습니다/)).toBeVisible();
     expect(screen.getByText(/구매일로부터 최소 1년간 서비스 이용을 보장/)).toBeVisible();
+    expect(screen.getByText(/무료 스케치북은 생성일로부터 6개월간 보관/)).toBeVisible();
+    expect(screen.getByText(/자동 삭제 예정일은 관리 화면에서 안내/)).toBeVisible();
     expect(screen.getByText(/1년 안에 운영자 사유로 서비스를 종료하면 해당 구매 금액을 전액 환불/)).toBeVisible();
   });
 

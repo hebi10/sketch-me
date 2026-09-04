@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
 import { BuyerPhoneField } from '@/components/ui/BuyerPhoneField';
 import { PurchaseConsent } from '@/components/ui/PurchaseConsent';
-import type { Drawing, ModerationStatus, PurchaseProductId, ShareThumbnailMode, SketchbookEntitlements } from '@/lib/domain/types';
+import type { Drawing, ModerationStatus, PurchaseProductId, ShareThumbnailMode, SketchbookEntitlements, SketchbookRetentionTier } from '@/lib/domain/types';
 import { openPaymentUrl } from '@/lib/payments/browser';
 import { normalizeBuyerPhone } from '@/lib/payments/phone';
 import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
@@ -27,7 +27,17 @@ interface ManageDashboardProps {
   entitlements?: SketchbookEntitlements;
   shareThumbnailMode?: ShareThumbnailMode | null;
   shareThumbnailVersion?: string | null;
+  retentionTier?: SketchbookRetentionTier;
+  retentionExpiresAt?: string | null;
+  retentionGuaranteedUntil?: string | null;
 }
+
+const retentionDateFormatter = new Intl.DateTimeFormat('ko-KR', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
 
 function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
@@ -59,7 +69,14 @@ function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) 
   );
 }
 
-export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false }, shareThumbnailMode: initialShareThumbnailMode = 'DEFAULT', shareThumbnailVersion: initialShareThumbnailVersion = null }: ManageDashboardProps) {
+export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false }, shareThumbnailMode: initialShareThumbnailMode = 'DEFAULT', shareThumbnailVersion: initialShareThumbnailVersion = null, retentionTier = 'LEGACY', retentionExpiresAt = null, retentionGuaranteedUntil = null }: ManageDashboardProps) {
+  const [retentionReferenceTime] = useState(() => Date.now());
+  const retentionExpirationDate = retentionExpiresAt ? new Date(retentionExpiresAt) : null;
+  const retentionGuaranteeDate = retentionGuaranteedUntil ? new Date(retentionGuaranteedUntil) : null;
+  const retentionWarningStartsAt = retentionExpirationDate
+    ? retentionExpirationDate.getTime() - 30 * 24 * 60 * 60 * 1000
+    : null;
+  const showRetentionWarning = retentionWarningStartsAt !== null && retentionReferenceTime >= retentionWarningStartsAt;
   const router = useRouter();
   const [limit] = useState(participantLimit);
   const [entitlements] = useState(initialEntitlements);
@@ -419,6 +436,25 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         <progress max={limit} value={participantCount} />
         <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">저장 공간 추가하기</button>
       </section>
+      {retentionTier === 'FREE' && retentionExpirationDate ? (
+        <section
+          aria-label="보관 기간 안내"
+          className={`retention-notice${showRetentionWarning ? ' retention-notice--warning' : ''}`}
+          role="status"
+        >
+          <strong>무료 보관</strong>
+          <p>{retentionDateFormatter.format(retentionExpirationDate)} 자동 삭제 예정</p>
+          <p>생성일로부터 6개월간 보관됩니다.</p>
+          {showRetentionWarning ? <p>삭제 전에 필요한 그림을 저장해 주세요.</p> : null}
+        </section>
+      ) : null}
+      {retentionTier === 'PAID' && retentionGuaranteeDate ? (
+        <section aria-label="보관 기간 안내" className="retention-notice" role="status">
+          <strong>유료 보관</strong>
+          <p>{retentionDateFormatter.format(retentionGuaranteeDate)}까지 최소 이용 보장</p>
+          <p>서비스 운영 중 계속 보관됩니다.</p>
+        </section>
+      ) : null}
       {message ? <p className="submission-success" role="status">{message}</p> : null}
       <section aria-labelledby="share-thumbnail-title" className="share-thumbnail-settings">
         <div>

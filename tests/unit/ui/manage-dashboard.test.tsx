@@ -20,6 +20,75 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     getPublicPaymentMode.mockReturnValue('MOCK');
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('무료 스케치북의 자동 삭제일을 관리 화면에 안내한다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-04T00:00:00.000Z'));
+
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={0}
+        participantLimit={10}
+        publicId="free-retention"
+        retentionExpiresAt="2027-03-04T00:00:00.000Z"
+        retentionTier="FREE"
+      />,
+    );
+
+    const notice = screen.getByRole('status', { name: '보관 기간 안내' });
+    expect(notice).toHaveTextContent('무료 보관');
+    expect(notice).toHaveTextContent('2027년 3월 4일 자동 삭제 예정');
+    expect(notice).toHaveTextContent('생성일로부터 6개월간 보관');
+  });
+
+  it('무료 만료일까지 30일 이하이면 삭제 전 백업을 강조한다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2027-02-10T00:00:00.000Z'));
+
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={0}
+        participantLimit={10}
+        publicId="free-warning"
+        retentionExpiresAt="2027-03-04T00:00:00.000Z"
+        retentionTier="FREE"
+      />,
+    );
+
+    expect(screen.getByRole('status', { name: '보관 기간 안내' })).toHaveTextContent(
+      '삭제 전에 필요한 그림을 저장해 주세요',
+    );
+  });
+
+  it('유료 스케치북은 최소 보장일과 운영 중 계속 보관됨을 안내한다', () => {
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={0}
+        participantLimit={20}
+        publicId="paid-retention"
+        retentionGuaranteedUntil="2027-09-04T00:00:00.000Z"
+        retentionTier="PAID"
+      />,
+    );
+
+    const notice = screen.getByRole('status', { name: '보관 기간 안내' });
+    expect(notice).toHaveTextContent('유료 보관');
+    expect(notice).toHaveTextContent('2027년 9월 4일까지 최소 이용 보장');
+    expect(notice).toHaveTextContent('서비스 운영 중 계속 보관');
+  });
+
   it('기존 비활성 설정이 남아 있어도 구매 행동을 제공한다', () => {
     getPublicPaymentMode.mockReturnValue('DISABLED');
 

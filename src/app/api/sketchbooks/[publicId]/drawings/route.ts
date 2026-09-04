@@ -34,7 +34,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
   const appCheckResponse = await enforceAppCheck(request);
   if (appCheckResponse) return appCheckResponse;
 
-  const rateLimitResponse = enforcePublicMutationLimit(request, 'submitDrawing');
+  const rateLimitResponse = await enforcePublicMutationLimit(request, 'submitDrawing');
   if (rateLimitResponse) return rateLimitResponse;
 
   const { publicId } = await params;

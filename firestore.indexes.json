@@ -37,6 +37,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "retentionTier",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "retentionExpiresAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "sketchbooks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "status",
           "order": "ASCENDING"
         },
@@ -201,6 +215,12 @@
           "queryScope": "COLLECTION_GROUP"
         }
       ]
+    },
+    {
+      "collectionGroup": "publicMutationRateLimits",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
     }
   ]
 }

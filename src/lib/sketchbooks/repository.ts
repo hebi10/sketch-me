@@ -14,12 +14,14 @@ import {
   type PinManageSession,
 } from './manage-session';
 import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
+import { paidRetentionUpdate } from './retention';
 
 const collectionName = 'sketchbooks';
 const adminDeletionJobCollectionName = 'adminSketchbookDeletionJobs';
 const deletionJobCollectionName = 'sketchbookDeletionJobs';
 const bestRanks = [1, 2, 3, 4] as const;
 const maxDrawingsPerSubmissionSource = 2;
+const retentionDeletionActor = 'system:retention';
 
 type BestRank = (typeof bestRanks)[number];
 
@@ -117,6 +119,13 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     entitlements: { watermarkFree: entitlements.watermarkFree === true },
     participantLimit: Number(data.participantLimit),
     participantCount: Number(data.participantCount),
+    retentionExpiresAt: data.retentionExpiresAt ? toDate(data.retentionExpiresAt) : null,
+    retentionGuaranteedUntil: data.retentionGuaranteedUntil
+      ? toDate(data.retentionGuaranteedUntil)
+      : null,
+    retentionTier: data.retentionTier === 'FREE' || data.retentionTier === 'PAID'
+      ? data.retentionTier
+      : 'LEGACY',
     status: data.status as Sketchbook['status'],
     moderationStatus: data.moderationStatus === 'BLOCKED' ? 'BLOCKED' : 'ACTIVE',
     moderatedAt: data.moderatedAt ? toDate(data.moderatedAt) : null,
@@ -177,6 +186,34 @@ export async function findSketchbookByPublicId(publicId: string) {
 
   const document = snapshot.docs[0];
   return toSketchbook(document.id, document.data());
+}
+
+export async function listExpiredFreeSketchbooks(now: Date, limit: number) {
+  const snapshot = await getAdminFirestore()
+    .collection(collectionName)
+    .where('retentionTier', '==', 'FREE')
+    .where('retentionExpiresAt', '<=', now)
+    .orderBy('retentionExpiresAt', 'asc')
+    .limit(limit)
+    .get();
+  return snapshot.docs.map((document) => ({
+    id: document.id,
+    publicId: String(document.data().publicId),
+    source: 'sketchbook' as const,
+  }));
+}
+
+export async function listPendingRetentionDeletionTargets(limit: number) {
+  const snapshot = await getAdminFirestore()
+    .collection(adminDeletionJobCollectionName)
+    .where('adminUid', '==', retentionDeletionActor)
+    .limit(limit)
+    .get();
+  return snapshot.docs.map((document) => ({
+    id: String(document.data().sketchbookId ?? document.id),
+    publicId: String(document.data().publicId),
+    source: 'admin-deletion-job' as const,
+  }));
 }
 
 function toDrawing(id: string, data: Record<string, unknown>): Drawing {
@@ -542,6 +579,7 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
     if (existingPurchase.exists) {
       return { entitlements: currentEntitlements, participantLimit: currentLimit };
     }
+    const now = new Date();
     const participantLimit = plan.kind === 'capacity'
       ? currentLimit + plan.additionalLimit
       : currentLimit;
@@ -551,7 +589,8 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
     transaction.update(reference, {
       ...(plan.kind === 'capacity' ? { participantLimit } : {}),
       ...(plan.kind === 'watermark' ? { entitlements } : {}),
-      updatedAt: new Date(),
+      ...paidRetentionUpdate(now),
+      updatedAt: now,
     });
     transaction.set(purchaseReference, {
       sketchbookId: sketchbook.id,
@@ -563,8 +602,8 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
       amount: plan.amount,
       additionalLimit: plan.additionalLimit,
       paymentStatus: 'SUCCEEDED',
-      paidAt: new Date(),
-      createdAt: new Date(),
+      paidAt: now,
+      createdAt: now,
     });
     return { entitlements, participantLimit };
   });

@@ -15,7 +15,7 @@ describe('공개 mutation 요청 제한 경계', () => {
       consume: vi.fn(() => ({ allowed: false, retryAfter: 30 })),
     };
 
-    const response = enforcePublicMutationLimit(
+    const response = await enforcePublicMutationLimit(
       new Request('https://example.com/api/sketchbooks'),
       'createSketchbook',
       limiter,
@@ -25,6 +25,25 @@ describe('공개 mutation 요청 제한 경계', () => {
     expect(response?.headers.get('Retry-After')).toBe('30');
     await expect(response?.json()).resolves.toEqual({
       message: '요청이 많아요. 30초 뒤 다시 시도해 주세요.',
+    });
+  });
+
+  it('영속 제한 저장소 오류는 생성을 허용하지 않고 503으로 닫는다', async () => {
+    const limiter: PublicMutationRateLimiter = {
+      consume: vi.fn(async () => {
+        throw new Error('firestore details');
+      }),
+    };
+
+    const response = await enforcePublicMutationLimit(
+      new Request('https://example.com/api/sketchbooks'),
+      'createSketchbook',
+      limiter,
+    );
+
+    expect(response?.status).toBe(503);
+    await expect(response?.json()).resolves.toEqual({
+      message: '요청 제한을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.',
     });
   });
 

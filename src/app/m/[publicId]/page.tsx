@@ -21,5 +21,5 @@ export default async function ManagePage({ params }: { params: Promise<{ publicI
     && drawing.moderationStatus === 'ACTIVE'
   )) ?? null;
   const shareThumbnail = resolveLinkShareThumbnail(sketchbook, bestDrawing);
-  return <ManageDashboard drawings={drawings} entitlements={sketchbook.entitlements} moderationStatus={sketchbook.moderationStatus} name={sketchbook.name} ownerBestRank={sketchbook.ownerBestRank} ownerDrawingPath={sketchbook.ownerDrawingPath} participantCount={sketchbook.participantCount} participantLimit={sketchbook.participantLimit} publicId={publicId} shareThumbnailMode={sketchbook.shareThumbnailMode} shareThumbnailVersion={shareThumbnail.previewVersion} />;
+  return <ManageDashboard drawings={drawings} entitlements={sketchbook.entitlements} moderationStatus={sketchbook.moderationStatus} name={sketchbook.name} ownerBestRank={sketchbook.ownerBestRank} ownerDrawingPath={sketchbook.ownerDrawingPath} participantCount={sketchbook.participantCount} participantLimit={sketchbook.participantLimit} publicId={publicId} retentionExpiresAt={sketchbook.retentionExpiresAt?.toISOString() ?? null} retentionGuaranteedUntil={sketchbook.retentionGuaranteedUntil?.toISOString() ?? null} retentionTier={sketchbook.retentionTier} shareThumbnailMode={sketchbook.shareThumbnailMode} shareThumbnailVersion={shareThumbnail.previewVersion} />;
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { consumeCreateSketchbookRateLimit } from '@/lib/security/create-sketchbook-rate-limit';
 import { createFixedWindowRateLimiter } from '@/lib/security/rate-limit';
 
 export type PublicMutationAction = 'createSketchbook' | 'submitDrawing';
@@ -10,19 +11,21 @@ export interface RateLimitResult {
 }
 
 export interface PublicMutationRateLimiter {
-  consume(request: Request, action: PublicMutationAction): RateLimitResult;
+  consume(request: Request, action: PublicMutationAction): RateLimitResult | Promise<RateLimitResult>;
 }
 
 const hour = 60 * 60 * 1_000;
 
 function requestIp(request: Request) {
   const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return (request.headers.get('cf-connecting-ip') ?? forwarded ?? request.headers.get('x-real-ip') ?? 'unknown')
+  return (forwarded ?? request.headers.get('x-real-ip') ?? 'unknown')
     .replace(/[^a-fA-F0-9.:]/g, '')
     .slice(0, 64) || 'unknown';
 }
 
-export function createInMemoryPublicMutationRateLimiter(): PublicMutationRateLimiter {
+export function createInMemoryPublicMutationRateLimiter(): {
+  consume(request: Request, action: PublicMutationAction): RateLimitResult;
+} {
   const limits = {
     createSketchbook: {
       perIp: createFixedWindowRateLimiter({ limit: 3, windowMs: hour }),
@@ -46,13 +49,31 @@ export function createInMemoryPublicMutationRateLimiter(): PublicMutationRateLim
 }
 
 const defaultPublicMutationRateLimiter = createInMemoryPublicMutationRateLimiter();
+const persistentPublicMutationRateLimiter: PublicMutationRateLimiter = {
+  consume(request, action) {
+    if (action === 'createSketchbook') return consumeCreateSketchbookRateLimit(request);
+    return defaultPublicMutationRateLimiter.consume(request, action);
+  },
+};
 
-export function enforcePublicMutationLimit(
+export async function enforcePublicMutationLimit(
   request: Request,
   action: PublicMutationAction,
-  limiter: PublicMutationRateLimiter = defaultPublicMutationRateLimiter,
+  limiter: PublicMutationRateLimiter = persistentPublicMutationRateLimiter,
 ) {
-  const result = limiter.consume(request, action);
+  let result: RateLimitResult;
+  try {
+    result = await limiter.consume(request, action);
+  } catch (error) {
+    console.error(
+      'Public mutation rate limit unavailable',
+      error instanceof Error ? error.name : 'UnknownError',
+    );
+    return NextResponse.json(
+      { message: '요청 제한을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.' },
+      { status: 503 },
+    );
+  }
   if (result.allowed) return null;
 
   return NextResponse.json(

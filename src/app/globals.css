@@ -196,6 +196,11 @@ a { color: inherit; text-decoration: none; }
 .manage-summary { background: var(--canvas); border: 1px solid var(--line); display: grid; gap: 12px; padding: 16px; }
 .manage-summary p { margin: 0; }.manage-summary strong { color: var(--accent); font-size: 1.3rem; }
 .manage-summary progress { accent-color: var(--accent); height: 8px; width: 100%; }
+.retention-notice { background: var(--canvas); border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 5px; margin-top: 12px; padding: 14px 16px; }
+.retention-notice strong { font-size: .92rem; font-weight: 700; }
+.retention-notice p { color: var(--muted); font-size: .84rem; line-height: 1.55; margin: 0; }
+.retention-notice--warning { background: color-mix(in srgb, var(--warning) 7%, var(--canvas)); border-color: var(--warning); }
+.retention-notice--warning p:last-child { color: var(--ink); font-weight: 500; }
 .manage-actions { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; margin: 14px 0 30px; }
 .manage-drawings { scroll-margin-top: 16px; }
 .manage-drawings h2 { font-size: 1.05rem; margin: 0 0 12px; }
