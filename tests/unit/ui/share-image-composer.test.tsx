@@ -51,6 +51,13 @@ describe('ShareImageComposer', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: '해비님의 그림 선택' }));
 
+    const search = screen.getByRole('searchbox', { name: '그린 사람 이름' });
+    const currentSelection = screen.getByRole('region', { name: '현재 선택한 그림' });
+    const currentDrawing = within(currentSelection).getByRole('button', { name: '해비님의 그림 선택' });
+    expect.soft(
+      search.compareDocumentPosition(currentSelection) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    expect.soft(currentDrawing).toHaveStyle({ marginInline: 'auto', width: '70%' });
     expect(screen.getByLabelText('정사각형 공유 이미지 미리보기')).toHaveTextContent('그린 사람 · 해비');
     expect(screen.getByRole('button', { name: 'PNG로 저장하기' })).toBeEnabled();
     expect(screen.getByText('1080 × 1080 · 1:1 공유 이미지')).toBeVisible();

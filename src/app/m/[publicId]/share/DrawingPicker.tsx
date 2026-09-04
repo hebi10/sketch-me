@@ -16,10 +16,12 @@ interface DrawingPickerProps {
 }
 
 function DrawingOptionButton({
+  centered = false,
   drawing,
   onSelect,
   selected,
 }: {
+  centered?: boolean;
   drawing: ShareDrawingOption;
   onSelect: (drawingId: string) => void;
   selected: boolean;
@@ -32,6 +34,7 @@ function DrawingOptionButton({
       aria-pressed={selected}
       className="drawing-picker-option"
       onClick={() => onSelect(drawing.id)}
+      style={centered ? { marginInline: 'auto', width: '70%' } : undefined}
       type="button"
     >
       <Image
@@ -64,20 +67,6 @@ export function DrawingPicker({ drawings, onSelect, selectedId }: DrawingPickerP
         <p>한 장으로 만들 그림을 골라 주세요.</p>
       </div>
 
-      {selected ? (
-        <div aria-label="현재 선택한 그림" className="drawing-picker-current" role="region">
-          <h3>현재 선택</h3>
-          <DrawingOptionButton drawing={selected} onSelect={onSelect} selected />
-        </div>
-      ) : null}
-
-      {owner && owner.id !== selectedId ? (
-        <div className="drawing-picker-owner">
-          <h3>내 그림</h3>
-          <DrawingOptionButton drawing={owner} onSelect={onSelect} selected={false} />
-        </div>
-      ) : null}
-
       <div className="drawing-picker-search">
         <label htmlFor="drawing-author-search">그린 사람 이름</label>
         <input
@@ -105,6 +94,20 @@ export function DrawingPicker({ drawings, onSelect, selectedId }: DrawingPickerP
       ) : (
         <p className="drawing-picker-empty">{normalizedDisplayQuery} 이름으로 공개된 그림을 찾지 못했어요.</p>
       )}
+
+      {owner && owner.id !== selectedId ? (
+        <div className="drawing-picker-owner">
+          <h3>내 그림</h3>
+          <DrawingOptionButton drawing={owner} onSelect={onSelect} selected={false} />
+        </div>
+      ) : null}
+
+      {selected ? (
+        <div aria-label="현재 선택한 그림" className="drawing-picker-current" role="region">
+          <h3>현재 선택</h3>
+          <DrawingOptionButton centered drawing={selected} onSelect={onSelect} selected />
+        </div>
+      ) : null}
     </section>
   );
 }
