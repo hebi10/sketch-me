@@ -2,7 +2,11 @@
 
 import { useRef, useState } from 'react';
 
-import type { ShareDrawingOption, ShareImageMode } from '@/lib/share/share-image';
+import {
+  SHARE_IMAGE_WATERMARK_TEXT,
+  type ShareDrawingOption,
+  type ShareImageMode,
+} from '@/lib/share/share-image';
 import { fitContainedRect, SINGLE_IMAGE_LAYOUT } from '@/lib/share/single-image-layout';
 import {
   STORY_BEST_TITLE_Y,
@@ -66,28 +70,48 @@ async function drawWatermark(
   context.save();
   context.globalAlpha = mode === 'best' ? storyWatermark.opacity : 0.52;
   if (mode === 'best') {
-    const iconX = storyWatermark.x + 12;
-    const iconY = storyWatermark.y + (storyWatermark.height - storyWatermark.iconSize) / 2;
-    context.drawImage(watermark, iconX, iconY, storyWatermark.iconSize, storyWatermark.iconSize);
+    const iconSize = 56;
+    const gap = 12;
+    const iconX = storyWatermark.x;
+    const iconY = storyWatermark.y + (storyWatermark.height - iconSize) / 2;
+    context.drawImage(watermark, iconX, iconY, iconSize, iconSize);
     context.fillStyle = storyStyle.ink;
-    context.font = `600 38px ${storyStyle.fontFamily}`;
+    setFittedFont(context, SHARE_IMAGE_WATERMARK_TEXT, {
+      maxSize: 22,
+      maxWidth: storyWatermark.width - iconSize - gap,
+      minSize: 14,
+      weight: 600,
+    });
     context.textAlign = 'left';
-    context.fillText('스캐치북', iconX + storyWatermark.iconSize + 12, storyWatermark.y + 70);
+    context.fillText(
+      SHARE_IMAGE_WATERMARK_TEXT,
+      iconX + iconSize + gap,
+      storyWatermark.y + storyWatermark.height / 2 + 8,
+    );
   } else {
-    const iconSize = 48;
-    const contentWidth = 210;
-    const startX = (SINGLE_IMAGE_LAYOUT.width - contentWidth) / 2;
+    const iconSize = 36;
+    const gap = 12;
+    const startX = SINGLE_IMAGE_LAYOUT.watermark.x;
     context.drawImage(
       watermark,
       startX,
-      SINGLE_IMAGE_LAYOUT.watermark.y + 6,
+      SINGLE_IMAGE_LAYOUT.watermark.y + (SINGLE_IMAGE_LAYOUT.watermark.height - iconSize) / 2,
       iconSize,
       iconSize,
     );
     context.fillStyle = storyStyle.ink;
-    context.font = `600 32px ${storyStyle.fontFamily}`;
+    setFittedFont(context, SHARE_IMAGE_WATERMARK_TEXT, {
+      maxSize: 22,
+      maxWidth: SINGLE_IMAGE_LAYOUT.watermark.width - iconSize - gap,
+      minSize: 14,
+      weight: 600,
+    });
     context.textAlign = 'left';
-    context.fillText('스캐치북', startX + 62, SINGLE_IMAGE_LAYOUT.watermark.y + 43);
+    context.fillText(
+      SHARE_IMAGE_WATERMARK_TEXT,
+      startX + iconSize + gap,
+      SINGLE_IMAGE_LAYOUT.watermark.y + SINGLE_IMAGE_LAYOUT.watermark.height / 2 + 8,
+    );
   }
   context.restore();
   context.textAlign = 'center';

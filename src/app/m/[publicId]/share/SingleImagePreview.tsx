@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-import type { ShareDrawingOption } from '@/lib/share/share-image';
+import { SHARE_IMAGE_WATERMARK_TEXT, type ShareDrawingOption } from '@/lib/share/share-image';
 import { SINGLE_IMAGE_LAYOUT } from '@/lib/share/single-image-layout';
 import { storyStyle } from '@/lib/share/story-style';
 
@@ -58,7 +58,7 @@ export function SingleImagePreview({
       {!watermarkFree ? (
         <div className="single-image-preview__watermark">
           <Image alt="스캐치북 워터마크" height={30} src="/brand/sketchbook-watermark.webp" unoptimized width={30} />
-          <span>스캐치북</span>
+          <span>{SHARE_IMAGE_WATERMARK_TEXT}</span>
         </div>
       ) : null}
     </section>

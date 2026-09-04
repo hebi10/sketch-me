@@ -4,6 +4,7 @@ export type ShareImageMode = 'single' | 'best';
 export type ShareDrawingSource = 'owner' | 'friend';
 
 export const SINGLE_IMAGE_DEFAULT_HEADING = '친구가 그린 나';
+export const SHARE_IMAGE_WATERMARK_TEXT = 'https://sketch.msgnote.kr/';
 
 export interface ShareDrawingOption {
   authorName: string;

@@ -68,7 +68,7 @@ describe('ShareImageMaker', () => {
         mode="single"
         name="내 이름"
         publicUrl="/s/book-1"
-        watermarkFree
+        watermarkFree={false}
       />,
     );
 
@@ -81,6 +81,11 @@ describe('ShareImageMaker', () => {
     expect(canvas).toHaveAttribute('height', '1080');
     expect(link?.download).toBe('내 이름-sketchbook-single.png');
     expect(context.fillText).toHaveBeenCalledWith('그린 사람 · 해비', 540, 946);
+    expect(context.fillText).toHaveBeenCalledWith(
+      'https://sketch.msgnote.kr/',
+      expect.any(Number),
+      expect.any(Number),
+    );
     expect(context.fillText).not.toHaveBeenCalledWith('나도 스케치북에 그림 남기기', expect.any(Number), expect.any(Number));
   });
 
@@ -111,7 +116,7 @@ describe('ShareImageMaker', () => {
         mode="best"
         name="내 이름"
         publicUrl="/s/book-1"
-        watermarkFree
+        watermarkFree={false}
       />,
     );
 
@@ -125,5 +130,10 @@ describe('ShareImageMaker', () => {
     expect(link?.download).toBe('내 이름-sketchbook-best.png');
     expect(context.fillText).toHaveBeenCalledWith('나도 스케치북에 그림 남기기', 540, 1359);
     expect(context.fillText).toHaveBeenCalledWith('http://localhost:3000/s/book-1', 540, 1418);
+    expect(context.fillText).toHaveBeenCalledWith(
+      'https://sketch.msgnote.kr/',
+      expect.any(Number),
+      expect.any(Number),
+    );
   });
 });

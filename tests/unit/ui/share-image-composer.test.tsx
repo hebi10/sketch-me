@@ -142,6 +142,7 @@ describe('ShareImageComposer', () => {
     expect(skySketch).toHaveAttribute('aria-pressed', 'true');
     expect(preview).toHaveStyle({ backgroundImage: 'url(/story/story-theme-sky-sketch.webp)' });
     expect(screen.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
+    expect(preview).toHaveTextContent('https://sketch.msgnote.kr/');
     expect(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' })).toBeVisible();
   });
 

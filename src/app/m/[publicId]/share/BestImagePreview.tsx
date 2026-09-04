@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-import type { ShareDrawingOption } from '@/lib/share/share-image';
+import { SHARE_IMAGE_WATERMARK_TEXT, type ShareDrawingOption } from '@/lib/share/share-image';
 import {
   STORY_CTA_Y,
   STORY_HEIGHT,
@@ -81,7 +81,7 @@ export function BestImagePreview({
           }}
         >
           <Image alt="스캐치북 워터마크" height={30} src="/brand/sketchbook-watermark.webp" unoptimized width={30} />
-          <span>https://sketch.msgnote.kr/</span>
+          <span>{SHARE_IMAGE_WATERMARK_TEXT}</span>
         </div>
       ) : null}
     </section>
