@@ -24,10 +24,10 @@ export function resolveLinkShareThumbnail(
     const version = sketchbook.updatedAt.getTime().toString(36);
     return {
       alt: `${sketchbook.name}님이 직접 그린 모습`,
-      height: 720,
+      height: 630,
       previewVersion: `owner-${version}`,
-      url: `/api/sketchbooks/${sketchbook.publicId}/owner/image?v=${version}`,
-      width: 720,
+      url: `/api/sketchbooks/${sketchbook.publicId}/owner/image?v=${version}&share=1`,
+      width: 1200,
     };
   }
 
@@ -39,10 +39,10 @@ export function resolveLinkShareThumbnail(
   ) {
     return {
       alt: `BEST 1, ${bestDrawing.authorName}님의 그림`,
-      height: 320,
+      height: 630,
       previewVersion: `${bestDrawing.id}-${bestDrawing.publicImageVersion}`,
-      url: `/api/sketchbooks/${sketchbook.publicId}/drawings/${bestDrawing.id}/thumbnail?v=${encodeURIComponent(bestDrawing.publicImageVersion)}`,
-      width: 320,
+      url: `/api/sketchbooks/${sketchbook.publicId}/drawings/${bestDrawing.id}/thumbnail?v=${encodeURIComponent(bestDrawing.publicImageVersion)}&share=1`,
+      width: 1200,
     };
   }
 

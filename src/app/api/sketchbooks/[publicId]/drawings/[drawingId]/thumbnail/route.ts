@@ -6,7 +6,7 @@ import {
   isDrawingImagePathFor,
   isDrawingThumbnailPathFor,
 } from '@/lib/firebase/storage';
-import { optimizeDrawingThumbnail } from '@/lib/images/optimize';
+import { optimizeDrawingThumbnail, optimizeImageForStorage } from '@/lib/images/optimize';
 import { findDrawing, findSketchbookByPublicId } from '@/lib/sketchbooks/repository';
 
 const publicThumbnailCache = 'public, max-age=300, s-maxage=300, stale-while-revalidate=60';
@@ -18,12 +18,20 @@ function notFoundResponse() {
   });
 }
 
-function thumbnailResponse(contents: Buffer, drawingId: string, version: string) {
-  return new NextResponse(Uint8Array.from(contents), {
+async function thumbnailResponse(
+  contents: Buffer,
+  drawingId: string,
+  version: string,
+  isLinkShare: boolean,
+) {
+  const output = isLinkShare
+    ? await optimizeImageForStorage(contents, 'link-share')
+    : { buffer: contents, contentType: 'image/webp' };
+  return new NextResponse(Uint8Array.from(output.buffer), {
     headers: {
       'Cache-Control': publicThumbnailCache,
-      'Content-Type': 'image/webp',
-      ETag: `"${drawingId}-${version}-thumb"`,
+      'Content-Type': output.contentType,
+      ETag: `"${drawingId}-${version}-${isLinkShare ? 'share' : 'thumb'}"`,
     },
   });
 }
@@ -33,7 +41,9 @@ export async function GET(
   { params }: { params: Promise<{ publicId: string; drawingId: string }> },
 ) {
   const { publicId, drawingId } = await params;
-  const requestedVersion = new URL(request.url).searchParams.get('v');
+  const searchParams = new URL(request.url).searchParams;
+  const requestedVersion = searchParams.get('v');
+  const isLinkShare = searchParams.get('share') === '1';
   if (!requestedVersion || !/^[a-zA-Z0-9_-]{1,100}$/.test(requestedVersion)) {
     return notFoundResponse();
   }
@@ -68,7 +78,7 @@ export async function GET(
   const thumbnailFile = bucket.file(thumbnailPath);
   try {
     const [contents] = await thumbnailFile.download();
-    return thumbnailResponse(contents, drawingId, requestedVersion);
+    return thumbnailResponse(contents, drawingId, requestedVersion, isLinkShare);
   } catch {
     // Legacy drawings predate thumbnails and are generated once on demand.
   }
@@ -86,7 +96,7 @@ export async function GET(
         error instanceof Error ? error.name : 'UnknownError',
       );
     }
-    return thumbnailResponse(optimized.buffer, drawingId, requestedVersion);
+    return thumbnailResponse(optimized.buffer, drawingId, requestedVersion, isLinkShare);
   } catch {
     return notFoundResponse();
   }

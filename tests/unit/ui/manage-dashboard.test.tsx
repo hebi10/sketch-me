@@ -142,7 +142,6 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
         participantLimit={20}
         publicId="public-1"
         shareThumbnailMode="OWNER"
-        shareThumbnailVersion="owner-version"
       />,
     );
 
@@ -175,7 +174,6 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
         participantLimit={20}
         publicId="public-default"
         shareThumbnailMode="OWNER"
-        shareThumbnailVersion="owner-version"
       />,
     );
 

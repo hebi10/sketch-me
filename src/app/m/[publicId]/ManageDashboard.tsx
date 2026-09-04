@@ -26,7 +26,6 @@ interface ManageDashboardProps {
   drawings: Drawing[];
   entitlements?: SketchbookEntitlements;
   shareThumbnailMode?: ShareThumbnailMode | null;
-  shareThumbnailVersion?: string | null;
   retentionTier?: SketchbookRetentionTier;
   retentionExpiresAt?: string | null;
   retentionGuaranteedUntil?: string | null;
@@ -69,7 +68,7 @@ function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) 
   );
 }
 
-export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false }, shareThumbnailMode: initialShareThumbnailMode = 'DEFAULT', shareThumbnailVersion: initialShareThumbnailVersion = null, retentionTier = 'LEGACY', retentionExpiresAt = null, retentionGuaranteedUntil = null }: ManageDashboardProps) {
+export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false }, shareThumbnailMode: initialShareThumbnailMode = 'DEFAULT', retentionTier = 'LEGACY', retentionExpiresAt = null, retentionGuaranteedUntil = null }: ManageDashboardProps) {
   const [retentionReferenceTime] = useState(() => Date.now());
   const retentionExpirationDate = retentionExpiresAt ? new Date(retentionExpiresAt) : null;
   const retentionGuaranteeDate = retentionGuaranteedUntil ? new Date(retentionGuaranteedUntil) : null;
@@ -96,7 +95,6 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<PurchaseProductId>('FRIENDS_10');
   const [shareThumbnailMode, setShareThumbnailMode] = useState<ShareThumbnailMode>(initialShareThumbnailMode ?? 'DEFAULT');
-  const [shareThumbnailVersion, setShareThumbnailVersion] = useState<string | null>(initialShareThumbnailVersion);
   const [shareThumbnailMessage, setShareThumbnailMessage] = useState<string | null>(null);
   const [isSavingShareThumbnail, setIsSavingShareThumbnail] = useState(false);
   const [drawingToDelete, setDrawingToDelete] = useState<string | null>(null);
@@ -289,7 +287,6 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         return;
       }
       setShareThumbnailMode(nextMode);
-      setShareThumbnailVersion(`${nextMode.toLowerCase()}-${Date.now().toString(36)}`);
       setShareThumbnailMessage('링크 공유 썸네일을 변경했어요.');
     } catch {
       setShareThumbnailMessage('연결을 확인하고 다시 시도해 주세요.');
@@ -419,7 +416,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         <HeaderMenu>
           <Link aria-label="친구 페이지 보기" href={`/s/${publicId}`} title="친구 페이지 보기">친구홈</Link>
           <ImageCreationEntry publicId={publicId}>스토리</ImageCreationEntry>
-          <ShareSketchbookButton menuItem name={name} previewVersion={shareThumbnailVersion} publicId={publicId} />
+          <ShareSketchbookButton menuItem name={name} publicId={publicId} />
           <button aria-label="관리용 비밀번호 변경" onClick={openSecurityDialog} ref={securityTriggerRef} title="관리용 비밀번호 변경" type="button">비밀번호</button>
           <button aria-label="로그아웃" onClick={logout} title="로그아웃" type="button">로그아웃</button>
         </HeaderMenu>
@@ -500,7 +497,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         ) : null}
       </section>
       <div className="manage-actions">
-        <ShareSketchbookButton name={name} previewVersion={shareThumbnailVersion} publicId={publicId} />
+        <ShareSketchbookButton name={name} publicId={publicId} />
         <ImageCreationEntry className="button button--primary" publicId={publicId} />
       </div>
       <section aria-labelledby="drawing-ranking-title" className="manage-drawings" id="drawing-ranking">

@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 
-export type ImageStorageProfile = 'sketch' | 'thumbnail';
+export type ImageStorageProfile = 'link-share' | 'sketch' | 'thumbnail';
 
 export interface OptimizedImage {
   buffer: Buffer;
@@ -8,6 +8,13 @@ export interface OptimizedImage {
 }
 
 const profiles = {
+  'link-share': {
+    width: 1200,
+    height: 630,
+    quality: 76,
+    fallbackQuality: 58,
+    maxBytes: 350_000,
+  },
   sketch: {
     width: 720,
     height: 720,
@@ -33,16 +40,28 @@ async function encodeWebp(
   scale = 1,
 ) {
   const settings = profiles[profile];
+  const isLinkShare = profile === 'link-share';
   const resizeOptions = {
-    width: Math.round(settings.width * scale),
-    height: Math.round(settings.height * scale),
+    width: Math.round((isLinkShare ? 560 : settings.width) * scale),
+    height: Math.round((isLinkShare ? 560 : settings.height) * scale),
     fit: 'contain' as const,
     background: { r: 255, g: 255, b: 255, alpha: 1 },
   };
 
-  return sharp(input, { failOn: 'error', limitInputPixels: 16_000_000 })
+  let pipeline = sharp(input, { failOn: 'error', limitInputPixels: 16_000_000 })
     .rotate()
-    .resize(resizeOptions)
+    .resize(resizeOptions);
+  if (isLinkShare) {
+    pipeline = pipeline.extend({
+      top: Math.round(35 * scale),
+      bottom: Math.round(35 * scale),
+      left: Math.round(320 * scale),
+      right: Math.round(320 * scale),
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    });
+  }
+
+  return pipeline
     .webp({ quality, effort: 4, smartSubsample: true })
     .toBuffer();
 }

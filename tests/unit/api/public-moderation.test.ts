@@ -191,15 +191,31 @@ describe('공개 경로 운영자 차단', () => {
         openGraph: {
           images: [{
             alt: '해비님이 직접 그린 모습',
-            height: 720,
-            url: `/api/sketchbooks/public-1/owner/image?v=${createdAt.getTime().toString(36)}`,
-            width: 720,
+            height: 630,
+            url: `/api/sketchbooks/public-1/owner/image?v=${createdAt.getTime().toString(36)}&share=1`,
+            width: 1200,
           }],
         },
         twitter: {
-          images: [`/api/sketchbooks/public-1/owner/image?v=${createdAt.getTime().toString(36)}`],
+          images: [`/api/sketchbooks/public-1/owner/image?v=${createdAt.getTime().toString(36)}&share=1`],
         },
       });
+  });
+
+  it('소유자 그림 링크 공유 요청은 가로형 중앙 정렬 이미지로 변환한다', async () => {
+    optimizeImageForStorage.mockResolvedValueOnce({
+      buffer: Buffer.from('share-thumbnail'),
+      contentType: 'image/webp',
+    });
+
+    const response = await getOwnerImage(
+      new Request('http://localhost/api/sketchbooks/public-1/owner/image?v=version-1&share=1'),
+      sketchbookContext,
+    );
+
+    expect(optimizeImageForStorage).toHaveBeenCalledWith(Buffer.from('image'), 'link-share');
+    expect(response.headers.get('Content-Type')).toBe('image/webp');
+    expect(Buffer.from(await response.arrayBuffer()).toString()).toBe('share-thumbnail');
   });
 
   it('1위 그림을 링크 썸네일로 선택하면 현재 공개 중인 1위 썸네일을 사용한다', async () => {
@@ -214,13 +230,13 @@ describe('공개 경로 운영자 차단', () => {
         openGraph: {
           images: [{
             alt: 'BEST 1, 친구님의 그림',
-            height: 320,
-            url: '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
-            width: 320,
+            height: 630,
+            url: '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1&share=1',
+            width: 1200,
           }],
         },
         twitter: {
-          images: ['/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1'],
+          images: ['/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1&share=1'],
         },
       });
     expect(findVisibleBestDrawing).toHaveBeenCalledWith('book-1', 1);

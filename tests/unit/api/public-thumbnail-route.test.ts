@@ -4,6 +4,7 @@ const {
   findDrawing,
   findSketchbookByPublicId,
   getAdminStorage,
+  optimizeImageForStorage,
   optimizeDrawingThumbnail,
   originalDownload,
   thumbnailDownload,
@@ -12,6 +13,7 @@ const {
   findDrawing: vi.fn(),
   findSketchbookByPublicId: vi.fn(),
   getAdminStorage: vi.fn(),
+  optimizeImageForStorage: vi.fn(),
   optimizeDrawingThumbnail: vi.fn(),
   originalDownload: vi.fn(),
   thumbnailDownload: vi.fn(),
@@ -19,7 +21,7 @@ const {
 }));
 
 vi.mock('@/lib/firebase/admin', () => ({ getAdminStorage }));
-vi.mock('@/lib/images/optimize', () => ({ optimizeDrawingThumbnail }));
+vi.mock('@/lib/images/optimize', () => ({ optimizeDrawingThumbnail, optimizeImageForStorage }));
 vi.mock('@/lib/sketchbooks/repository', () => ({ findDrawing, findSketchbookByPublicId }));
 
 import { GET } from '@/app/api/sketchbooks/[publicId]/drawings/[drawingId]/thumbnail/route';
@@ -57,6 +59,10 @@ describe('공개 갤러리 썸네일', () => {
       buffer: Buffer.from('generated-thumbnail'),
       contentType: 'image/webp',
     });
+    optimizeImageForStorage.mockResolvedValue({
+      buffer: Buffer.from('share-thumbnail'),
+      contentType: 'image/webp',
+    });
     getAdminStorage.mockReturnValue({
       bucket: vi.fn(() => ({
         file: vi.fn((path: string) => path.endsWith('/thumbnail.webp')
@@ -81,6 +87,19 @@ describe('공개 갤러리 썸네일', () => {
     );
     expect(response.headers.get('ETag')).toBe('"drawing-1-version-1-thumb"');
     expect(originalDownload).not.toHaveBeenCalled();
+  });
+
+  it('링크 공유 요청은 정사각형 썸네일을 가로형 중앙 정렬 이미지로 변환한다', async () => {
+    const response = await GET(new Request(
+      'http://localhost/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1&share=1',
+    ), context);
+
+    expect(response.status).toBe(200);
+    expect(optimizeImageForStorage).toHaveBeenCalledWith(
+      Buffer.from('stored-thumbnail'),
+      'link-share',
+    );
+    expect(Buffer.from(await response.arrayBuffer()).toString()).toBe('share-thumbnail');
   });
 
   it.each([

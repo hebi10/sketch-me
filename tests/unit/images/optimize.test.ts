@@ -36,6 +36,23 @@ async function makeNoisySquare() {
 }
 
 describe('optimizeImageForStorage', () => {
+  it('링크 공유 이미지는 원본 전체를 1200x630 흰 캔버스 중앙에 안전 여백과 함께 배치한다', async () => {
+    const result = await optimizeImageForStorage(await makeMarkedPortrait(), 'link-share' as never);
+    const metadata = await sharp(result.buffer).metadata();
+    const { data, info } = await sharp(result.buffer).raw().toBuffer({ resolveWithObject: true });
+    const pixel = (x: number, y: number) => {
+      const offset = (y * info.width + x) * info.channels;
+      return [data[offset], data[offset + 1], data[offset + 2]];
+    };
+
+    expect(metadata).toMatchObject({ format: 'webp', height: 630, width: 1200 });
+    expect(pixel(600, 20).every((value) => value > 235)).toBe(true);
+    expect(pixel(600, 45)[0]).toBeGreaterThan(180);
+    expect(pixel(600, 585)[2]).toBeGreaterThan(180);
+    expect(pixel(600, 610).every((value) => value > 235)).toBe(true);
+    expect(pixel(20, 315).every((value) => value > 235)).toBe(true);
+  });
+
   it('친구 그림 원본과 90KB 이하 320px 갤러리 썸네일을 함께 만든다', async () => {
     const result = await optimizeDrawingImages(await makeNoisySquare());
     const [original, thumbnail] = await Promise.all([

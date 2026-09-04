@@ -29,4 +29,29 @@ describe('링크 공유 기본 썸네일', () => {
       width: 1200,
     });
   });
+
+  it('소유자 그림은 가로형 공유 이미지 주소와 크기를 제공한다', () => {
+    const updatedAt = new Date('2026-09-03T06:00:00.000Z');
+
+    expect(resolveLinkShareThumbnail({
+      createdAt: updatedAt,
+      entitlements: { watermarkFree: false },
+      id: 'book-1',
+      manageTokenHash: 'hash',
+      moderatedAt: null,
+      moderationStatus: 'ACTIVE',
+      name: '해비',
+      ownerDrawingPath: 'sketchbooks/book-1/owner/original.webp',
+      participantCount: 0,
+      participantLimit: 10,
+      publicId: 'public-1',
+      shareThumbnailMode: 'OWNER',
+      status: 'PUBLIC',
+      updatedAt,
+    })).toMatchObject({
+      height: 630,
+      url: `/api/sketchbooks/public-1/owner/image?v=${updatedAt.getTime().toString(36)}&share=1`,
+      width: 1200,
+    });
+  });
 });
