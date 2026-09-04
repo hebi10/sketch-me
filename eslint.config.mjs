@@ -5,6 +5,7 @@ const config = [
   {
     ignores: [
       '.next/**',
+      '.worktrees/**',
       '.superpowers/sdd/2026-08-25-operator-admin/.next-task10/**',
       'node_modules/**',
       'playwright-report/**',
