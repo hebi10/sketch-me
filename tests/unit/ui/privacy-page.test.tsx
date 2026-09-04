@@ -13,7 +13,7 @@ describe('PrivacyPage', () => {
     expect(screen.getByText(/무료 스케치북은 생성일로부터 6개월/)).toBeVisible();
     expect(screen.getByRole('heading', { name: '처리위탁 및 국외 이전' })).toBeVisible();
     expect(screen.getByText(/Cloud Firestore.*대한민국 서울/)).toBeVisible();
-    expect(screen.getByText(/Cloud Storage.*미국 버지니아/)).toBeVisible();
+    expect(screen.getByText(/Cloud Storage.*미국 사우스캐롤라이나.*us-east1/)).toBeVisible();
     expect(screen.getByText(/Firebase App Hosting.*대만/)).toBeVisible();
     expect(screen.queryByText(/참고 사진/)).not.toBeInTheDocument();
   });
@@ -37,11 +37,21 @@ describe('PrivacyPage', () => {
     expect(screen.getByRole('link', { name: 'asdlkj0104@gmail.com' })).toHaveAttribute('href', 'mailto:asdlkj0104@gmail.com');
   });
 
-  it('관리 PIN이 생성 중 브라우저 세션 초안에만 임시 저장됨을 안내한다', () => {
+  it('관리 PIN은 브라우저 저장소에 남기지 않고 현재 페이지 메모리에서만 처리함을 안내한다', () => {
     render(<PrivacyPage />);
 
     expect(screen.getByText(/입력한 관리용 비밀번호 원문은 서버에 저장하지 않습니다/)).toBeVisible();
-    expect(screen.getByText(/생성 중에는 브라우저의 sessionStorage 초안에 임시 저장되며, 생성에 성공하거나 탭 또는 브라우저 세션이 끝나면 사라집니다/)).toBeVisible();
+    expect(screen.getByText(/현재 페이지 메모리에서만 처리하며.*새로고침하거나 탭을 닫으면 사라집니다/)).toBeVisible();
+    expect(screen.getByText(/이름, 비밀번호 힌트와 직접 그린 그림 초안만 sessionStorage/)).toBeVisible();
+    expect(screen.queryByText(/이름, 관리용 비밀번호, 힌트.*sessionStorage/)).not.toBeInTheDocument();
+  });
+
+  it('이메일로 접수된 소비자 불만과 분쟁 기록의 보관 기준을 안내한다', () => {
+    render(<PrivacyPage />);
+
+    expect(screen.getByText(/이메일 등 문의 채널로 접수된 소비자 불만 또는 분쟁처리 기록/)).toBeVisible();
+    expect(screen.getByText(/처리 완료일로부터 3년/)).toBeVisible();
+    expect(screen.getByText(/일반 문의는 처리 목적 달성 후 지체 없이 삭제/)).toBeVisible();
   });
 
   it('결제 기록과 결제수단 정보의 저장 범위를 안내한다', () => {

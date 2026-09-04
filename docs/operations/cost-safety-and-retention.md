@@ -31,12 +31,15 @@ TTL 삭제는 만료 시각과 정확히 동시에 실행된다는 보장이 없
 
 ## 자동 정리 스케줄
 
-Cloud Scheduler 또는 동등한 서버 스케줄러에서 다음 요청을 하루 1회 호출한다.
+Cloud Scheduler에서 전용 서비스 계정의 OIDC 토큰으로 다음 요청을 하루 1회 호출한다. 정적 비밀값은 Scheduler 작업 설정에 저장하지 않는다.
 
 - 메서드: `POST`
 - URL: 운영 도메인의 `/api/internal/retention-cleanup`
-- 헤더: `Authorization: Bearer <RETENTION_CLEANUP_SECRET>`
+- 서비스 계정: `retention-cleanup-scheduler@sketch-me-31e13.iam.gserviceaccount.com`
+- OIDC 대상: `https://sketch.msgnote.kr/api/internal/retention-cleanup`
 - 권장 실행 시간: 트래픽이 적은 시간대
+
+App Hosting에는 OIDC 대상과 서비스 계정 이메일을 각각 `RETENTION_CLEANUP_OIDC_AUDIENCE`, `RETENTION_CLEANUP_SCHEDULER_SERVICE_ACCOUNT`로 설정한다. `RETENTION_CLEANUP_SECRET` 인증은 장애 대응용 수동 실행에만 사용하며 값은 명령 기록이나 로그에 남기지 않는다.
 
 응답의 `deleted`, `failed`, `retried` 수치를 로그에서 확인한다. `failed`가 0보다 크거나 요청이 5xx로 끝나면 운영 알림 대상으로 연결한다. 정리 작업은 실패한 시스템 삭제 작업을 다음 실행에서 먼저 재시도한다.
 
@@ -59,4 +62,16 @@ Firebase와 연결된 Google Cloud 결제 계정에서 다음 항목을 직접 �
 - 관리 화면에 무료 삭제 예정일 또는 유료 최소 보장일이 표시되는지 확인
 - 생성 제한 초과 시 `429`, 제한 저장소 장애 시 `503`을 반환하는지 확인
 - 자동 정리 API가 잘못된 Bearer 값에 `401`을 반환하는지 확인
+- 자동 정리 API가 지정된 Scheduler 서비스 계정 OIDC 토큰만 허용하는지 확인
+- Firestore TTL 목록에 `publicMutationRateLimits.expiresAt` 정책이 표시되는지 확인
+- Cloud Scheduler 작업의 최근 실행 결과와 응답 코드가 정상인지 확인
 
+## 소비자 불만·분쟁 기록
+
+이메일 등 문의 채널로 소비자 불만 또는 분쟁이 접수되면 접수일, 처리 완료일, 주문 식별정보, 요청 내용과 처리 결과만 보관한다. 카드번호, 전체 휴대전화번호, 그림과 메시지는 별도로 복사하지 않는다.
+
+- 법정 보관 대상 불만·분쟁 기록: 처리 완료일로부터 3년
+- 일반 문의: 답변과 후속 조치가 끝나면 지체 없이 삭제
+- 보관 만료 확인: 매월 1회
+
+처리 완료일과 삭제 예정일을 문의 기록에 표시하고, 삭제 예정일이 지난 기록은 이메일과 별도 메모를 함께 삭제한다. 분쟁이 계속 중이거나 법령·수사기관 요청으로 보존이 필요한 경우에는 근거와 연장 기간을 함께 기록한다.
