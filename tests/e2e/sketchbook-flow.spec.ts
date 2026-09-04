@@ -276,7 +276,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await expect(managerPage.getByAltText('BEST 1 그림')).toBeVisible();
   const storyPreview = managerPage.getByRole('region', { name: 'BEST 공유 이미지 미리보기' });
   await expect(storyPreview).toHaveCSS('background-image', /sketchbook-share-background\.webp/);
-  await expect(storyPreview.getByText('나도 스케치북에 그림 남기기')).toBeVisible();
+  await expect(storyPreview.getByText('나도 스케치북에 그림 남기기')).toHaveCount(0);
   await expect(managerPage.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
   const previewRatio = await storyPreview.evaluate((element) => {
     const bounds = element.getBoundingClientRect();

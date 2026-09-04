@@ -10,7 +10,6 @@ import {
 import { fitContainedRect, SINGLE_IMAGE_LAYOUT } from '@/lib/share/single-image-layout';
 import {
   STORY_BEST_TITLE_Y,
-  STORY_CTA_Y,
   STORY_HEIGHT,
   STORY_PUBLIC_URL_Y,
   STORY_SHARED_HEADING_Y,
@@ -181,11 +180,6 @@ async function drawBestComposition(
   }
 
   const absolutePublicUrl = new URL(publicUrl, window.location.origin).href;
-  context.fillStyle = storyStyle.accent;
-  context.fillRect(210, STORY_CTA_Y, 660, 84);
-  context.fillStyle = '#ffffff';
-  context.font = `600 32px ${storyStyle.fontFamily}`;
-  context.fillText('나도 스케치북에 그림 남기기', 540, STORY_CTA_Y + 54);
   context.fillStyle = storyStyle.muted;
   context.font = `22px ${storyStyle.fontFamily}`;
   context.fillText(absolutePublicUrl, 540, STORY_PUBLIC_URL_Y);

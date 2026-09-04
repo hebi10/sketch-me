@@ -117,7 +117,7 @@ describe('ShareImageComposer', () => {
     }));
   });
 
-  it('BEST 모드의 제목, 순위, 참여 문구와 URL을 유지한다', async () => {
+  it('BEST 모드의 제목, 순위, URL을 유지하고 동작하지 않는 참여 CTA는 표시하지 않는다', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({ storyHeading: '우리들의 베스트' }),
       ok: true,
@@ -137,7 +137,7 @@ describe('ShareImageComposer', () => {
 
     const preview = screen.getByLabelText('BEST 공유 이미지 미리보기');
     expect(preview).toHaveTextContent('BEST 4');
-    expect(preview).toHaveTextContent('나도 스케치북에 그림 남기기');
+    expect(preview).not.toHaveTextContent('나도 스케치북에 그림 남기기');
     expect(preview).toHaveTextContent('/s/book-1');
     expect(screen.getByRole('link', { name: '순위 정하러 가기' })).toHaveAttribute('href', '/m/book-1#drawing-ranking');
     expect(screen.getByText('1080 × 1440 · 3:4 공유 이미지')).toBeVisible();

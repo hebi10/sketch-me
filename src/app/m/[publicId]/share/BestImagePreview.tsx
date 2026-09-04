@@ -2,8 +2,8 @@ import Image from 'next/image';
 
 import { SHARE_IMAGE_WATERMARK_TEXT, type ShareDrawingOption } from '@/lib/share/share-image';
 import {
-  STORY_CTA_Y,
   STORY_HEIGHT,
+  STORY_PUBLIC_URL_Y,
   STORY_WIDTH,
   storySlots,
   storyWatermark,
@@ -64,10 +64,12 @@ export function BestImagePreview({
           );
         })}
       </div>
-      <div className="story-preview-cta" style={{ top: `${(STORY_CTA_Y / STORY_HEIGHT) * 100}%` }}>
-        <strong>나도 스케치북에 그림 남기기</strong>
-        <span>{publicUrl}</span>
-      </div>
+      <span
+        className="story-preview-public-url"
+        style={{ top: `${(STORY_PUBLIC_URL_Y / STORY_HEIGHT) * 100}%` }}
+      >
+        {publicUrl}
+      </span>
       {!watermarkFree ? (
         <div
           className="story-watermark"

@@ -106,7 +106,7 @@ describe('ShareImageMaker', () => {
     expect(screen.getByRole('button', { name: 'PNG로 저장하기' })).toBeDisabled();
   });
 
-  it('BEST 모드는 기존 1080×1440 PNG와 참여 문구를 유지한다', async () => {
+  it('BEST 모드는 기존 1080×1440 PNG와 URL을 유지하고 동작하지 않는 참여 CTA는 그리지 않는다', async () => {
     render(
       <ShareImageMaker
         backgroundImage="/story/background.webp"
@@ -128,7 +128,12 @@ describe('ShareImageMaker', () => {
     expect(canvas).toHaveAttribute('width', '1080');
     expect(canvas).toHaveAttribute('height', '1440');
     expect(link?.download).toBe('내 이름-sketchbook-best.png');
-    expect(context.fillText).toHaveBeenCalledWith('나도 스케치북에 그림 남기기', 540, 1359);
+    expect(context.fillRect).not.toHaveBeenCalledWith(210, 1305, 660, 84);
+    expect(context.fillText).not.toHaveBeenCalledWith(
+      '나도 스케치북에 그림 남기기',
+      expect.any(Number),
+      expect.any(Number),
+    );
     expect(context.fillText).toHaveBeenCalledWith('http://localhost:3000/s/book-1', 540, 1418);
     expect(context.fillText).toHaveBeenCalledWith(
       'https://sketch.msgnote.kr/',
