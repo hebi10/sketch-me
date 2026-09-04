@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 import { SketchEditor, type SketchEditorHandle } from '@/components/sketch/SketchEditor';
 import { getPublicMutationHeaders } from '@/lib/security/app-check-client';
 import { FREE_PARTICIPANT_LIMIT } from '@/lib/sketchbooks/capacity';
+import { CreateCompleteActions } from './CreateCompleteActions';
 
 interface CreateResult {
   manageUrl: string;
@@ -15,23 +15,30 @@ interface CreateResult {
 const draftKey = 'sketch-me:create-draft:v1';
 
 interface CreateDraft {
-  managePin: string;
   managePinHint: string;
   name: string;
   ownerImageDataUrl?: string;
-  version: 1;
+  version: 2;
+}
+
+interface SavedCreateDraft {
+  managePinHint?: unknown;
+  name?: unknown;
+  ownerImageDataUrl?: unknown;
+  version?: unknown;
 }
 
 export function CreateSketchbookForm() {
   const editorRef = useRef<SketchEditorHandle>(null);
   const draftClearedRef = useRef(false);
-  const router = useRouter();
   const [name, setName] = useState('');
   const [managePin, setManagePin] = useState('');
+  const [managePinConfirmation, setManagePinConfirmation] = useState('');
   const [managePinHint, setManagePinHint] = useState('');
   const [ownerImageDataUrl, setOwnerImageDataUrl] = useState<string | null>(null);
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pinConfirmationError, setPinConfirmationError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [created, setCreated] = useState<CreateResult | null>(null);
 
@@ -40,12 +47,11 @@ export function CreateSketchbookForm() {
     try {
       const saved = sessionStorage.getItem(draftKey);
       if (saved) {
-        const draft = JSON.parse(saved) as Partial<CreateDraft>;
-        if (draft.version === 1) {
+        const draft = JSON.parse(saved) as SavedCreateDraft;
+        if (draft.version === 1 || draft.version === 2) {
           queueMicrotask(() => {
             if (!isCurrent) return;
             if (typeof draft.name === 'string') setName(draft.name);
-            if (typeof draft.managePin === 'string') setManagePin(draft.managePin);
             if (typeof draft.managePinHint === 'string') setManagePinHint(draft.managePinHint);
             if (typeof draft.ownerImageDataUrl === 'string') setOwnerImageDataUrl(draft.ownerImageDataUrl);
           });
@@ -65,14 +71,14 @@ export function CreateSketchbookForm() {
 
   useEffect(() => {
     if (!hasLoadedDraft || draftClearedRef.current) return;
-    const draft: CreateDraft = { managePin, managePinHint, name, version: 1 };
+    const draft: CreateDraft = { managePinHint, name, version: 2 };
     if (ownerImageDataUrl) draft.ownerImageDataUrl = ownerImageDataUrl;
     try {
       sessionStorage.setItem(draftKey, JSON.stringify(draft));
     } catch {
       // Session drafts are optional and must not block creating a sketchbook.
     }
-  }, [hasLoadedDraft, managePin, managePinHint, name, ownerImageDataUrl]);
+  }, [hasLoadedDraft, managePinHint, name, ownerImageDataUrl]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,8 +86,13 @@ export function CreateSketchbookForm() {
       setError('관리용 비밀번호는 숫자 4자리로 입력해 주세요.');
       return;
     }
+    if (managePin !== managePinConfirmation) {
+      setPinConfirmationError('관리용 비밀번호가 일치하지 않아요.');
+      return;
+    }
     const drawingDataUrl = editorRef.current?.exportDrawing() ?? ownerImageDataUrl;
     setError(null);
+    setPinConfirmationError(null);
     setIsSubmitting(true);
 
     try {
@@ -113,7 +124,7 @@ export function CreateSketchbookForm() {
         <p className="eyebrow">스캐치북 완성</p>
         <h1 id="create-complete-title">스캐치북이 완성됐어요</h1>
         <p>다른 기기에서는 방금 만든 숫자 4자리 관리용 비밀번호로 접속할 수 있어요. 비밀번호는 복구할 수 없어요.</p>
-        <button className="button button--primary" onClick={() => router.push(created.manageUrl)} type="button">내 스캐치북 관리하기</button>
+        <CreateCompleteActions manageUrl={created.manageUrl} publicUrl={created.publicUrl} />
       </section>
     );
   }
@@ -127,7 +138,10 @@ export function CreateSketchbookForm() {
         <label className="field-label" htmlFor="sketchbook-name">이름 또는 애칭</label>
         <input autoComplete="nickname" id="sketchbook-name" maxLength={24} name="name" onChange={(event) => setName(event.target.value)} placeholder="내 이름" required value={name} />
         <label className="field-label" htmlFor="manage-pin">관리용 비밀번호</label>
-        <input autoComplete="new-password" id="manage-pin" inputMode="numeric" maxLength={4} name="manage-pin" onChange={(event) => { event.currentTarget.setCustomValidity(''); setManagePin(event.target.value.replace(/\D/g, '')); }} onInvalid={(event) => { event.currentTarget.setCustomValidity('관리용 비밀번호는 숫자 4자리로 입력해 주세요.'); setError('관리용 비밀번호는 숫자 4자리로 입력해 주세요.'); }} pattern="[0-9]{4}" placeholder="숫자 4자리" required type="password" value={managePin} />
+        <input autoComplete="new-password" id="manage-pin" inputMode="numeric" maxLength={4} name="manage-pin" onChange={(event) => { event.currentTarget.setCustomValidity(''); setManagePin(event.target.value.replace(/\D/g, '')); setPinConfirmationError(null); }} onInvalid={(event) => { event.currentTarget.setCustomValidity('관리용 비밀번호는 숫자 4자리로 입력해 주세요.'); setError('관리용 비밀번호는 숫자 4자리로 입력해 주세요.'); }} pattern="[0-9]{4}" placeholder="숫자 4자리" required type="password" value={managePin} />
+        <label className="field-label" htmlFor="manage-pin-confirmation">관리용 비밀번호 확인</label>
+        <input aria-describedby={pinConfirmationError ? 'manage-pin-confirmation-error' : undefined} aria-invalid={pinConfirmationError ? true : undefined} autoComplete="new-password" id="manage-pin-confirmation" inputMode="numeric" maxLength={4} name="manage-pin-confirmation" onChange={(event) => setManagePinConfirmation(event.target.value.replace(/\D/g, ''))} pattern="[0-9]{4}" placeholder="숫자 4자리 다시 입력" required type="password" value={managePinConfirmation} />
+        {pinConfirmationError ? <p className="form-error" id="manage-pin-confirmation-error" role="alert">{pinConfirmationError}</p> : null}
         <label className="field-label" htmlFor="manage-pin-hint">비밀번호 힌트 <span className="optional-label">(선택)</span></label>
         <input id="manage-pin-hint" maxLength={40} name="manage-pin-hint" onChange={(event) => setManagePinHint(event.target.value)} placeholder="예: 좋아하는 숫자" value={managePinHint} />
         <p className="field-hint">관리용 비밀번호는 복구할 수 없어요.</p>

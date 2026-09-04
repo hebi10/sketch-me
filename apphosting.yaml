@@ -7,3 +7,18 @@ env:
     secret: ADMIN_EMAIL
   - variable: ADMIN_ALLOWED_ORIGIN
     secret: ADMIN_ALLOWED_ORIGIN
+  - variable: NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY
+    secret: NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME

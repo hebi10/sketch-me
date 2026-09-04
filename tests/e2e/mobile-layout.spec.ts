@@ -5,6 +5,7 @@ import { createAdminEmulatorSession } from './admin-auth-helper';
 const viewports = [
   { width: 280, height: 700 },
   { width: 320, height: 700 },
+  { width: 390, height: 667 },
   { width: 390, height: 844 },
   { width: 650, height: 900 },
 ];

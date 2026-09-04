@@ -79,9 +79,23 @@ export default async function PublicSketchbookPage({
     .filter((drawing) => drawing.bestRank)
     .sort((left, right) => (left.bestRank ?? 5) - (right.bestRank ?? 5));
   const friendDrawings = drawings.filter((drawing) => drawing.bestRank == null);
+  const bestRanks = [1, 2, 3, 4] as const;
+  const rankedDrawings = bestRanks.reduce<
+    Array<{ drawing: (typeof bestDrawings)[number] | null; owner: boolean; rank: (typeof bestRanks)[number] }>
+  >(
+    (acc, rank) => {
+      if (sketchbook.ownerDrawingPath && sketchbook.ownerBestRank === rank) {
+        acc.push({ drawing: null, owner: true, rank });
+        return acc;
+      }
+      const drawing = bestDrawings.find((item) => item.bestRank === rank);
+      if (drawing) acc.push({ drawing, owner: false, rank });
+      return acc;
+    },
+    [],
+  );
   const isFull = isSketchbookFull(sketchbook);
   const hasDrawings = drawings.length > 0;
-  const hasOwnerBestDrawing = Boolean(sketchbook.ownerDrawingPath && sketchbook.ownerBestRank);
 
   return (
     <main className="public-sketchbook-shell">
@@ -120,24 +134,30 @@ export default async function PublicSketchbookPage({
         </section>
       ) : null}
 
-      {hasDrawings || hasOwnerBestDrawing ? (
+      {rankedDrawings.length > 0 ? (
         <section className="public-feed-section" aria-labelledby="best-drawings-heading">
             <div className="section-title-row"><h2 id="best-drawings-heading">♕ 베스트 그림</h2><span>BEST 4</span></div>
             <div className="best-drawing-grid">
-              {[1, 2, 3, 4].map((rank) => {
-                const drawing = bestDrawings.find((item) => item.bestRank === rank);
-                const isOwnerDrawing = sketchbook.ownerDrawingPath && sketchbook.ownerBestRank === rank;
+              {rankedDrawings.map(({ drawing, owner, rank }) => {
+                if (owner) {
+                  return (
+                    <article className="best-drawing-card" key={rank}>
+                      <div className="best-drawing-image">
+                        <b>BEST {rank}</b>
+                        <Image alt={`BEST ${rank}, ${sketchbook.name}님의 그림`} height={255} src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={255} />
+                      </div>
+                      <p>{`${sketchbook.name} (내 그림)`}</p>
+                    </article>
+                  );
+                }
+                if (!drawing) return null;
                 return (
                   <article className="best-drawing-card" key={rank}>
                     <div className="best-drawing-image">
                       <b>BEST {rank}</b>
-                      {isOwnerDrawing ? (
-                        <Image alt={`BEST ${rank}, ${sketchbook.name}님의 그림`} height={255} src={`/api/sketchbooks/${publicId}/owner/image`} unoptimized width={255} />
-                      ) : drawing ? (
-                        <Image alt={`BEST ${rank}, ${drawing.authorName}님의 그림`} height={255} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/thumbnail?v=${encodeURIComponent(drawing.publicImageVersion)}`} unoptimized width={255} />
-                      ) : <span>선정 전</span>}
+                      <Image alt={`BEST ${rank}, ${drawing.authorName}님의 그림`} height={255} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/thumbnail?v=${encodeURIComponent(drawing.publicImageVersion)}`} unoptimized width={255} />
                     </div>
-                    <p>{isOwnerDrawing ? `${sketchbook.name} (내 그림)` : drawing?.authorName ?? '기다리는 중'}</p>
+                    <p>{drawing.authorName}</p>
                   </article>
                 );
               })}

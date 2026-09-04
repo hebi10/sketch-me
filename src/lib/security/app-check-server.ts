@@ -2,6 +2,7 @@ import { getAppCheck } from 'firebase-admin/app-check';
 import { NextResponse } from 'next/server';
 
 import { getFirebaseAdminApp } from '@/lib/firebase/admin';
+import { resolveAppCheckMode } from '@/lib/security/app-check-config';
 
 const invalidTokenCodes = new Set([
   'app-check/app-check-token-expired',
@@ -32,8 +33,16 @@ function isInvalidTokenError(error: unknown) {
 }
 
 export async function enforceAppCheck(request: Request): Promise<NextResponse | null> {
-  if (process.env.FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED !== 'true') return null;
-  if (!process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY) return unavailableResponse();
+  const mode = resolveAppCheckMode({
+    clientEnabled: process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED === 'true',
+    enforcementEnabled: process.env.FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED === 'true',
+    siteKey: process.env.NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY ?? '',
+  });
+  if (mode === 'disabled') return null;
+  if (mode === 'misconfigured') {
+    console.error('APP_CHECK_CONFIGURATION_INVALID');
+    return unavailableResponse();
+  }
 
   const token = request.headers.get('X-Firebase-AppCheck')?.trim();
   if (!token) return unauthorizedResponse();

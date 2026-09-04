@@ -39,13 +39,26 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     expect(screen.getByText('그리지 않아도 스캐치북을 만들 수 있어요.')).toBeVisible();
   });
 
-  it('세션 초안의 이름, PIN, 힌트를 복원한다', async () => {
+  it('초안에는 PIN을 저장하거나 복원하지 않는다', async () => {
     sessionStorage.setItem(draftKey, JSON.stringify({ version: 1, name: '해비', managePin: '1234', managePinHint: '좋아하는 숫자' }));
     render(<CreateSketchbookForm />);
 
     await waitFor(() => expect(screen.getByLabelText('이름 또는 애칭')).toHaveValue('해비'));
-    expect(screen.getByLabelText('관리용 비밀번호')).toHaveValue('1234');
+    expect(screen.getByLabelText('관리용 비밀번호', { exact: true })).toHaveValue('');
     expect(screen.getByLabelText(/비밀번호 힌트/)).toHaveValue('좋아하는 숫자');
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(draftKey) ?? '{}')).not.toHaveProperty('managePin'));
+  });
+
+  it('PIN 확인이 다르면 요청하지 않고 확인 필드에 오류를 표시한다', async () => {
+    render(<CreateSketchbookForm />);
+
+    fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호', { exact: true }), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호 확인'), { target: { value: '1243' } });
+    fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
+
+    expect(await screen.findByText('관리용 비밀번호가 일치하지 않아요.')).toBeVisible();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('숫자 네 자리가 아닌 PIN에는 제품 안내 문구를 표시한다', async () => {
@@ -65,6 +78,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
     fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호 확인'), { target: { value: '1234' } });
 
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
@@ -87,6 +101,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
     fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호 확인'), { target: { value: '1234' } });
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
@@ -104,6 +119,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
     fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호 확인'), { target: { value: '1234' } });
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
@@ -121,6 +137,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
     fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호 확인'), { target: { value: '1234' } });
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
@@ -138,6 +155,7 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     render(<CreateSketchbookForm />);
     fireEvent.change(screen.getByLabelText('이름 또는 애칭'), { target: { value: '해비' } });
     fireEvent.change(screen.getByLabelText('관리용 비밀번호'), { target: { value: '1234' } });
+    fireEvent.change(screen.getByLabelText('관리용 비밀번호 확인'), { target: { value: '1234' } });
     fireEvent.click(screen.getByRole('button', { name: '내 스캐치북 만들기' }));
 
     await waitFor(() => expect(screen.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible());
