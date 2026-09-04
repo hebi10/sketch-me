@@ -374,7 +374,10 @@ describe('공개 경로 운영자 차단', () => {
       { ...drawing, bestRank: 3, id: 'hidden', status: 'HIDDEN' },
     ]);
 
-    render(await SharePage({ params: Promise.resolve({ publicId: 'public-1' }) }));
+    render(await SharePage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({ mode: 'best' }),
+    }));
 
     expect(screen.getByRole('img', { name: 'BEST 1 그림' })).toBeVisible();
     expect(screen.queryByRole('img', { name: 'BEST 2 그림' })).not.toBeInTheDocument();
@@ -382,7 +385,10 @@ describe('공개 경로 운영자 차단', () => {
   });
 
   it('공유 화면에서 그림 순위 선택 영역으로 바로 이동할 수 있다', async () => {
-    render(await SharePage({ params: Promise.resolve({ publicId: 'public-1' }) }));
+    render(await SharePage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({ mode: 'best' }),
+    }));
 
     expect(screen.getByRole('link', { name: '순위 정하러 가기' })).toHaveAttribute(
       'href',
@@ -393,7 +399,10 @@ describe('공개 경로 운영자 차단', () => {
   it('관리자가 순위를 지정한 소유자 그림을 Story에 전달한다', async () => {
     getManagedSketchbook.mockResolvedValue({ ...sketchbook, ownerBestRank: 2 });
 
-    render(await SharePage({ params: Promise.resolve({ publicId: 'public-1' }) }));
+    render(await SharePage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({ mode: 'best' }),
+    }));
 
     expect(screen.getByRole('img', { name: 'BEST 2 그림' })).toHaveAttribute(
       'src',

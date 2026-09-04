@@ -1,58 +1,82 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
-import { StoryImageComposer } from './StoryImageComposer';
-import type { StoryDrawing } from './StoryImageMaker';
+import { ImageCreationEntry } from './ImageCreationEntry';
+import { ImageModeChooser } from './ImageModeChooser';
+import { ShareImageComposer } from './ShareImageComposer';
+import {
+  buildFriendShareDrawingOptions,
+  buildOwnerShareDrawingOption,
+  parseShareImageMode,
+  type ShareDrawingOption,
+} from '@/lib/share/share-image';
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
 import { findSketchbookByPublicId, listDrawings } from '@/lib/sketchbooks/repository';
 
 export const dynamic = 'force-dynamic';
 
-export default async function SharePage({ params }: { params: Promise<{ publicId: string }> }) {
-  const { publicId } = await params;
+export default async function SharePage({ params, searchParams }: {
+  params: Promise<{ publicId: string }>;
+  searchParams?: Promise<{ mode?: string }>;
+}) {
+  const [{ publicId }, { mode: rawMode }] = await Promise.all([
+    params,
+    searchParams ?? Promise.resolve({}),
+  ]);
+  const mode = parseShareImageMode(rawMode);
   const sketchbook = await getManagedSketchbook(publicId);
   if (!sketchbook) {
     if (await findSketchbookByPublicId(publicId)) redirect(`/m/${publicId}/login`);
     notFound();
   }
 
+  if (!mode) {
+    return (
+      <>
+        <main className="share-shell">
+          <header className="simple-header share-header">
+            <Link aria-label="내 스캐치북으로 돌아가기" className="header-icon-link" href={`/m/${publicId}`}>←</Link>
+            <span className="header-title">이미지 제작</span>
+            <span aria-hidden="true" className="header-balance" />
+          </header>
+        </main>
+        <ImageModeChooser dismissHref={`/m/${publicId}`} open publicId={publicId} />
+      </>
+    );
+  }
+
   const drawings = await listDrawings(sketchbook.id);
+  const drawingOptions = [
+    buildOwnerShareDrawingOption(publicId, sketchbook),
+    ...buildFriendShareDrawingOptions(publicId, drawings),
+  ].filter((drawing): drawing is ShareDrawingOption => drawing !== null);
   const publicPath = `/s/${publicId}`;
-  const bestDrawings = drawings
-    .filter((drawing) => (
-      drawing.status === 'VISIBLE'
-      && drawing.moderationStatus === 'ACTIVE'
-      && drawing.bestRank
-    ))
-    .map((drawing) => ({
-      rank: drawing.bestRank as 1 | 2 | 3 | 4,
-      imageUrl: `/api/manage/${publicId}/drawings/${drawing.id}/image`,
-    }))
-    .concat(sketchbook.ownerDrawingPath && sketchbook.ownerBestRank ? [{
-      rank: sketchbook.ownerBestRank,
-      imageUrl: `/api/manage/${publicId}/owner/image`,
-    }] : [])
-    .sort((a, b) => a.rank - b.rank) satisfies StoryDrawing[];
 
   return (
     <main className="share-shell">
       <header className="simple-header share-header">
         <Link aria-label="내 스캐치북으로 돌아가기" className="header-icon-link" href={`/m/${publicId}`}>←</Link>
-        <span className="header-title">스토리 이미지</span>
+        <span className="header-title">이미지 제작</span>
         <span aria-hidden="true" className="header-balance" />
       </header>
-      <div className="story-ranking-action">
-        <Link className="button button--secondary" href={`/m/${publicId}#drawing-ranking`}>
-          순위 정하러 가기
-        </Link>
+      <div className="share-mode-action">
+        <ImageCreationEntry
+          ariaLabel="제작 유형 바꾸기"
+          className="button button--secondary"
+          publicId={publicId}
+        >
+          제작 유형 바꾸기
+        </ImageCreationEntry>
       </div>
-      <StoryImageComposer
-        drawings={bestDrawings}
-        initialHeading={sketchbook.storyHeading}
+      <ShareImageComposer
+        bestHeading={sketchbook.storyHeading}
+        drawings={drawingOptions}
         initialWatermarkFree={sketchbook.entitlements.watermarkFree}
+        mode={mode}
         name={sketchbook.name}
         publicId={publicId}
         publicUrl={publicPath}
+        singleHeading={sketchbook.singleStoryHeading}
       />
     </main>
   );

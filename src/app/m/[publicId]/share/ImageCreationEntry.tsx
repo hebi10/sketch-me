@@ -6,12 +6,14 @@ import { createPortal } from 'react-dom';
 import { ImageModeChooser } from './ImageModeChooser';
 
 interface ImageCreationEntryProps {
+  ariaLabel?: string;
   children?: ReactNode;
   className?: string;
   publicId: string;
 }
 
 export function ImageCreationEntry({
+  ariaLabel = '이미지 제작',
   children = '이미지 제작',
   className,
   publicId,
@@ -22,11 +24,11 @@ export function ImageCreationEntry({
   return (
     <>
       <button
-        aria-label="이미지 제작"
+        aria-label={ariaLabel}
         className={className}
         onClick={() => setOpen(true)}
         ref={triggerRef}
-        title="이미지 제작"
+        title={ariaLabel}
         type="button"
       >
         {children}
