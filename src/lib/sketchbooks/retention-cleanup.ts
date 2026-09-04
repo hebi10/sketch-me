@@ -1,4 +1,5 @@
-import { getAdminStorage } from '@/lib/firebase/admin';
+import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin';
+import { deleteExpiredLegalPurchaseRecords } from '@/lib/purchases/legal-retention';
 import {
   createAdminSketchbookDeletionJob,
   deleteAdminSketchbookDeletionJob,
@@ -19,6 +20,7 @@ export interface RetentionCleanupDependencies {
   createDeletionJob(target: RetentionDeletionTarget): Promise<void>;
   deleteAdminDeletionJob(sketchbookId: string): Promise<void>;
   deleteDeletionJob(publicId: string): Promise<void>;
+  deleteExpiredLegalPurchaseRecords(now: Date, limit: number): Promise<number>;
   deleteFirestoreTree(sketchbookId: string): Promise<void>;
   deleteStoragePrefix(sketchbookId: string): Promise<void>;
   listExpired(now: Date, limit: number): Promise<RetentionDeletionTarget[]>;
@@ -36,6 +38,9 @@ const defaultDependencies: RetentionCleanupDependencies = {
   },
   deleteAdminDeletionJob: deleteAdminSketchbookDeletionJob,
   deleteDeletionJob: deleteSketchbookDeletionJob,
+  async deleteExpiredLegalPurchaseRecords(now, limit) {
+    return deleteExpiredLegalPurchaseRecords(getAdminFirestore(), now, limit);
+  },
   deleteFirestoreTree: deleteSketchbookPermanently,
   async deleteStoragePrefix(sketchbookId) {
     await getAdminStorage().bucket().deleteFiles({ prefix: `sketchbooks/${sketchbookId}/` });
@@ -87,5 +92,10 @@ export async function cleanupExpiredSketchbooks({
     }
   }
 
-  return { attempted: targets.length, failed, succeeded };
+  const legalRecordsDeleted = await dependencies.deleteExpiredLegalPurchaseRecords(
+    now,
+    boundedLimit,
+  );
+
+  return { attempted: targets.length, failed, legalRecordsDeleted, succeeded };
 }

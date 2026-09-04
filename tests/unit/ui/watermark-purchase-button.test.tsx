@@ -38,7 +38,7 @@ describe('WatermarkPurchaseButton', () => {
     fireEvent.click(trigger);
 
     expect(screen.getByRole('dialog', { name: '워터마크 없이 저장하기' })).toBeVisible();
-    expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms#closure');
+    expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms#withdrawal');
     fireEvent.change(screen.getByLabelText('결제용 휴대전화번호'), {
       target: { value: '010-1234-5678' },
     });

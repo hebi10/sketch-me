@@ -11,6 +11,10 @@ function createDependencies() {
     createDeletionJob: vi.fn(async (target) => { operations.push(`job:${target.id}`); }),
     deleteAdminDeletionJob: vi.fn(async (id) => { operations.push(`admin-job-delete:${id}`); }),
     deleteDeletionJob: vi.fn(async (publicId) => { operations.push(`manage-job-delete:${publicId}`); }),
+    deleteExpiredLegalPurchaseRecords: vi.fn(async () => {
+      operations.push('legal-records');
+      return 2;
+    }),
     deleteFirestoreTree: vi.fn(async (id) => { operations.push(`firestore:${id}`); }),
     deleteStoragePrefix: vi.fn(async (id) => { operations.push(`storage:${id}`); }),
     listExpired: vi.fn(async () => []),
@@ -32,7 +36,7 @@ describe('만료 스케치북 정리', () => {
     await expect(cleanupExpiredSketchbooks({
       dependencies: state.dependencies,
       now: new Date('2027-03-04T00:00:00.000Z'),
-    })).resolves.toEqual({ attempted: 1, failed: 0, succeeded: 1 });
+    })).resolves.toEqual({ attempted: 1, failed: 0, legalRecordsDeleted: 2, succeeded: 1 });
 
     expect(state.operations).toEqual([
       'job:book-1',
@@ -41,6 +45,7 @@ describe('만료 스케치북 정리', () => {
       'firestore:book-1',
       'manage-job-delete:public-1',
       'admin-job-delete:book-1',
+      'legal-records',
     ]);
   });
 
@@ -70,6 +75,7 @@ describe('만료 스케치북 정리', () => {
       'firestore:book-new',
       'manage-job-delete:public-new',
       'admin-job-delete:book-new',
+      'legal-records',
     ]);
   });
 
@@ -85,7 +91,7 @@ describe('만료 스케치북 정리', () => {
     });
 
     await expect(cleanupExpiredSketchbooks({ dependencies: state.dependencies }))
-      .resolves.toEqual({ attempted: 2, failed: 1, succeeded: 1 });
+      .resolves.toEqual({ attempted: 2, failed: 1, legalRecordsDeleted: 2, succeeded: 1 });
 
     expect(state.operations).toContain('firestore:book-ok');
     expect(state.operations).not.toContain('firestore:book-fail');

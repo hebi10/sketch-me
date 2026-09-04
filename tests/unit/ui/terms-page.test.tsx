@@ -23,7 +23,7 @@ describe('TermsPage', () => {
     render(<TermsPage />);
 
     expect(screen.getByText(/종료일 최소 30일 전/)).toBeVisible();
-    expect(screen.getByText(/청약철회를 접수한 날부터 3영업일 이내/)).toBeVisible();
+    expect(screen.getAllByText(/청약철회를 접수한 날부터 3영업일 이내/).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: '2. 결제 상품' })).toBeVisible();
     expect(screen.getByText(/페이앱의 검증된 결제 완료 통보를 서버가 확인한 뒤/)).toBeVisible();
     expect(screen.getByText(/전체 취소 또는 환불/)).toBeVisible();

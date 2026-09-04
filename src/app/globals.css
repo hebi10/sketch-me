@@ -819,6 +819,32 @@ a { color: inherit; text-decoration: none; }
   gap: 10px;
 }
 
+.payment-receipt {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 14px;
+  padding-top: 18px;
+  text-align: left;
+}
+
+.payment-receipt h2 { font-size: 1.1rem; margin: 0; }
+.payment-receipt-facts { display: grid; gap: 8px; margin: 0; }
+.payment-receipt-facts div { display: grid; gap: 4px; grid-template-columns: minmax(88px, .42fr) 1fr; }
+.payment-receipt-facts dt { color: var(--muted); }
+.payment-receipt-facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.payment-receipt-policy { color: var(--muted); line-height: 1.65; margin: 0; }
+.payment-receipt-policy a { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+.payment-receipt-actions { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media print {
+  .payment-result-card > .button,
+  .payment-result-error,
+  .payment-receipt-actions,
+  .simple-header { display: none !important; }
+  .payment-result-card { border: 0; padding: 0; }
+  .payment-result-shell { min-height: 0; padding: 0; }
+}
+
 @media (min-width: 651px) {
   .purchase-dialog-backdrop {
     align-items: center;

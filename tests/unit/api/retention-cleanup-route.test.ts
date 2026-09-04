@@ -12,7 +12,12 @@ describe('POST /api/internal/retention-cleanup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.RETENTION_CLEANUP_SECRET = 'cleanup-secret';
-    cleanupExpiredSketchbooks.mockResolvedValue({ attempted: 2, failed: 0, succeeded: 2 });
+    cleanupExpiredSketchbooks.mockResolvedValue({
+      attempted: 2,
+      failed: 0,
+      legalRecordsDeleted: 3,
+      succeeded: 2,
+    });
   });
 
   it('Bearer 비밀키가 없거나 다르면 정리 작업을 시작하지 않는다', async () => {
@@ -43,7 +48,12 @@ describe('POST /api/internal/retention-cleanup', () => {
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ attempted: 2, failed: 0, succeeded: 2 });
+    await expect(response.json()).resolves.toEqual({
+      attempted: 2,
+      failed: 0,
+      legalRecordsDeleted: 3,
+      succeeded: 2,
+    });
     expect(cleanupExpiredSketchbooks).toHaveBeenCalledTimes(1);
   });
 });

@@ -20,7 +20,12 @@ export async function GET(
 
   return NextResponse.json({
     amount: purchase.amount,
+    cancelledAt: purchase.cancelledAt?.toISOString() ?? null,
+    createdAt: purchase.createdAt.toISOString(),
+    orderId: purchase.orderId,
+    paidAt: purchase.paidAt?.toISOString() ?? null,
     paymentStatus: purchase.paymentStatus,
     productType: purchase.productType,
+    providerPayType: purchase.providerPayType ?? null,
   });
 }

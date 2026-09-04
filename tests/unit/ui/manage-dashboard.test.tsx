@@ -501,7 +501,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     const dialog = screen.getByRole('dialog', { name: '상품 선택하기' });
     expect(dialog).toBeVisible();
     expect(screen.getByRole('radio', { name: /10명 추가.*1,000원/ })).toBeChecked();
-    expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms#closure');
+    expect(screen.getByRole('link', { name: '서비스 이용 및 결제 안내' })).toHaveAttribute('href', '/terms#withdrawal');
     expect(screen.getByRole('link', { name: '전체 정책 보기' })).toHaveAttribute('href', '/terms');
 
     expect(screen.getByRole('group', { name: '친구 인원 추가' })).toBeVisible();

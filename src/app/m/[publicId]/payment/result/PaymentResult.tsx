@@ -3,7 +3,10 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { BusinessDisclosure } from '@/components/ui/BusinessDisclosure';
 import type { PurchaseProductId, PurchaseStatus } from '@/lib/domain/types';
+import { BUSINESS_INFO } from '@/lib/business';
+import { getPurchasePlan } from '@/lib/purchases/plans';
 
 interface PaymentResultProps {
   orderId: string;
@@ -12,8 +15,13 @@ interface PaymentResultProps {
 
 interface PaymentStatusResponse {
   amount: number;
+  cancelledAt: string | null;
+  createdAt: string;
+  orderId: string;
+  paidAt: string | null;
   paymentStatus: PurchaseStatus;
   productType: PurchaseProductId;
+  providerPayType: string | null;
 }
 
 const descriptions: Record<PurchaseProductId, string> = {
@@ -22,6 +30,25 @@ const descriptions: Record<PurchaseProductId, string> = {
   FRIENDS_100: '친구 그림 100명 추가가 적용됐어요.',
   WATERMARK_FREE: '워터마크 제거가 적용됐어요.',
 };
+
+const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'Asia/Seoul',
+});
+
+const paymentMethodLabels: Record<string, string> = {
+  CARD: '신용카드',
+  CELLPHONE: '휴대전화',
+  PHONE: '휴대전화',
+  VBANK: '가상계좌',
+};
+
+function formatDate(value: string | null) {
+  if (!value) return '해당 없음';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '확인 필요' : dateTimeFormatter.format(date);
+}
 
 export function PaymentResult({ orderId, publicId }: PaymentResultProps) {
   const [result, setResult] = useState<PaymentStatusResponse | null>(null);
@@ -64,6 +91,10 @@ export function PaymentResult({ orderId, publicId }: PaymentResultProps) {
   }, [checkStatus]);
 
   const status = result?.paymentStatus;
+  const plan = result ? getPurchasePlan(result.productType) : null;
+  const refundHref = result
+    ? `mailto:${BUSINESS_INFO.email}?subject=${encodeURIComponent(`스캐치북 청약철회·환불 신청 ${result.orderId}`)}&body=${encodeURIComponent(`주문번호: ${result.orderId}\n스케치북 공개 ID: ${publicId}\n요청 사유: `)}`
+    : `mailto:${BUSINESS_INFO.email}`;
   const content = status === 'SUCCEEDED'
     ? {
         description: descriptions[result?.productType ?? 'WATERMARK_FREE'],
@@ -86,6 +117,29 @@ export function PaymentResult({ orderId, publicId }: PaymentResultProps) {
         <div className="payment-result-error" role="alert">
           <p>{error}</p>
           <button className="button button--secondary" onClick={() => void checkStatus()} type="button">다시 확인하기</button>
+        </div>
+      ) : null}
+      {result ? (
+        <div className="payment-receipt">
+          <h2>전자 영수증</h2>
+          <dl className="payment-receipt-facts">
+            <div><dt>주문번호</dt><dd>{result.orderId}</dd></div>
+            <div><dt>상품</dt><dd>{plan?.label ?? result.productType}</dd></div>
+            <div><dt>결제금액</dt><dd>{result.amount.toLocaleString('ko-KR')}원</dd></div>
+            <div><dt>결제수단</dt><dd>{result.providerPayType ? paymentMethodLabels[result.providerPayType] ?? result.providerPayType : '확인 중'}</dd></div>
+            <div><dt>주문일</dt><dd>{formatDate(result.createdAt)}</dd></div>
+            <div><dt>결제일</dt><dd>{formatDate(result.paidAt)}</dd></div>
+            {result.cancelledAt ? <div><dt>취소일</dt><dd>{formatDate(result.cancelledAt)}</dd></div> : null}
+          </dl>
+          <BusinessDisclosure compact />
+          <p className="payment-receipt-policy">
+            청약철회·환불 조건과 신청 방법은{' '}
+            <Link href="/terms#withdrawal">서비스 이용 및 결제 안내</Link>에서 확인할 수 있습니다.
+          </p>
+          <div className="payment-receipt-actions">
+            <button className="button button--secondary" onClick={() => window.print()} type="button">영수증 인쇄</button>
+            <a className="button button--secondary" href={refundHref}>청약철회·환불 신청</a>
+          </div>
         </div>
       ) : null}
       <Link className="button button--primary" href={`/m/${publicId}`}>관리 화면으로 돌아가기</Link>

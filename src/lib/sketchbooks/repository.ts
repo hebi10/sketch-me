@@ -1,6 +1,7 @@
 import type { Drawing, Sketchbook } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
 import type { PurchasePlan } from '@/lib/purchases/plans';
+import { preservePurchaseRecordsBeforeSketchbookDeletion } from '@/lib/purchases/legal-retention';
 import { SINGLE_IMAGE_DEFAULT_HEADING } from '@/lib/share/share-image';
 import {
   nextManagePinAttempt,
@@ -611,6 +612,7 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
 
 export async function deleteSketchbookPermanently(sketchbookId: string) {
   const firestore = getAdminFirestore();
+  await preservePurchaseRecordsBeforeSketchbookDeletion(firestore, sketchbookId);
   await firestore.recursiveDelete(firestore.collection(collectionName).doc(sketchbookId));
 }
 
