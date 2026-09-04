@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
 
 import {
   createCanvasHistory,
@@ -11,6 +11,7 @@ import {
   type CanvasHistory,
 } from './canvas-history';
 import { sketchColors } from './colors';
+import { drawImportedImage, validateSketchImport } from './import-image';
 
 const width = 720;
 const height = 720;
@@ -43,6 +44,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const fullscreenConfirmRef = useRef<HTMLButtonElement>(null);
     const drawingRef = useRef(false);
     const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+    const canvasHelpId = useId();
     const [tab, setTab] = useState<EditorTab>('draw');
     const [crosshairVisible, setCrosshairVisible] = useState(true);
     const [color, setColor] = useState<string>(sketchColors[0].value);
@@ -58,6 +60,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [loupeActive, setLoupeActive] = useState(false);
     const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
     const [drawingError, setDrawingError] = useState<string | null>(null);
+    const [importStatus, setImportStatus] = useState('');
     const loupeBrushStyle = {
       '--loupe-brush-color': eraser ? '#ffffff' : color,
       '--loupe-brush-opacity': eraser ? '100%' : `${penOpacity}%`,
@@ -303,6 +306,64 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       setIsFullscreen(false);
     }
 
+    async function decodeImportedImage(file: File) {
+      if (typeof createImageBitmap === 'function') {
+        const bitmap = await createImageBitmap(file);
+        return {
+          dispose: () => bitmap.close(),
+          source: bitmap as CanvasImageSource,
+        };
+      }
+
+      const objectUrl = URL.createObjectURL(file);
+      let decoded = false;
+      try {
+        const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const nextImage = new window.Image();
+          nextImage.onload = () => resolve(nextImage);
+          nextImage.onerror = () => reject(new Error('이미지 디코딩 실패'));
+          nextImage.src = objectUrl;
+        });
+        decoded = true;
+        return {
+          dispose: () => URL.revokeObjectURL(objectUrl),
+          source: image,
+        };
+      } finally {
+        if (!decoded) URL.revokeObjectURL(objectUrl);
+      }
+    }
+
+    async function importImage(event: React.ChangeEvent<HTMLInputElement>) {
+      const input = event.currentTarget;
+      const file = input.files?.[0];
+      if (!file) return;
+
+      const validationError = validateSketchImport(file);
+      if (validationError) {
+        setImportStatus(validationError);
+        input.value = '';
+        return;
+      }
+
+      let dispose = () => {};
+      try {
+        const canvas = canvasRef.current;
+        if (!canvas) throw new Error('캔버스를 찾지 못했어요.');
+        const decoded = await decodeImportedImage(file);
+        dispose = decoded.dispose;
+        drawImportedImage(canvas, decoded.source);
+        snapshot();
+        finishDrawing(canvas.toDataURL('image/webp', 0.76));
+        setImportStatus('이미지를 그림으로 가져왔어요.');
+      } catch {
+        setImportStatus('이미지를 불러오지 못했어요. 다시 시도해 주세요.');
+      } finally {
+        dispose();
+        input.value = '';
+      }
+    }
+
     function confirmDrawing() {
       const canvas = canvasRef.current;
       if (!canvas || !currentDrawingHasContent()) {
@@ -325,12 +386,22 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
 
     return (
       <section aria-label={isFullscreen ? '전체 화면 그리기' : undefined} aria-modal={isFullscreen || undefined} className={`sketch-editor ${isFullscreen ? 'sketch-editor--fullscreen' : ''} ${isFullscreen && controlsOpen ? 'sketch-editor--controls-open' : ''}`} ref={editorRef} role={isFullscreen ? 'dialog' : undefined}>
-        {!isFullscreen && !confirmedDrawing ? <button className="button button--primary drawing-entry-button" onClick={openDrawing} ref={fullscreenEntryRef} type="button">그림 그리기</button> : null}
-        {!isFullscreen && confirmedDrawing ? <figure className="drawing-preview"><Image alt="그린 그림 미리보기" height={height} src={confirmedDrawing} unoptimized width={width} /></figure> : null}
-        {!isFullscreen && confirmedDrawing && reopenLabel ? <button className="button button--secondary drawing-entry-button drawing-reopen-button" onClick={openDrawing} ref={fullscreenEntryRef} type="button">{reopenLabel}</button> : null}
+        {!isFullscreen ? <>
+          {!confirmedDrawing ? <button className="button button--primary drawing-entry-button" onClick={openDrawing} ref={fullscreenEntryRef} type="button">그림 그리기</button> : null}
+          {confirmedDrawing ? <figure className="drawing-preview"><Image alt="그린 그림 미리보기" height={height} src={confirmedDrawing} unoptimized width={width} /></figure> : null}
+          {confirmedDrawing && reopenLabel ? <button className="button button--secondary drawing-entry-button drawing-reopen-button" onClick={openDrawing} ref={fullscreenEntryRef} type="button">{reopenLabel}</button> : null}
+          <div className="drawing-import">
+            <label className="button button--secondary drawing-import-button">
+              이미지로 가져오기
+              <input accept="image/png,image/jpeg,image/webp" aria-label="이미지로 가져오기" onChange={importImage} type="file" />
+            </label>
+            <p aria-live="polite" className="drawing-import-status" role="status">{importStatus}</p>
+          </div>
+        </> : null}
         <div className="sketch-stage-slot" hidden={!isFullscreen}>
           <div className={`sketch-stage sketch-stage--${tab}`}>
-            <canvas aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
+            <p className="sr-only" id={canvasHelpId}>손가락이나 마우스로 그림을 그리거나 이미지로 가져오기를 사용할 수 있어요.</p>
+            <canvas aria-describedby={canvasHelpId} aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
             {crosshairVisible ? <div aria-hidden="true" className="canvas-crosshair" data-testid="canvas-crosshair" /> : null}
             <div aria-hidden="true" className={`drawing-loupe drawing-loupe--above ${loupeActive ? 'is-visible' : ''}`} data-active={loupeActive} data-placement="above" data-testid="drawing-loupe" ref={loupeRef} style={loupeBrushStyle}>
               <canvas data-loupe="true" height={loupeSize} ref={loupeCanvasRef} width={loupeSize} />
@@ -352,7 +423,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
                 <label className="crosshair-toggle"><input aria-label="왼손 모드" checked={leftHandMode} onChange={(event) => setLeftHandMode(event.target.checked)} type="checkbox" /><span>왼손 모드</span></label>
               </div>
             ) : (
-              <><div className="tool-row drawing-action-row"><button className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button aria-label="되돌리기" className="tool-button tool-button--icon" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-undo.webp" width={26} /></button><button aria-label="다시 실행" className="tool-button tool-button--icon" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-redo.webp" width={26} /></button><button className="tool-button tool-button--clear" onClick={clear} type="button">전체 삭제</button></div>
+              <><div className="tool-row drawing-action-row"><button aria-pressed={!eraser} className={`tool-button ${!eraser ? 'is-active' : ''}`} onClick={() => { setEraser(false); setTab('draw'); }} type="button">펜</button><button aria-pressed={eraser} className={`tool-button ${eraser ? 'is-active' : ''}`} onClick={() => { setEraser(true); setTab('draw'); }} type="button">지우개</button><button aria-label="되돌리기" className="tool-button tool-button--icon" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-undo.webp" width={26} /></button><button aria-label="다시 실행" className="tool-button tool-button--icon" disabled={!history || history.index >= history.snapshots.length - 1} onClick={() => history && restore(redoSnapshot(history))} type="button"><Image alt="" height={26} src="/icons/drawing-redo.webp" width={26} /></button><button className="tool-button tool-button--clear" onClick={clear} type="button">전체 삭제</button></div>
               <div className="tool-row color-palette">{sketchColors.map((nextColor) => <button aria-label={`${nextColor.label} 색상`} aria-pressed={color === nextColor.value && !eraser} className={`color-swatch ${color === nextColor.value && !eraser ? 'is-active' : ''}`} key={nextColor.value} onClick={() => { setColor(nextColor.value); setEraser(false); setTab('draw'); }} style={{ backgroundColor: nextColor.value }} type="button" />)}<label className={`color-swatch custom-color-swatch ${customColor === color && !eraser ? 'is-active' : ''}`} style={{ backgroundColor: customColor ?? 'var(--canvas)' }}><span aria-hidden="true">+</span><input aria-label={customColor ? `사용자 지정 색상 ${customColor}` : '사용자 지정 색상 선택'} onChange={selectCustomColor} type="color" value={customColor ?? sketchColors[0].value} /></label></div>
               <div className="drawing-range-controls"><label className="range-control"><span>펜 투명도</span><strong>{penOpacity}%</strong><input aria-label="펜 투명도" max="100" min="10" onChange={(event) => setPenOpacity(Number(event.target.value))} step="5" type="range" value={penOpacity} /></label><label className="range-control"><span>굵기</span><strong>{lineWidth}</strong><input aria-label="굵기" max="18" min="2" onChange={(event) => setLineWidth(Number(event.target.value))} type="range" value={lineWidth} /></label></div></>
             )}
