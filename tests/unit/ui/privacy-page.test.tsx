@@ -24,6 +24,8 @@ describe('PrivacyPage', () => {
     expect(screen.getByText(/IP 원문은 저장하지 않고.*복원하기 어려운 해시.*최대 72시간/)).toBeVisible();
     expect(screen.getByText(/계약.*대금결제.*5년/)).toBeVisible();
     expect(screen.getByText(/무료 스케치북의 Firestore 기록과 Storage 파일을 자동 삭제/)).toBeVisible();
+    expect(screen.getByText(/스케치북을 삭제하더라도 법정 거래 기록은 별도 저장소에 분리/)).toBeVisible();
+    expect(screen.getByText(/보존기간이 끝나면 지체 없이 파기/)).toBeVisible();
   });
 
   it('결제 처리위탁과 권리 행사 연락처를 안내한다', () => {

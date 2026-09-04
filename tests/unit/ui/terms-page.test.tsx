@@ -23,13 +23,25 @@ describe('TermsPage', () => {
     render(<TermsPage />);
 
     expect(screen.getByText(/종료일 최소 30일 전/)).toBeVisible();
-    expect(screen.getByText(/환불 대상을 확인한 날부터 3영업일 이내/)).toBeVisible();
+    expect(screen.getByText(/청약철회를 접수한 날부터 3영업일 이내/)).toBeVisible();
     expect(screen.getByRole('heading', { name: '2. 결제 상품' })).toBeVisible();
     expect(screen.getByText(/페이앱의 검증된 결제 완료 통보를 서버가 확인한 뒤/)).toBeVisible();
     expect(screen.getByText(/전체 취소 또는 환불/)).toBeVisible();
     expect(screen.getByText(/결제 완료와 동시에 선택한 디지털 혜택의 제공이 시작/)).toBeVisible();
     expect(screen.getByText(/표시·광고 또는 계약 내용과 다르게 제공된 경우/)).toBeVisible();
     expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
+  });
+
+  it('청약철회와 디지털 콘텐츠·미성년자 보호 기준을 구체적으로 안내한다', () => {
+    render(<TermsPage />);
+
+    expect(screen.getByText(/계약내용에 관한 서면을 받은 날.*7일 이내/)).toBeVisible();
+    expect(screen.getByText(/친구 그림 10개까지 무료로 이용/)).toBeVisible();
+    expect(screen.getByText(/워터마크가 표시된 결과 이미지를 미리 확인/)).toBeVisible();
+    expect(screen.getByText(/결제수단의 취소 제한은 판매자의 법정 환불 의무를 없애지 않습니다/)).toBeVisible();
+    expect(screen.getByText(/법정대리인이 동의하지 않은 미성년자 계약/)).toBeVisible();
+    expect(screen.getByRole('link', { name: '청약철회·환불 신청 이메일' }))
+      .toHaveAttribute('href', expect.stringContaining('mailto:asdlkj0104@gmail.com'));
   });
 
   it('현재 인원 추가 가격과 워터마크 제거 상품을 정확히 안내한다', () => {

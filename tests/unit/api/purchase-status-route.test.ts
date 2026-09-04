@@ -12,9 +12,14 @@ describe('GET /api/manage/:publicId/purchases/:orderId', () => {
     mocks.getManagedPurchase.mockResolvedValue({
       amount: 1000,
       buyerPhoneLast4: '5678',
+      cancelledAt: null,
+      createdAt: new Date('2026-09-04T01:00:00.000Z'),
+      orderId: 'order-public-random',
+      paidAt: new Date('2026-09-04T01:01:00.000Z'),
       paymentStatus: 'SUCCEEDED',
       productType: 'WATERMARK_FREE',
       providerOrderId: 'secret-provider-order',
+      providerPayType: 'CARD',
       sketchbookId: 'book-1',
     });
     const response = await GET(new Request('https://sketch.example.com'), {
@@ -25,8 +30,13 @@ describe('GET /api/manage/:publicId/purchases/:orderId', () => {
     const body = await response.json();
     expect(body).toEqual({
       amount: 1000,
+      cancelledAt: null,
+      createdAt: '2026-09-04T01:00:00.000Z',
+      orderId: 'order-public-random',
+      paidAt: '2026-09-04T01:01:00.000Z',
       paymentStatus: 'SUCCEEDED',
       productType: 'WATERMARK_FREE',
+      providerPayType: 'CARD',
     });
     expect(JSON.stringify(body)).not.toContain('5678');
     expect(JSON.stringify(body)).not.toContain('secret-provider-order');
