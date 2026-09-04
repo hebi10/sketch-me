@@ -21,7 +21,7 @@ export default async function SharePage({ params, searchParams }: {
 }) {
   const [{ publicId }, { mode: rawMode }] = await Promise.all([
     params,
-    searchParams ?? Promise.resolve({}),
+    searchParams ?? Promise.resolve<{ mode?: string }>({}),
   ]);
   const mode = parseShareImageMode(rawMode);
   const sketchbook = await getManagedSketchbook(publicId);

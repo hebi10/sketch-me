@@ -12,6 +12,17 @@ describe('WatermarkPurchaseButton', () => {
     vi.unstubAllGlobals();
   });
 
+  it('두 제작 유형에 공통인 워터마크 제거 혜택을 안내한다', () => {
+    render(<WatermarkPurchaseButton onPurchased={vi.fn()} publicId="book-1" />);
+    fireEvent.click(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' }));
+
+    const dialog = screen.getByRole('dialog', { name: '워터마크 없이 저장하기' });
+    expect(dialog).toHaveTextContent(
+      '공유 이미지를 워터마크 없이 저장하고 싶나요? 1,000원으로 모든 이미지 제작에서 워터마크가 빠져요.',
+    );
+    expect(dialog).not.toHaveTextContent('스토리 이미지');
+  });
+
   it('유효한 전화번호로 주문을 만든 뒤 페이앱 결제창으로 이동한다', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({ orderId: 'order-1', payUrl: 'https://payapp.kr/pay/2000' }),

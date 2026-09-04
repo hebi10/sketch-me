@@ -44,6 +44,30 @@ test('핵심 진입 화면이 모바일 뷰포트에서 넘치지 않는다', as
   }
 });
 
+test('이미지 제작 유형과 두 편집 화면이 모바일 너비에서 넘치지 않는다', async ({ page }) => {
+  const createResponse = await page.request.post('/api/sketchbooks', {
+    data: {
+      managePin: '1234',
+      name: `레이아웃${Date.now().toString().slice(-6)}`,
+    },
+    headers: { 'x-forwarded-for': `198.51.100.${Math.floor(Math.random() * 200) + 1}` },
+  });
+  expect(createResponse.status()).toBe(200);
+  const { manageUrl } = await createResponse.json() as { manageUrl: string };
+
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    for (const suffix of ['/share', '/share?mode=single', '/share?mode=best']) {
+      await page.goto(`${manageUrl}${suffix}`);
+      const dimensions = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+    }
+  }
+});
+
 test('관리자 화면은 지원 모바일 너비에서 넘치지 않고 메뉴를 유지한다', async ({ page }) => {
   await createAdminEmulatorSession(page);
 

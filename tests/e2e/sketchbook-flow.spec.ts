@@ -40,7 +40,7 @@ test('public image API를 Next optimizer로 직접 우회할 수 없다', async 
   expect(regularImageResponse.status()).toBe(200);
 });
 
-test('모바일 스토리 이미지 제목을 저장하고 다시 방문해도 유지한다', async ({ page }, testInfo) => {
+test('모바일 BEST 이미지 제목을 저장하고 다시 방문해도 유지한다', async ({ page }, testInfo) => {
   test.setTimeout(60_000);
   test.skip(testInfo.project.name !== 'mobile-chrome', '모바일 제목 저장 흐름은 모바일 프로젝트에서 한 번만 실행합니다.');
 
@@ -58,17 +58,17 @@ test('모바일 스토리 이미지 제목을 저장하고 다시 방문해도 �
   await page.getByRole('button', { name: '내 스캐치북 관리하기' }).click();
   await expect(page.getByText(`${uniqueName}님의 스케치북`)).toBeVisible();
   const publicId = new URL(page.url()).pathname.split('/')[2];
-  await page.goto(`/m/${publicId}/share`);
+  await page.goto(`/m/${publicId}/share?mode=best`);
 
   await page.getByRole('link', { name: '순위 정하러 가기' }).click();
   await expect(page).toHaveURL(`/m/${publicId}#drawing-ranking`);
   await expect(page.getByRole('region', { name: '그림 순위 선택' })).toBeInViewport();
-  await page.goto(`/m/${publicId}/share`);
+  await page.goto(`/m/${publicId}/share?mode=best`);
 
   const headingInput = page.getByRole('textbox', { name: '이미지 제목' });
   await expect(headingInput).toHaveValue('친구들이 그린 내 모습');
   await headingInput.fill('우리들의 소중한 추억');
-  await expect(page.getByRole('region', { name: '스토리 이미지 미리보기' })).toContainText('우리들의 소중한 추억');
+  await expect(page.getByRole('region', { name: 'BEST 공유 이미지 미리보기' })).toContainText('우리들의 소중한 추억');
 
   const saveResponse = page.waitForResponse((response) => (
     response.request().method() === 'PATCH'
@@ -80,7 +80,7 @@ test('모바일 스토리 이미지 제목을 저장하고 다시 방문해도 �
 
   await page.reload();
   await expect(page.getByRole('textbox', { name: '이미지 제목' })).toHaveValue('우리들의 소중한 추억');
-  await expect(page.getByRole('region', { name: '스토리 이미지 미리보기' })).toContainText('우리들의 소중한 추억');
+  await expect(page.getByRole('region', { name: 'BEST 공유 이미지 미리보기' })).toContainText('우리들의 소중한 추억');
 });
 
 test('모바일에서 소유자 그림 수정과 첫 친구 그림 자동 BEST를 확인한다', async ({ page }, testInfo) => {
@@ -239,10 +239,42 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await expect(managerPage.locator('.best-badge')).toHaveText('BEST 1');
 
   await managerPage.getByLabel('메뉴', { exact: true }).click();
-  await managerPage.getByLabel('메뉴 항목').getByRole('link', { name: '베스트 이미지 제작' }).click();
-  await expect(managerPage).toHaveURL(/\/share$/);
+  await managerPage.getByLabel('메뉴 항목').getByRole('button', { name: '이미지 제작' }).click();
+  const singleChooser = managerPage.getByRole('dialog', { name: '이미지 제작 방식 선택' });
+  await singleChooser.getByRole('link', { name: /그림 하나 제작하기/ }).click();
+  await expect(managerPage).toHaveURL(/\/share\?mode=single$/);
+
+  const singleHeading = managerPage.getByRole('textbox', { name: '이미지 제목' });
+  await expect(singleHeading).toHaveValue('친구가 그린 나');
+  await singleHeading.fill('한 장의 소중한 기억');
+  const singleSaveResponse = managerPage.waitForResponse((response) => (
+    response.request().method() === 'PATCH'
+      && response.url().endsWith(`/api/manage/${managementPublicId}/sketchbook`)
+  ));
+  await managerPage.getByRole('button', { name: '제목 저장하기' }).click();
+  expect((await singleSaveResponse).status()).toBe(200);
+  await managerPage.getByRole('searchbox', { name: '그린 사람 이름' }).fill('모바일 친구');
+  await managerPage.getByRole('button', { name: '모바일 친구님의 그림 선택' }).click();
+  const singlePreview = managerPage.getByRole('region', { name: '정사각형 공유 이미지 미리보기' });
+  await expect(singlePreview).toContainText('한 장의 소중한 기억');
+  await expect(singlePreview).toContainText('그린 사람 · 모바일 친구');
+  await expect(managerPage.getByText('1080 × 1080 · 1:1 공유 이미지')).toBeVisible();
+  const singleDownloadPromise = managerPage.waitForEvent('download', { timeout: 15_000 });
+  await managerPage.getByRole('button', { name: 'PNG로 저장하기' }).click();
+  const singleDownload = await singleDownloadPromise;
+  expect(singleDownload.suggestedFilename()).toMatch(/-sketchbook-single\.png$/);
+  const singleDownloadPath = await singleDownload.path();
+  if (!singleDownloadPath) throw new Error('다운로드된 정사각형 PNG 경로를 찾을 수 없습니다.');
+  expectPngSize(await readFile(singleDownloadPath), 1080, 1080);
+
+  await managerPage.goto(`/m/${managementPublicId}`);
+  await managerPage.getByLabel('메뉴', { exact: true }).click();
+  await managerPage.getByLabel('메뉴 항목').getByRole('button', { name: '이미지 제작' }).click();
+  const bestChooser = managerPage.getByRole('dialog', { name: '이미지 제작 방식 선택' });
+  await bestChooser.getByRole('link', { name: /BEST 이미지 제작하기/ }).click();
+  await expect(managerPage).toHaveURL(/\/share\?mode=best$/);
   await expect(managerPage.getByAltText('BEST 1 그림')).toBeVisible();
-  const storyPreview = managerPage.getByRole('region', { name: '스토리 이미지 미리보기' });
+  const storyPreview = managerPage.getByRole('region', { name: 'BEST 공유 이미지 미리보기' });
   await expect(storyPreview).toHaveCSS('background-image', /sketchbook-share-background\.webp/);
   await expect(storyPreview.getByText('나도 스케치북에 그림 남기기')).toBeVisible();
   await expect(managerPage.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();

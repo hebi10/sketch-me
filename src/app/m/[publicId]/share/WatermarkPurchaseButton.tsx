@@ -146,7 +146,7 @@ export function WatermarkPurchaseButton({ publicId }: WatermarkPurchaseButtonPro
               </button>
             </div>
             <p className="purchase-dialog-copy">
-              이미지를 워터마크 없이 저장하고 싶나요? 단돈 1,000원으로 이미지에서 워터마크가 빠져요.
+              공유 이미지를 워터마크 없이 저장하고 싶나요? 1,000원으로 모든 이미지 제작에서 워터마크가 빠져요.
             </p>
             <BuyerPhoneField
               disabled={isPurchasing}

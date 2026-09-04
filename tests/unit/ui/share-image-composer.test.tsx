@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ShareImageComposer } from '@/app/m/[publicId]/share/ShareImageComposer';
@@ -143,5 +143,35 @@ describe('ShareImageComposer', () => {
     expect(preview).toHaveStyle({ backgroundImage: 'url(/story/story-theme-sky-sketch.webp)' });
     expect(screen.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
     expect(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' })).toBeVisible();
+  });
+
+  it('결제창을 열고 닫아도 제목, 검색, 선택, 디자인 상태를 유지한다', () => {
+    render(
+      <ShareImageComposer
+        drawings={drawings}
+        initialWatermarkFree={false}
+        mode="single"
+        name="내 이름"
+        publicId="book-1"
+        publicUrl="/s/book-1"
+      />,
+    );
+
+    fireEvent.change(screen.getByRole('textbox', { name: '이미지 제목' }), {
+      target: { value: '한 장의 기억' },
+    });
+    fireEvent.change(screen.getByRole('searchbox', { name: '그린 사람 이름' }), {
+      target: { value: '해비' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '해비님의 그림 선택' }));
+    fireEvent.click(screen.getByRole('button', { name: '푸른 하늘' }));
+    fireEvent.click(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' }));
+    fireEvent.click(screen.getByRole('button', { name: '결제창 닫기' }));
+
+    expect(screen.getByRole('textbox', { name: '이미지 제목' })).toHaveValue('한 장의 기억');
+    expect(screen.getByRole('searchbox', { name: '그린 사람 이름' })).toHaveValue('해비');
+    expect(within(screen.getByRole('region', { name: '현재 선택한 그림' }))
+      .getByRole('button', { name: '해비님의 그림 선택' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '푸른 하늘' })).toHaveAttribute('aria-pressed', 'true');
   });
 });
