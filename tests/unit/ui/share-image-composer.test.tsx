@@ -28,6 +28,30 @@ describe('ShareImageComposer', () => {
     vi.unstubAllGlobals();
   });
 
+  it('배경 디자인 다음에 이미지 제목을 입력하고 미리보기를 확인한다', () => {
+    render(
+      <ShareImageComposer
+        drawings={drawings}
+        initialWatermarkFree
+        mode="single"
+        name="내 이름"
+        publicId="book-1"
+        publicUrl="/s/book-1"
+      />,
+    );
+
+    const themePicker = screen.getByRole('group', { name: '공유 이미지 디자인' });
+    const headingEditor = screen.getByRole('textbox', { name: '이미지 제목' }).closest('section');
+    const preview = screen.getByLabelText('정사각형 공유 이미지 미리보기');
+    expect(headingEditor).not.toBeNull();
+    expect.soft(
+      themePicker.compareDocumentPosition(headingEditor as HTMLElement) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    expect.soft(
+      (headingEditor as HTMLElement).compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+  });
+
   it('한 장 모드에서 그림을 검색·선택한 뒤 정사각형 출력을 활성화한다', () => {
     render(
       <ShareImageComposer

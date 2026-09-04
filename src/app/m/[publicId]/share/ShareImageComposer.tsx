@@ -86,6 +86,34 @@ export function ShareImageComposer({
 
   return (
     <>
+      {mode === 'single' ? (
+        <DrawingPicker drawings={drawings} onSelect={setSelectedId} selectedId={selectedId} />
+      ) : (
+        <div className="story-ranking-action">
+          <Link className="button button--secondary" href={`/m/${publicId}#drawing-ranking`}>
+            순위 정하러 가기
+          </Link>
+        </div>
+      )}
+
+      <fieldset className="story-theme-picker" style={{ maxWidth: '100%', minWidth: 0 }}>
+        <legend>공유 이미지 디자인</legend>
+        <div className="story-theme-options" style={{ maxWidth: '100%', minWidth: 0 }}>
+          {storyThemes.map((option) => (
+            <button
+              aria-pressed={option.id === theme.id}
+              className="story-theme-option"
+              key={option.id}
+              onClick={() => setThemeId(option.id)}
+              type="button"
+            >
+              <span aria-hidden="true" className="story-theme-thumbnail" style={{ backgroundImage: `url(${option.backgroundImage})` }} />
+              <span>{option.label}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
       <section aria-labelledby="share-heading-label" className="story-heading-editor">
         <div className="story-heading-meta">
           <label id="share-heading-label" htmlFor="share-heading">이미지 제목</label>
@@ -115,34 +143,6 @@ export function ShareImageComposer({
         </div>
         {headingStatus ? <p aria-live="polite">{headingStatus}</p> : null}
       </section>
-
-      {mode === 'single' ? (
-        <DrawingPicker drawings={drawings} onSelect={setSelectedId} selectedId={selectedId} />
-      ) : (
-        <div className="story-ranking-action">
-          <Link className="button button--secondary" href={`/m/${publicId}#drawing-ranking`}>
-            순위 정하러 가기
-          </Link>
-        </div>
-      )}
-
-      <fieldset className="story-theme-picker" style={{ maxWidth: '100%', minWidth: 0 }}>
-        <legend>공유 이미지 디자인</legend>
-        <div className="story-theme-options" style={{ maxWidth: '100%', minWidth: 0 }}>
-          {storyThemes.map((option) => (
-            <button
-              aria-pressed={option.id === theme.id}
-              className="story-theme-option"
-              key={option.id}
-              onClick={() => setThemeId(option.id)}
-              type="button"
-            >
-              <span aria-hidden="true" className="story-theme-thumbnail" style={{ backgroundImage: `url(${option.backgroundImage})` }} />
-              <span>{option.label}</span>
-            </button>
-          ))}
-        </div>
-      </fieldset>
 
       {mode === 'single' ? (
         <SingleImagePreview
