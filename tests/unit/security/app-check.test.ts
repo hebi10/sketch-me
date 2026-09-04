@@ -53,15 +53,24 @@ describe('공개 mutation App Check 클라이언트 헤더', () => {
     expect(getToken).not.toHaveBeenCalled();
   });
 
-  it('공개 활성 플래그가 비활성이면 사이트 키가 있어도 Firebase를 초기화하거나 토큰을 발급하지 않는다', async () => {
+  it('공개 활성 플래그와 사이트 키가 불일치하면 초기화하지 않고 보안 오류를 반환한다', async () => {
     vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY', 'public-site-key');
     getToken.mockResolvedValue({ token: 'token-that-must-not-be-issued' });
     const { getPublicMutationHeaders } = await import('@/lib/security/app-check-client');
 
-    await expect(getPublicMutationHeaders()).resolves.toEqual({});
+    await expect(getPublicMutationHeaders()).rejects.toThrow('보안 확인을 완료하지 못했어요.');
     expect(getFirebaseClientApp).not.toHaveBeenCalled();
     expect(initializeAppCheck).not.toHaveBeenCalled();
     expect(getToken).not.toHaveBeenCalled();
+  });
+
+  it('공개 활성 플래그만 켜진 경우에도 초기화하지 않고 보안 오류를 반환한다', async () => {
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED', 'true');
+    const { getPublicMutationHeaders } = await import('@/lib/security/app-check-client');
+
+    await expect(getPublicMutationHeaders()).rejects.toThrow('보안 확인을 완료하지 못했어요.');
+    expect(getFirebaseClientApp).not.toHaveBeenCalled();
+    expect(initializeAppCheck).not.toHaveBeenCalled();
   });
 
   it('사이트 키가 있으면 한 번만 지연 초기화하고 매 요청에 최신 토큰을 싣는다', async () => {
@@ -88,6 +97,7 @@ describe('공개 mutation App Check 서버 검증', () => {
     vi.clearAllMocks();
     vi.resetModules();
     vi.stubEnv('FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED', 'false');
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED', 'false');
     vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY', '');
     getAppCheck.mockReturnValue({ verifyToken });
   });
@@ -105,6 +115,7 @@ describe('공개 mutation App Check 서버 검증', () => {
 
   it('강제가 활성이고 토큰이 유효하면 요청당 한 번 검증하고 허용한다', async () => {
     vi.stubEnv('FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED', 'true');
     vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY', 'public-site-key');
     verifyToken.mockResolvedValue({ appId: 'web-app' });
     const { enforceAppCheck } = await import('@/lib/security/app-check-server');
@@ -123,6 +134,7 @@ describe('공개 mutation App Check 서버 검증', () => {
     { code: 'app-check/app-check-token-expired', label: '토큰이 만료되면' },
   ])('$label 비밀값 없는 401을 반환한다', async ({ code }) => {
     vi.stubEnv('FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED', 'true');
     vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY', 'public-site-key');
     if (code) verifyToken.mockRejectedValue({ code, message: 'SECRET_TOKEN=do-not-expose' });
     const { enforceAppCheck } = await import('@/lib/security/app-check-server');
@@ -142,6 +154,8 @@ describe('공개 mutation App Check 서버 검증', () => {
 
   it('강제 설정에 필요한 클라이언트 키가 없으면 검증하지 않고 503을 반환한다', async () => {
     vi.stubEnv('FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED', 'true');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const { enforceAppCheck } = await import('@/lib/security/app-check-server');
 
     const response = await enforceAppCheck(new Request('http://localhost/api/sketchbooks', {
@@ -153,10 +167,13 @@ describe('공개 mutation App Check 서버 검증', () => {
       message: '보안 확인을 준비하지 못했어요. 잠시 후 다시 시도해 주세요.',
     });
     expect(getAppCheck).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith('APP_CHECK_CONFIGURATION_INVALID');
+    log.mockRestore();
   });
 
   it('서버 검증 구성이 실패하면 오류 세부정보를 숨긴 503을 반환한다', async () => {
     vi.stubEnv('FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED', 'true');
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED', 'true');
     vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY', 'public-site-key');
     getAppCheck.mockImplementation(() => {
       throw new Error('SERVICE_ACCOUNT_SECRET=do-not-expose');
@@ -171,5 +188,27 @@ describe('공개 mutation App Check 서버 검증', () => {
     const body = await response?.text();
     expect(body).toContain('보안 확인을 준비하지 못했어요.');
     expect(body).not.toContain('SERVICE_ACCOUNT_SECRET');
+  });
+
+  it.each([
+    { clientEnabled: 'true', enforcementEnabled: 'false', siteKey: 'SECRET_SITE_KEY' },
+    { clientEnabled: 'false', enforcementEnabled: 'true', siteKey: 'SECRET_SITE_KEY' },
+    { clientEnabled: 'false', enforcementEnabled: 'false', siteKey: 'SECRET_SITE_KEY' },
+  ])('불완전한 설정은 비밀값 없이 503을 반환한다: %j', async (configuration) => {
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED', configuration.clientEnabled);
+    vi.stubEnv('FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED', configuration.enforcementEnabled);
+    vi.stubEnv('NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY', configuration.siteKey);
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { enforceAppCheck } = await import('@/lib/security/app-check-server');
+
+    const response = await enforceAppCheck(new Request('http://localhost/api/sketchbooks', {
+      headers: { 'X-Firebase-AppCheck': 'token-that-must-not-be-verified' },
+    }));
+
+    expect(response?.status).toBe(503);
+    expect(getAppCheck).not.toHaveBeenCalled();
+    expect(JSON.stringify(log.mock.calls)).toContain('APP_CHECK_CONFIGURATION_INVALID');
+    expect(JSON.stringify(log.mock.calls)).not.toContain(configuration.siteKey);
+    log.mockRestore();
   });
 });
