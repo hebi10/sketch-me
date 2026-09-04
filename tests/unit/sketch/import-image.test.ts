@@ -37,4 +37,36 @@ describe('스케치 이미지 가져오기', () => {
     expect(context.fillRect).toHaveBeenCalledWith(0, 0, 720, 720);
     expect(context.drawImage).toHaveBeenCalledWith(source, 90, 0, 540, 720);
   });
+
+  it('지우개와 낮은 투명도가 남아 있어도 불투명한 일반 합성으로 가져온다', () => {
+    const paintStates: Array<{ alpha: number; composite: string; operation: string }> = [];
+    const context = {
+      drawImage: vi.fn(() => paintStates.push({
+        alpha: context.globalAlpha,
+        composite: context.globalCompositeOperation,
+        operation: 'drawImage',
+      })),
+      fillRect: vi.fn(() => paintStates.push({
+        alpha: context.globalAlpha,
+        composite: context.globalCompositeOperation,
+        operation: 'fillRect',
+      })),
+      fillStyle: '',
+      globalAlpha: 0.35,
+      globalCompositeOperation: 'destination-out',
+    };
+    const canvas = {
+      getContext: vi.fn(() => context),
+      height: 720,
+      width: 720,
+    } as unknown as HTMLCanvasElement;
+    const source = { height: 720, width: 720 } as unknown as CanvasImageSource;
+
+    drawImportedImage(canvas, source);
+
+    expect(paintStates).toEqual([
+      { alpha: 1, composite: 'source-over', operation: 'fillRect' },
+      { alpha: 1, composite: 'source-over', operation: 'drawImage' },
+    ]);
+  });
 });

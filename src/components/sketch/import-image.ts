@@ -42,6 +42,8 @@ export function drawImportedImage(canvas: HTMLCanvasElement, source: CanvasImage
   const { width: sourceWidth, height: sourceHeight } = getSourceDimensions(source);
   const rect = getContainedRect(sourceWidth, sourceHeight, canvas.width, canvas.height);
 
+  context.globalAlpha = 1;
+  context.globalCompositeOperation = 'source-over';
   context.fillStyle = '#ffffff';
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.drawImage(source, rect.x, rect.y, rect.width, rect.height);
