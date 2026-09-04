@@ -78,6 +78,7 @@ export default async function PublicSketchbookPage({
   const bestDrawings = drawings
     .filter((drawing) => drawing.bestRank)
     .sort((left, right) => (left.bestRank ?? 5) - (right.bestRank ?? 5));
+  const friendDrawings = drawings.filter((drawing) => drawing.bestRank == null);
   const isFull = isSketchbookFull(sketchbook);
   const hasDrawings = drawings.length > 0;
   const hasOwnerBestDrawing = Boolean(sketchbook.ownerDrawingPath && sketchbook.ownerBestRank);
@@ -150,14 +151,16 @@ export default async function PublicSketchbookPage({
             <h2 className="public-section-title" id="friend-drawings-heading">친구들이 그린 나</h2>
             <span>{sketchbook.participantCount} / {sketchbook.participantLimit}</span>
           </div>
-          <div className="friend-drawing-grid">
-            {drawings.map((drawing, index) => (
-              <article className="friend-drawing-card" key={drawing.id}>
-                <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/thumbnail?v=${encodeURIComponent(drawing.publicImageVersion)}`} unoptimized width={255} />
-                <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{formatTimeAgo(drawing.createdAt)}</span></div>
-              </article>
-            ))}
-          </div>
+          {friendDrawings.length > 0 ? (
+            <div className="friend-drawing-grid">
+              {friendDrawings.map((drawing, index) => (
+                <article className="friend-drawing-card" key={drawing.id}>
+                  <Image alt={`${drawing.authorName}님의 그림`} height={255} loading={galleryImageLoading(index)} src={`/api/sketchbooks/${publicId}/drawings/${drawing.id}/thumbnail?v=${encodeURIComponent(drawing.publicImageVersion)}`} unoptimized width={255} />
+                  <div className="drawing-card-meta"><p>{drawing.authorName}</p><span>{formatTimeAgo(drawing.createdAt)}</span></div>
+                </article>
+              ))}
+            </div>
+          ) : null}
           {isFull ? <span aria-disabled="true" className="button button--disabled board-draw-button">친구 그림 접수 마감</span> : <Link className="button button--primary board-draw-button" href={`/s/${publicId}/draw`}>✎ 그림 남기기</Link>}
           <div className="board-progress"><span>기본 {FREE_PARTICIPANT_LIMIT}개 무료</span><strong>{sketchbook.participantCount} / {sketchbook.participantLimit}</strong></div>
         </section>

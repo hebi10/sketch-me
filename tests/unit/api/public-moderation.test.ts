@@ -165,7 +165,7 @@ describe('공개 경로 운영자 차단', () => {
       .rejects.toThrow('NEXT_NOT_FOUND');
   });
 
-  it('공개 페이지의 그림 이미지는 최적화 프록시를 거치지 않는다', async () => {
+  it('공개 페이지의 BEST 그림은 친구 영역에 중복 노출하지 않고 최적화 프록시를 거치지 않는다', async () => {
     listVisibleDrawings.mockResolvedValue([drawing]);
 
     render(await PublicSketchbookPage({
@@ -173,10 +173,7 @@ describe('공개 경로 운영자 차단', () => {
       searchParams: Promise.resolve({}),
     }));
 
-    expect(screen.getByRole('img', { name: '친구님의 그림' })).toHaveAttribute(
-      'src',
-      '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
-    );
+    expect(screen.queryByRole('img', { name: '친구님의 그림' })).not.toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'BEST 1, 친구님의 그림' })).toHaveAttribute(
       'src',
       '/api/sketchbooks/public-1/drawings/drawing-1/thumbnail?v=version-1',
@@ -245,7 +242,7 @@ describe('공개 경로 운영자 차단', () => {
 
   it('공개 페이지는 전달된 BLOCKED 그림을 렌더링하지 않는다', async () => {
     listVisibleDrawings.mockResolvedValue([
-      drawing,
+      { ...drawing, bestRank: null },
       { ...drawing, bestRank: null, id: 'blocked', moderationStatus: 'BLOCKED' },
     ]);
 
