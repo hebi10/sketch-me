@@ -14,13 +14,14 @@ import {
 } from '@/lib/purchases/orders';
 
 type Stored = Record<string, unknown>;
-type Reference = { id: string; kind: 'purchase' | 'sketchbook'; path: string };
+type Reference = { id: string; kind: 'legal' | 'purchase' | 'sketchbook'; path: string };
 
 function createFirestoreDouble() {
   const books = new Map<string, Stored>([[
     'book-1',
     { entitlements: { watermarkFree: false }, participantLimit: 20, publicId: 'public-1' },
   ]]);
+  const legalRecords = new Map<string, Stored>();
   const purchases = new Map<string, Stored>();
 
   const purchaseReference = (bookId: string, requestId: string): Reference => ({
@@ -34,10 +35,17 @@ function createFirestoreDouble() {
     path: `sketchbooks/${bookId}`,
     collection: () => ({ doc: (requestId: string) => purchaseReference(bookId, requestId) }),
   });
+  const legalRecordReference = (orderId: string): Reference => ({
+    id: orderId,
+    kind: 'legal',
+    path: `legalTransactionRecords/${orderId}`,
+  });
   const read = (reference: Reference) => {
     const data = reference.kind === 'sketchbook'
       ? books.get(reference.id)
-      : purchases.get(reference.path);
+      : reference.kind === 'legal'
+        ? legalRecords.get(reference.id)
+        : purchases.get(reference.path);
     return {
       data: () => data,
       exists: Boolean(data),
@@ -46,12 +54,18 @@ function createFirestoreDouble() {
     };
   };
   const update = (reference: Reference, values: Stored) => {
-    const store = reference.kind === 'sketchbook' ? books : purchases;
-    const key = reference.kind === 'sketchbook' ? reference.id : reference.path;
+    const store = reference.kind === 'sketchbook'
+      ? books
+      : reference.kind === 'legal'
+        ? legalRecords
+        : purchases;
+    const key = reference.kind === 'purchase' ? reference.path : reference.id;
     store.set(key, { ...store.get(key), ...values });
   };
   const firestore = {
-    collection: vi.fn(() => ({ doc: (bookId: string) => sketchbookReference(bookId) })),
+    collection: vi.fn((name: string) => name === 'legalTransactionRecords'
+      ? { doc: (orderId: string) => legalRecordReference(orderId) }
+      : { doc: (bookId: string) => sketchbookReference(bookId) }),
     collectionGroup: vi.fn(() => ({
       where: (_field: string, _operator: string, orderId: string) => ({
         limit: () => ({
@@ -75,7 +89,7 @@ function createFirestoreDouble() {
       update,
     })),
   };
-  return { books, firestore, purchases };
+  return { books, firestore, legalRecords, purchases };
 }
 
 const sketchbook = {
@@ -103,6 +117,8 @@ const plan = {
 
 describe('페이앱 주문 저장', () => {
   it('READY 주문에는 전체 전화번호를 남기지 않고 혜택도 적용하지 않는다', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-04T00:00:00.000Z'));
     const state = createFirestoreDouble();
     getAdminFirestore.mockReturnValue(state.firestore);
 
@@ -126,6 +142,16 @@ describe('페이앱 주문 저장', () => {
       provider: 'PAYAPP',
     });
     expect(JSON.stringify(saved)).not.toContain('01012345678');
+    expect(state.legalRecords.get('order-public-random')).toMatchObject({
+      amount: 1000,
+      buyerPhoneLast4: '5678',
+      orderId: 'order-public-random',
+      paymentStatus: 'READY',
+      retentionExpiresAt: new Date('2031-09-04T00:00:00.000Z'),
+    });
+    expect(JSON.stringify(state.legalRecords.get('order-public-random')))
+      .not.toContain('01012345678');
+    vi.useRealTimers();
   });
 
   it('동일 요청은 기존 주문을 반환하고 다른 상품 재사용은 거부한다', async () => {
