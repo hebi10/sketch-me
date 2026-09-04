@@ -94,7 +94,7 @@ Firebase 규칙·동시성 통합 테스트는 `FIREBASE_PROJECT_ID=sketch-me-lo
 
 ## 공개 운영 체크리스트
 
-- `apphosting.yaml`의 `maxInstances: 1`을 유지합니다. 이 값은 급격한 인스턴스 확장을 제한하지만 Storage·Firestore 등 다른 비용까지 자동 차단하지는 않습니다.
+- `apphosting.yaml`의 `maxInstances: 1`을 유지합니다. 메모리 요청 제한은 인스턴스 사이에서 상태를 공유하지 않으므로, 이 값을 2 이상으로 바꾸기 전 Redis·Cloud Armor 등 공유 limiter 구현과 검증을 먼저 완료해야 합니다. 이 값은 Storage·Firestore 등 다른 비용까지 자동 차단하지는 않습니다.
 - Firebase·Google Cloud 월 예산을 정한 뒤 70%, 90%, 100% 도달 알림을 운영 이메일에 설정합니다. 예산 금액과 수신자는 운영자가 실제 월 한도를 결정한 뒤 Console에서 입력하며 저장소에 기록하지 않습니다.
 - 예산 알림은 비용 발생을 자동 중단하지 않습니다. 알림을 받으면 App Hosting, Cloud Run, Firestore 읽기·쓰기, Storage 저장량·전송량을 함께 확인합니다.
 - 공개 생성·제출 API에는 인스턴스 단위 속도 제한이 적용됩니다. 여러 인스턴스로 확장할 때는 Redis 또는 Cloud Armor 같은 공유 제한 장치로 교체합니다.
@@ -118,6 +118,14 @@ Firebase 규칙·동시성 통합 테스트는 `FIREBASE_PROJECT_ID=sketch-me-lo
 3. 서버 런타임의 Firebase 프로젝트 ID와 Application Default Credentials가 같은 프로젝트를 가리키는지 확인합니다. 서비스 계정 JSON이나 reCAPTCHA 비밀값은 클라이언트 변수에 넣지 않습니다.
 4. 배포 후 정상 브라우저에서 스케치북 생성과 그림 제출을 각각 한 번 확인하고, 토큰 없는 직접 POST가 401인지 확인합니다. 503이 보이면 새 mutation을 계속 보내지 말고 세 설정의 동시 활성화, 사이트 키 연결, 프로젝트, 서버 자격 증명을 먼저 점검합니다.
 5. Firebase App Check 지표, Route Handler 401/503 비율, Firestore·Storage 사용량과 예산 알림을 함께 관찰합니다.
+
+## 콘텐츠 보안 정책
+
+현재 CSP의 `unsafe-inline`은 Next.js 16의 비-nonce 권장 구성과 React 인라인 스타일 호환을 위해 유지합니다. 설치된 Next.js 공식 문서에 따르면 nonce 기반 CSP는 모든 페이지를 동적 렌더링으로 전환하며 정적 최적화·ISR·기본 CDN 캐시를 사용할 수 없게 합니다. 이번 하드닝에서는 기존 정적 랜딩·약관 페이지의 성능 특성을 유지하고, 결제·관리 화면을 별도 동적 경계로 분리할 때 nonce 전환을 다시 평가합니다. App Router의 해시 기반 SRI는 아직 실험 기능이므로 운영 기본값으로 활성화하지 않습니다.
+
+## 의존성 보안 감사
+
+2026-09-04 기준 `npm audit fix --package-lock-only`는 lockfile을 변경하지 않았고 moderate 등급 14건을 보고했습니다. `qs@6.15.3`은 일반 수정 가능 항목으로 표시됐지만 현재 의존성 범위에서는 새 버전으로 해소되지 않았습니다. 나머지는 `firebase-tools`의 `@opentelemetry/core`·`stream-json`·`uuid` 전이 경로와 `firebase-admin`의 `uuid` 전이 경로이며, 자동 수정은 `firebase-tools@10.1.1`로의 파괴적 다운그레이드를 요구합니다. `npm audit fix --force`나 검증되지 않은 `overrides`는 적용하지 않고 Firebase 상위 패키지의 호환 업데이트를 기다린 뒤 다시 감사합니다.
 
 ## 운영자 계정 설정
 
