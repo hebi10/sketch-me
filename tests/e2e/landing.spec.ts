@@ -29,3 +29,10 @@ test('320×568 첫 화면에서 CTA와 개인정보 안내 링크를 바로 사�
   await expect(footerLink).toBeVisible();
   expect((await footerLink.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 });
+
+test('390×667 첫 화면에 생성 CTA가 온전히 보인다', async ({ page }) => {
+  await page.setViewportSize({ height: 667, width: 390 });
+  await page.goto('/');
+
+  await expect(page.getByRole('link', { name: '내 스캐치북 만들기' })).toBeInViewport({ ratio: 1 });
+});

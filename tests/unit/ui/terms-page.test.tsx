@@ -1,9 +1,13 @@
 import { render, screen } from '@testing-library/react';
 
 import LandingPage from '@/app/(marketing)/page';
-import TermsPage from '@/app/terms/page';
+import TermsPage, { metadata } from '@/app/terms/page';
 
 describe('TermsPage', () => {
+  it('루트 제목 템플릿에 서비스명을 한 번만 붙일 수 있도록 페이지 제목만 제공한다', () => {
+    expect(metadata.title).toBe('서비스 이용 및 결제 안내');
+  });
+
   it('추가 인원과 1년 서비스 보장 조건을 안내한다', () => {
     render(<TermsPage />);
 

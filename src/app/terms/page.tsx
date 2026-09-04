@@ -5,7 +5,7 @@ import { BrandWordmark } from '@/components/ui/BrandWordmark';
 import { BusinessDisclosure } from '@/components/ui/BusinessDisclosure';
 
 export const metadata: Metadata = {
-  title: '서비스 이용 및 결제 안내 | 스캐치북',
+  title: '서비스 이용 및 결제 안내',
   description: '스캐치북의 서비스 이용, 결제, 유료 상품 보장 및 서비스 종료 정책입니다.',
 };
 

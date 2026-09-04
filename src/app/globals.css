@@ -919,6 +919,28 @@ main {
   text-align: center;
 }
 
+@media (orientation: portrait) and (max-height: 720px) {
+  .landing-hero {
+    padding-top: clamp(14px, 3.5svh, 28px);
+  }
+
+  .landing-collage {
+    height: 34svh;
+    max-height: 34svh;
+    width: auto;
+  }
+
+  .landing-collage img {
+    height: 100%;
+    object-fit: contain;
+    width: auto;
+  }
+
+  .landing-action {
+    margin-top: clamp(8px, 2svh, 16px);
+  }
+}
+
 .landing-cta {
   margin: 0;
   width: 100%;
