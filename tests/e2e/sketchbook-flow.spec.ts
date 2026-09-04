@@ -115,7 +115,7 @@ test('모바일에서 소유자 그림 수정과 첫 친구 그림 자동 BEST�
   await page.getByRole('button', { name: '확인' }).click();
   await page.getByLabel('내 이름').fill('첫 번째 친구');
   await page.getByRole('button', { name: '그림 남기기' }).click();
-  await expect(page.getByRole('img', { exact: true, name: '첫 번째 친구님의 그림' })).toBeVisible();
+  await expect(page.getByRole('img', { exact: true, name: '첫 번째 친구님의 그림' })).toHaveCount(0);
   await expect(page.getByRole('img', { name: 'BEST 1, 첫 번째 친구님의 그림' })).toBeVisible();
   await expect(page.getByText('선정 전')).toHaveCount(0);
 
@@ -199,7 +199,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await expect(friendPage.getByText('그림을 남겼어요. 고마워요!')).toBeVisible();
   await expect(friendPage.getByRole('img', { name: 'BEST 1, 모바일 친구님의 그림' })).toBeVisible();
   await expect(friendPage.getByText('선정 전')).toHaveCount(0);
-  const publicDrawingImage = friendPage.getByRole('img', { exact: true, name: '모바일 친구님의 그림' });
+  const publicDrawingImage = friendPage.getByRole('img', { name: 'BEST 1, 모바일 친구님의 그림' });
   await expect(publicDrawingImage).toHaveAttribute('src', /\/api\/sketchbooks\/[^/]+\/drawings\/[^/]+\/thumbnail\?v=[^&]+$/);
   const publicDrawingImagePath = await publicDrawingImage.getAttribute('src');
   const publicDrawingImageResponse = await friendPage.request.get(
