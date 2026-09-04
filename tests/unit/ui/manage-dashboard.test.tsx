@@ -227,17 +227,38 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
 
     const items = [
       ['친구 페이지 보기', '친구홈'],
-      ['베스트 이미지 제작', '스토리'],
+      ['이미지 제작', '스토리'],
       ['공유하기', '공유'],
       ['관리용 비밀번호 변경', '비밀번호'],
       ['로그아웃', '로그아웃'],
     ] as const;
 
     items.forEach(([name, shortLabel]) => {
-      const control = within(menu).getByRole(name === '친구 페이지 보기' || name === '베스트 이미지 제작' ? 'link' : 'button', { name });
+      const control = within(menu).getByRole(name === '친구 페이지 보기' ? 'link' : 'button', { name });
       expect(control).toHaveTextContent(shortLabel);
     });
     expect(menu.querySelector('img')).not.toBeInTheDocument();
+  });
+
+  it('관리 메뉴에서 이미지 제작 유형 선택창을 연다', () => {
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={0}
+        participantLimit={20}
+        publicId="public-image-maker"
+      />,
+    );
+
+    fireEvent.click(
+      within(screen.getByRole('navigation', { name: '메뉴 항목' }))
+        .getByRole('button', { name: '이미지 제작' }),
+    );
+
+    expect(screen.getByRole('dialog', { name: '이미지 제작 방식 선택' })).toBeVisible();
+    expect(screen.getByRole('main')).toHaveAttribute('inert');
   });
 
   it('운영자 숨김 그림은 삭제만 허용하고 공개와 BEST 조작을 비활성화한다', () => {

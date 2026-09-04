@@ -13,6 +13,7 @@ import { openPaymentUrl } from '@/lib/payments/browser';
 import { normalizeBuyerPhone } from '@/lib/payments/phone';
 import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
+import { ImageCreationEntry } from './share/ImageCreationEntry';
 
 interface ManageDashboardProps {
   publicId: string;
@@ -400,7 +401,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         <span className="header-title">내 스캐치북</span>
         <HeaderMenu>
           <Link aria-label="친구 페이지 보기" href={`/s/${publicId}`} title="친구 페이지 보기">친구홈</Link>
-          <Link aria-label="베스트 이미지 제작" href={`/m/${publicId}/share`} title="베스트 이미지 제작">스토리</Link>
+          <ImageCreationEntry publicId={publicId}>스토리</ImageCreationEntry>
           <ShareSketchbookButton menuItem name={name} previewVersion={shareThumbnailVersion} publicId={publicId} />
           <button aria-label="관리용 비밀번호 변경" onClick={openSecurityDialog} ref={securityTriggerRef} title="관리용 비밀번호 변경" type="button">비밀번호</button>
           <button aria-label="로그아웃" onClick={logout} title="로그아웃" type="button">로그아웃</button>
@@ -464,7 +465,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       </section>
       <div className="manage-actions">
         <ShareSketchbookButton name={name} previewVersion={shareThumbnailVersion} publicId={publicId} />
-        <Link className="button button--primary" href={`/m/${publicId}/share`}>베스트 이미지 제작</Link>
+        <ImageCreationEntry className="button button--primary" publicId={publicId} />
       </div>
       <section aria-labelledby="drawing-ranking-title" className="manage-drawings" id="drawing-ranking">
         <h2 id="drawing-ranking-title">그림 순위 선택</h2>
