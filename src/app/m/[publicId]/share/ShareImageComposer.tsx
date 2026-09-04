@@ -126,9 +126,9 @@ export function ShareImageComposer({
         </div>
       )}
 
-      <fieldset className="story-theme-picker">
+      <fieldset className="story-theme-picker" style={{ maxWidth: '100%', minWidth: 0 }}>
         <legend>공유 이미지 디자인</legend>
-        <div className="story-theme-options">
+        <div className="story-theme-options" style={{ maxWidth: '100%', minWidth: 0 }}>
           {storyThemes.map((option) => (
             <button
               aria-pressed={option.id === theme.id}

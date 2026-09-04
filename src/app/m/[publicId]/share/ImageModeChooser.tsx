@@ -34,6 +34,7 @@ export function ImageModeChooser({
   triggerRef,
 }: ImageModeChooserProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const releaseMain = () => document.querySelector('main')?.removeAttribute('inert');
 
   useEffect(() => {
     if (!open) return;
@@ -96,7 +97,7 @@ export function ImageModeChooser({
           {onClose ? (
             <button aria-label="이미지 제작 방식 선택 닫기" onClick={onClose} type="button">×</button>
           ) : dismissHref ? (
-            <Link aria-label="이미지 제작 방식 선택 닫기" href={dismissHref}>×</Link>
+            <Link aria-label="이미지 제작 방식 선택 닫기" href={dismissHref} onClick={releaseMain}>×</Link>
           ) : null}
         </div>
         <div className="image-mode-options">
@@ -105,6 +106,7 @@ export function ImageModeChooser({
               className="image-mode-option"
               href={`/m/${publicId}/share?mode=${option.mode}`}
               key={option.mode}
+              onClick={releaseMain}
             >
               <strong>{option.label}</strong>
               <span>{option.ratio}</span>

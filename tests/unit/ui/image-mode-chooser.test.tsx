@@ -45,4 +45,20 @@ describe('ImageModeChooser', () => {
     expect(screen.getByRole('link', { name: '이미지 제작 방식 선택 닫기' }))
       .toHaveAttribute('href', '/m/book-1');
   });
+
+  it('제작 유형 이동 전에 배경 화면의 inert 상태를 해제한다', () => {
+    render(
+      <>
+        <main>이미지 제작 화면</main>
+        <ImageModeChooser onClose={vi.fn()} open publicId="book-1" />
+      </>,
+    );
+
+    const main = screen.getByRole('main', { hidden: true });
+    const singleLink = screen.getByRole('link', { name: /그림 하나 제작하기/ });
+    singleLink.addEventListener('click', (event) => event.preventDefault());
+    expect(main).toHaveAttribute('inert');
+    fireEvent.click(singleLink);
+    expect(main).not.toHaveAttribute('inert');
+  });
 });
