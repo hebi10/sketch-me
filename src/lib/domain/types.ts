@@ -15,6 +15,7 @@ export interface Sketchbook {
   id: string;
   publicId: string;
   name: string;
+  singleStoryHeading?: string;
   storyHeading?: string;
   shareThumbnailMode?: ShareThumbnailMode | null;
   manageTokenHash: string;

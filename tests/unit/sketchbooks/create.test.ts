@@ -29,6 +29,7 @@ describe('createSketchbookDraft', () => {
       moderationStatus: 'ACTIVE',
       moderatedAt: null,
       shareThumbnailMode: 'DEFAULT',
+      singleStoryHeading: '친구가 그린 나',
       status: 'PUBLIC',
       storyHeading: '친구들이 그린 내 모습',
     });

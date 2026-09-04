@@ -13,6 +13,7 @@ const {
   clearOwnerBestDrawing,
   setOwnerBestDrawing,
   updateSketchbookShareThumbnailMode,
+  updateSketchbookSingleStoryHeading,
   updateSketchbookStoryHeading,
 } = vi.hoisted(() => ({
   deleteFiles: vi.fn(),
@@ -27,6 +28,7 @@ const {
   clearOwnerBestDrawing: vi.fn(),
   setOwnerBestDrawing: vi.fn(),
   updateSketchbookShareThumbnailMode: vi.fn(),
+  updateSketchbookSingleStoryHeading: vi.fn(),
   updateSketchbookStoryHeading: vi.fn(),
 }));
 
@@ -40,6 +42,7 @@ vi.mock('@/lib/sketchbooks/repository', () => ({
   findVisibleBestDrawing,
   setOwnerBestDrawing,
   updateSketchbookShareThumbnailMode,
+  updateSketchbookSingleStoryHeading,
   updateSketchbookStoryHeading,
 }));
 
@@ -157,6 +160,7 @@ describe('PATCH /api/manage/:publicId/sketchbook', () => {
     clearOwnerBestDrawing.mockResolvedValue(undefined);
     setOwnerBestDrawing.mockResolvedValue(undefined);
     updateSketchbookStoryHeading.mockResolvedValue(undefined);
+    updateSketchbookSingleStoryHeading.mockResolvedValue(undefined);
     updateSketchbookShareThumbnailMode.mockResolvedValue(undefined);
     findVisibleBestDrawing.mockResolvedValue({ id: 'drawing-1' });
   });
@@ -171,6 +175,19 @@ describe('PATCH /api/manage/:publicId/sketchbook', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ storyHeading: '우리들의 소중한 추억' });
     expect(updateSketchbookStoryHeading).toHaveBeenCalledWith('book-1', '우리들의 소중한 추억');
+  });
+
+  it('한 장 이미지 제목만 별도로 저장한다', async () => {
+    const response = await PATCH(new Request('http://localhost/api/manage/public-1/sketchbook', {
+      body: JSON.stringify({ singleStoryHeading: '  한 장의 추억  ' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH',
+    }), context);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ singleStoryHeading: '한 장의 추억' });
+    expect(updateSketchbookSingleStoryHeading).toHaveBeenCalledWith('book-1', '한 장의 추억');
+    expect(updateSketchbookStoryHeading).not.toHaveBeenCalled();
   });
 
   it('내 그림의 BEST 순위를 지정하거나 해제한다', async () => {

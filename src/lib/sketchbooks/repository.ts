@@ -1,6 +1,7 @@
 import type { Drawing, Sketchbook } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
 import type { PurchasePlan } from '@/lib/purchases/plans';
+import { SINGLE_IMAGE_DEFAULT_HEADING } from '@/lib/share/share-image';
 import {
   nextManagePinAttempt,
   type ManagePinAttemptState,
@@ -103,6 +104,7 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
     shareThumbnailMode: data.shareThumbnailMode === 'DEFAULT' || data.shareThumbnailMode === 'OWNER' || data.shareThumbnailMode === 'BEST_1'
       ? data.shareThumbnailMode
       : 'DEFAULT',
+    singleStoryHeading: data.singleStoryHeading ? String(data.singleStoryHeading) : SINGLE_IMAGE_DEFAULT_HEADING,
     storyHeading: data.storyHeading ? String(data.storyHeading) : STORY_SHARED_HEADING,
     manageTokenHash: String(data.manageTokenHash),
     managePinHash: data.managePinHash ? String(data.managePinHash) : null,
@@ -131,6 +133,16 @@ export async function saveSketchbook(sketchbook: Sketchbook) {
 export async function updateSketchbookStoryHeading(sketchbookId: string, storyHeading: string) {
   await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
     storyHeading,
+    updatedAt: new Date(),
+  });
+}
+
+export async function updateSketchbookSingleStoryHeading(
+  sketchbookId: string,
+  singleStoryHeading: string,
+) {
+  await getAdminFirestore().collection(collectionName).doc(sketchbookId).update({
+    singleStoryHeading,
     updatedAt: new Date(),
   });
 }

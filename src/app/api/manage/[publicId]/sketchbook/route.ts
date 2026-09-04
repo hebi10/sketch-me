@@ -11,6 +11,7 @@ import {
   markSketchbookDeletionStarted,
   findVisibleBestDrawing,
   setOwnerBestDrawing,
+  updateSketchbookSingleStoryHeading,
   updateSketchbookStoryHeading,
   updateSketchbookShareThumbnailMode,
 } from '@/lib/sketchbooks/repository';
@@ -49,6 +50,19 @@ export async function PATCH(
     }
     await setOwnerBestDrawing(sketchbook.id, ownerBestRank as 1 | 2 | 3 | 4);
     return NextResponse.json({ ownerBestRank });
+  }
+  if (payload && Object.hasOwn(payload, 'singleStoryHeading')) {
+    const singleStoryHeading = typeof payload.singleStoryHeading === 'string'
+      ? payload.singleStoryHeading.trim()
+      : '';
+    if (!singleStoryHeading || singleStoryHeading.length > STORY_SHARED_HEADING_MAX_LENGTH) {
+      return NextResponse.json(
+        { message: `이미지 제목은 1자 이상 ${STORY_SHARED_HEADING_MAX_LENGTH}자 이내로 입력해 주세요.` },
+        { status: 400 },
+      );
+    }
+    await updateSketchbookSingleStoryHeading(sketchbook.id, singleStoryHeading);
+    return NextResponse.json({ singleStoryHeading });
   }
   const storyHeading = typeof payload?.storyHeading === 'string' ? payload.storyHeading.trim() : '';
   if (!storyHeading || storyHeading.length > STORY_SHARED_HEADING_MAX_LENGTH) {

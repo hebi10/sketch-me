@@ -1,4 +1,5 @@
 import type { Sketchbook } from '@/lib/domain/types';
+import { SINGLE_IMAGE_DEFAULT_HEADING } from '@/lib/share/share-image';
 import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
 import { FREE_PARTICIPANT_LIMIT } from './capacity';
 
@@ -38,6 +39,7 @@ export function createSketchbookDraft({
     participantCount: 0,
     status: 'PUBLIC',
     shareThumbnailMode: 'DEFAULT',
+    singleStoryHeading: SINGLE_IMAGE_DEFAULT_HEADING,
     storyHeading: STORY_SHARED_HEADING,
     moderationStatus: 'ACTIVE',
     moderatedAt: null,
