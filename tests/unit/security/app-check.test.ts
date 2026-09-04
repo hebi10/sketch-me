@@ -6,7 +6,7 @@ const {
   getFirebaseClientApp,
   getToken,
   initializeAppCheck,
-  recaptchaProvider,
+  recaptchaEnterpriseProvider,
   verifyToken,
 } = vi.hoisted(() => ({
   getAppCheck: vi.fn(),
@@ -14,16 +14,16 @@ const {
   getFirebaseClientApp: vi.fn(() => ({ name: 'client-app' })),
   getToken: vi.fn(),
   initializeAppCheck: vi.fn(),
-  recaptchaProvider: vi.fn(),
+  recaptchaEnterpriseProvider: vi.fn(),
   verifyToken: vi.fn(),
 }));
 
 vi.mock('firebase/app-check', () => ({
   getToken,
   initializeAppCheck,
-  ReCaptchaV3Provider: class ReCaptchaV3Provider {
+  ReCaptchaEnterpriseProvider: class ReCaptchaEnterpriseProvider {
     constructor(siteKey: string) {
-      recaptchaProvider(siteKey);
+      recaptchaEnterpriseProvider(siteKey);
     }
   },
 }));
@@ -85,8 +85,8 @@ describe('공개 mutation App Check 클라이언트 헤더', () => {
 
     await expect(getPublicMutationHeaders()).resolves.toEqual({ 'X-Firebase-AppCheck': 'token-1' });
     await expect(getPublicMutationHeaders()).resolves.toEqual({ 'X-Firebase-AppCheck': 'token-2' });
-    expect(recaptchaProvider).toHaveBeenCalledOnce();
-    expect(recaptchaProvider).toHaveBeenCalledWith('public-site-key');
+    expect(recaptchaEnterpriseProvider).toHaveBeenCalledOnce();
+    expect(recaptchaEnterpriseProvider).toHaveBeenCalledWith('public-site-key');
     expect(initializeAppCheck).toHaveBeenCalledOnce();
     expect(getToken).toHaveBeenCalledTimes(2);
   });

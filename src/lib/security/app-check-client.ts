@@ -3,7 +3,7 @@
 import {
   getToken,
   initializeAppCheck,
-  ReCaptchaV3Provider,
+  ReCaptchaEnterpriseProvider,
   type AppCheck,
 } from 'firebase/app-check';
 
@@ -16,7 +16,7 @@ function getPublicMutationAppCheck(siteKey: string) {
   if (!publicMutationAppCheck) {
     publicMutationAppCheck = initializeAppCheck(getFirebaseClientApp(), {
       isTokenAutoRefreshEnabled: true,
-      provider: new ReCaptchaV3Provider(siteKey),
+      provider: new ReCaptchaEnterpriseProvider(siteKey),
     });
   }
   return publicMutationAppCheck;
