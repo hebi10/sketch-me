@@ -99,7 +99,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const drawingSurfaceStyle = {
       transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
     } as CSSProperties;
-    const zoomStatus = viewport.zoom > minimumZoom ? `${Math.round(viewport.zoom * 100)}% · ${viewportLocation(viewport)}` : null;
+    const zoomStatus = viewport.zoom > minimumZoom ? `${Math.round(viewport.zoom * 100)}%` : null;
 
     const context = useCallback(() => {
       return canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -119,16 +119,6 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       const stageBounds = stageRef.current?.getBoundingClientRect();
       if (stageBounds?.width && stageBounds.height) return stageBounds;
       return canvasRef.current?.getBoundingClientRect() ?? null;
-    }
-
-    function viewportLocation(next: CanvasViewport) {
-      const bounds = viewportBounds();
-      if (!bounds?.width || !bounds.height) return '중앙';
-      const centerX = clamp(0.5 - next.x / (next.zoom * bounds.width), 0, 1);
-      const centerY = clamp(0.5 - next.y / (next.zoom * bounds.height), 0, 1);
-      const horizontal = centerX < 1 / 3 ? '왼쪽' : centerX > 2 / 3 ? '오른쪽' : '중앙';
-      const vertical = centerY < 1 / 3 ? '위' : centerY > 2 / 3 ? '아래' : '중앙';
-      return horizontal === '중앙' && vertical === '중앙' ? '중앙' : `${horizontal} ${vertical}`;
     }
 
     function updateViewport(next: CanvasViewport) {

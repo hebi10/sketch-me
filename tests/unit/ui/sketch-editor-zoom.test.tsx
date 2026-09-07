@@ -87,8 +87,7 @@ describe('SketchEditor 두 손가락 확대', () => {
 
     expect(drawingContext.putImageData).toHaveBeenCalledWith(expect.anything(), 0, 0);
     expect(screen.getByRole('button', { name: '그림 기록 한 단계 이전' })).toBeDisabled();
-    expect(screen.getByLabelText(/캔버스 확대 상태/)).toHaveTextContent('200%');
-    expect(screen.getByLabelText(/캔버스 확대 상태/)).toHaveTextContent('왼쪽 중앙');
+    expect(screen.getByLabelText('캔버스 확대 상태 200%')).toHaveTextContent(/^200%$/);
     expect(document.querySelector('.drawing-surface')).toHaveStyle('transform: translate(170px, 0px) scale(2)');
   });
 });
