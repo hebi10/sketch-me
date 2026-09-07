@@ -32,18 +32,46 @@ type EditorTab = 'draw' | 'guide';
 
 const loupeSize = 104;
 const loupeHorizontalOffset = 64;
+const pinchHintStorageKey = 'sketch-editor-pinch-hint-seen';
+const minimumZoom = 1;
+const maximumZoom = 3;
+
+type CanvasPoint = { x: number; y: number };
+type CanvasViewport = CanvasPoint & { zoom: number };
+type PinchGesture = {
+  distance: number;
+  midpoint: CanvasPoint;
+  viewport: CanvasViewport;
+};
+
+function distanceBetween(first: CanvasPoint, second: CanvasPoint) {
+  return Math.hypot(second.x - first.x, second.y - first.y);
+}
+
+function midpointBetween(first: CanvasPoint, second: CanvasPoint): CanvasPoint {
+  return { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+}
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
 
 export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
   function SketchEditor({ ariaLabel, initialDrawingDataUrl = null, onDrawingChange, reopenLabel }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const loupeCanvasRef = useRef<HTMLCanvasElement>(null);
     const loupeRef = useRef<HTMLDivElement>(null);
+    const stageRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<HTMLElement>(null);
     const fullscreenEntryRef = useRef<HTMLButtonElement>(null);
     const fullscreenRestoreFocusRef = useRef(false);
     const fullscreenConfirmRef = useRef<HTMLButtonElement>(null);
     const drawingRef = useRef(false);
-    const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+    const lastPointRef = useRef<CanvasPoint | null>(null);
+    const unconfirmedStrokePixelsRef = useRef<ImageData | null>(null);
+    const activePointersRef = useRef(new Map<number, CanvasPoint>());
+    const pinchGestureRef = useRef<PinchGesture | null>(null);
+    const viewportRef = useRef<CanvasViewport>({ x: 0, y: 0, zoom: minimumZoom });
     const canvasHelpId = useId();
     const [tab, setTab] = useState<EditorTab>('draw');
     const [crosshairVisible, setCrosshairVisible] = useState(true);
@@ -58,6 +86,8 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [loupeEnabled, setLoupeEnabled] = useState(true);
     const [leftHandMode, setLeftHandMode] = useState(false);
     const [loupeActive, setLoupeActive] = useState(false);
+    const [viewport, setViewport] = useState<CanvasViewport>(viewportRef.current);
+    const [pinchHintVisible, setPinchHintVisible] = useState(false);
     const [confirmedDrawing, setConfirmedDrawing] = useState<string | null>(null);
     const [drawingError, setDrawingError] = useState<string | null>(null);
     const [importStatus, setImportStatus] = useState('');
@@ -66,6 +96,10 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       '--loupe-brush-opacity': eraser ? '100%' : `${penOpacity}%`,
       '--loupe-brush-size': `${eraser ? lineWidth * 3 : lineWidth}px`,
     } as CSSProperties;
+    const drawingSurfaceStyle = {
+      transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+    } as CSSProperties;
+    const zoomStatus = viewport.zoom > minimumZoom ? `${Math.round(viewport.zoom * 100)}% · ${viewportLocation(viewport)}` : null;
 
     const context = useCallback(() => {
       return canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -79,6 +113,77 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
         x: ((event.clientX - bounds.left) / bounds.width) * width,
         y: ((event.clientY - bounds.top) / bounds.height) * height,
       };
+    }
+
+    function viewportBounds() {
+      const stageBounds = stageRef.current?.getBoundingClientRect();
+      if (stageBounds?.width && stageBounds.height) return stageBounds;
+      return canvasRef.current?.getBoundingClientRect() ?? null;
+    }
+
+    function viewportLocation(next: CanvasViewport) {
+      const bounds = viewportBounds();
+      if (!bounds?.width || !bounds.height) return '중앙';
+      const centerX = clamp(0.5 - next.x / (next.zoom * bounds.width), 0, 1);
+      const centerY = clamp(0.5 - next.y / (next.zoom * bounds.height), 0, 1);
+      const horizontal = centerX < 1 / 3 ? '왼쪽' : centerX > 2 / 3 ? '오른쪽' : '중앙';
+      const vertical = centerY < 1 / 3 ? '위' : centerY > 2 / 3 ? '아래' : '중앙';
+      return horizontal === '중앙' && vertical === '중앙' ? '중앙' : `${horizontal} ${vertical}`;
+    }
+
+    function updateViewport(next: CanvasViewport) {
+      viewportRef.current = next;
+      setViewport(next);
+    }
+
+    function resetViewport() {
+      activePointersRef.current.clear();
+      pinchGestureRef.current = null;
+      unconfirmedStrokePixelsRef.current = null;
+      drawingRef.current = false;
+      lastPointRef.current = null;
+      updateViewport({ x: 0, y: 0, zoom: minimumZoom });
+    }
+
+    function startPinchGesture() {
+      const [first, second] = [...activePointersRef.current.values()];
+      if (!first || !second) return;
+      pinchGestureRef.current = {
+        distance: Math.max(1, distanceBetween(first, second)),
+        midpoint: midpointBetween(first, second),
+        viewport: viewportRef.current,
+      };
+      if (drawingRef.current) restoreUnconfirmedStroke();
+      drawingRef.current = false;
+      lastPointRef.current = null;
+      setLoupeActive(false);
+    }
+
+    function restoreUnconfirmedStroke() {
+      const pixels = unconfirmedStrokePixelsRef.current;
+      const drawingContext = context();
+      if (pixels && drawingContext) drawingContext.putImageData(pixels, 0, 0);
+      unconfirmedStrokePixelsRef.current = null;
+    }
+
+    function updatePinchViewport() {
+      const gesture = pinchGestureRef.current;
+      const [first, second] = [...activePointersRef.current.values()];
+      const bounds = viewportBounds();
+      if (!gesture || !first || !second || !bounds?.width || !bounds.height) return;
+
+      const nextZoom = clamp(gesture.viewport.zoom * (distanceBetween(first, second) / gesture.distance), minimumZoom, maximumZoom);
+      const midpoint = midpointBetween(first, second);
+      const maximumX = ((nextZoom - 1) * bounds.width) / 2;
+      const maximumY = ((nextZoom - 1) * bounds.height) / 2;
+      const zoomRatio = nextZoom / gesture.viewport.zoom;
+      const centerX = bounds.left + bounds.width / 2;
+      const centerY = bounds.top + bounds.height / 2;
+      updateViewport({
+        x: clamp(midpoint.x - centerX - zoomRatio * (gesture.midpoint.x - centerX - gesture.viewport.x), -maximumX, maximumX),
+        y: clamp(midpoint.y - centerY - zoomRatio * (gesture.midpoint.y - centerY - gesture.viewport.y), -maximumY, maximumY),
+        zoom: nextZoom,
+      });
     }
 
     function snapshot() {
@@ -135,6 +240,14 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       };
       image.src = initialDrawingDataUrl;
     }, [context, initialDrawingDataUrl]);
+
+    useEffect(() => {
+      if (!isFullscreen || window.localStorage.getItem(pinchHintStorageKey)) return;
+      window.localStorage.setItem(pinchHintStorageKey, 'true');
+      setPinchHintVisible(true);
+      const timeout = window.setTimeout(() => setPinchHintVisible(false), 1000);
+      return () => window.clearTimeout(timeout);
+    }, [isFullscreen]);
 
     useEffect(() => {
       if (!isFullscreen) {
@@ -201,7 +314,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       drawingContext.stroke();
     }
 
-    function updateLoupe(point: { x: number; y: number }) {
+    function updateLoupe(point: CanvasPoint, clientX: number, clientY: number) {
       const canvas = canvasRef.current;
       const loupe = loupeRef.current;
       const loupeContext = loupeCanvasRef.current?.getContext('2d');
@@ -212,12 +325,12 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       const sourceSize = Math.min(width, (loupeSize / 2) * (width / bounds.width));
       const sourceX = Math.min(width - sourceSize, Math.max(0, point.x - sourceSize / 2));
       const sourceY = Math.min(height - sourceSize, Math.max(0, point.y - sourceSize / 2));
-      const canvasPixelsPerCssPixel = width / bounds.width;
       const horizontalDirection = leftHandMode ? 1 : -1;
-      const displayX = point.x + horizontalDirection * loupeHorizontalOffset * canvasPixelsPerCssPixel;
+      const placementBounds = viewportBounds() ?? bounds;
+      const displayX = clientX + horizontalDirection * loupeHorizontalOffset;
 
-      loupe.style.left = `${(displayX / width) * 100}%`;
-      loupe.style.top = `${(point.y / height) * 100}%`;
+      loupe.style.left = `${((displayX - placementBounds.left) / placementBounds.width) * 100}%`;
+      loupe.style.top = `${((clientY - placementBounds.top) / placementBounds.height) * 100}%`;
       loupeContext.clearRect(0, 0, loupeSize, loupeSize);
       loupeContext.drawImage(
         canvas,
@@ -244,28 +357,52 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       const point = canvasPoint(event);
       if (!point) return;
       event.currentTarget.setPointerCapture(event.pointerId);
+      activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (activePointersRef.current.size >= 2) {
+        startPinchGesture();
+        return;
+      }
+      const drawingContext = context();
+      unconfirmedStrokePixelsRef.current = drawingContext?.getImageData(0, 0, width, height) ?? null;
       drawingRef.current = true;
       lastPointRef.current = point;
       drawLine(point, { x: point.x + 0.1, y: point.y + 0.1 });
       if (loupeEnabled) {
-        updateLoupe(point);
+        updateLoupe(point, event.clientX, event.clientY);
         setLoupeActive(true);
       }
     }
 
     function pointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+      if (activePointersRef.current.has(event.pointerId)) {
+        activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      }
+      if (pinchGestureRef.current) {
+        updatePinchViewport();
+        return;
+      }
       if (!drawingRef.current) return;
       const point = canvasPoint(event);
       if (!point || !lastPointRef.current) return;
       drawLine(lastPointRef.current, point);
       lastPointRef.current = point;
-      if (loupeEnabled) updateLoupe(point);
+      if (loupeEnabled) updateLoupe(point, event.clientX, event.clientY);
     }
 
-    function pointerEnd() {
+    function pointerEnd(event: React.PointerEvent<HTMLCanvasElement>) {
+      activePointersRef.current.delete(event.pointerId);
+      if (pinchGestureRef.current) {
+        pinchGestureRef.current = null;
+        drawingRef.current = false;
+        lastPointRef.current = null;
+        unconfirmedStrokePixelsRef.current = null;
+        setLoupeActive(false);
+        return;
+      }
       if (!drawingRef.current) return;
       drawingRef.current = false;
       lastPointRef.current = null;
+      unconfirmedStrokePixelsRef.current = null;
       setLoupeActive(false);
       snapshot();
     }
@@ -293,6 +430,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }
 
     function openDrawing() {
+      resetViewport();
       setControlsOpen(false);
       setDrawingError(null);
       setIsFullscreen(true);
@@ -303,6 +441,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       onDrawingChange?.(output);
       setControlsOpen(false);
       setDrawingError(null);
+      resetViewport();
       setIsFullscreen(false);
     }
 
@@ -399,14 +538,20 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
           </div>
         </> : null}
         <div className="sketch-stage-slot" hidden={!isFullscreen}>
-          <div className={`sketch-stage sketch-stage--${tab}`}>
+          <div className={`sketch-stage sketch-stage--${tab}`} ref={stageRef}>
             <p className="sr-only" id={canvasHelpId}>손가락이나 마우스로 그림을 그리거나 이미지로 가져오기를 사용할 수 있어요.</p>
-            <canvas aria-describedby={canvasHelpId} aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
-            {crosshairVisible ? <div aria-hidden="true" className="canvas-crosshair" data-testid="canvas-crosshair" /> : null}
+            <div className="canvas-viewport">
+              <div className="drawing-surface" style={drawingSurfaceStyle}>
+                <canvas aria-describedby={canvasHelpId} aria-label={ariaLabel} className="drawing-canvas" height={height} onPointerCancel={pointerEnd} onPointerDown={pointerDown} onPointerLeave={pointerEnd} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={canvasRef} width={width} />
+                {crosshairVisible ? <div aria-hidden="true" className="canvas-crosshair" data-testid="canvas-crosshair" /> : null}
+              </div>
+            </div>
             <div aria-hidden="true" className={`drawing-loupe drawing-loupe--above ${loupeActive ? 'is-visible' : ''}`} data-active={loupeActive} data-placement="above" data-testid="drawing-loupe" ref={loupeRef} style={loupeBrushStyle}>
               <canvas data-loupe="true" height={loupeSize} ref={loupeCanvasRef} width={loupeSize} />
               <span className="drawing-loupe-tip" />
             </div>
+            {pinchHintVisible ? <p aria-hidden="true" className="canvas-pinch-hint">두 손가락으로 확대할 수 있어요</p> : null}
+            {zoomStatus ? <p aria-label={`캔버스 확대 상태 ${zoomStatus}`} className="canvas-zoom-status">{zoomStatus}</p> : null}
           </div>
         </div>
         <div className="editor-control-panel" hidden={!isFullscreen || !controlsOpen}>
