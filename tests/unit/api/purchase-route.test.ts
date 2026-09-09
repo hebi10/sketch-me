@@ -21,8 +21,7 @@ vi.mock('@/lib/payments/payapp', async (importOriginal) => ({
 }));
 
 import { POST } from '@/app/api/manage/[publicId]/purchase/route';
-import { PayAppResponseError } from '@/lib/payments/payapp';
-import { PurchaseConflictError } from '@/lib/purchases/orders';
+// 결제 시스템 비활성화: 기존 페이앱 오류·주문 충돌 검증은 아래 주석 처리된 테스트에 보존합니다.
 
 const sketchbook = {
   entitlements: { watermarkFree: false },
@@ -57,6 +56,20 @@ describe('POST /api/manage/:publicId/purchase', () => {
     });
   });
 
+  it('무료 운영 중에는 외부 결제를 시작하지 않는다', async () => {
+    const response = await POST(paymentRequest({
+      buyerPhone: '010-1234-5678',
+      digitalContentConsent: true,
+      productId: 'FRIENDS_50',
+      requestId: 'request-12345',
+    }), { params: Promise.resolve({ publicId: 'public-1' }) });
+
+    expect(response.status).toBe(410);
+    await expect(response.json()).resolves.toEqual({ message: '결제 기능을 운영하지 않습니다.' });
+    expect(mocks.requestPayAppPayment).not.toHaveBeenCalled();
+  });
+
+  /* 결제 시스템 비활성화: 기존 페이앱 주문 생성 테스트입니다.
   it('결제 요청만으로 혜택을 적용하지 않고 페이앱 URL을 반환한다', async () => {
     const response = await POST(paymentRequest({
       buyerPhone: '010-1234-5678',
@@ -161,4 +174,5 @@ describe('POST /api/manage/:publicId/purchase', () => {
     await expect(response.json()).resolves.toEqual({ message: '이미 다른 상품으로 시작된 결제 요청입니다.' });
     expect(mocks.requestPayAppPayment).not.toHaveBeenCalled();
   });
+  */
 });

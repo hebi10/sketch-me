@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 결제 완료 대화상자 컴포넌트를 보존합니다.
 'use client';
 
 import {
@@ -73,3 +74,4 @@ export function PaymentSuccessDialog({
     </div>
   );
 }
+*/

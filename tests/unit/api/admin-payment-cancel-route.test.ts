@@ -23,7 +23,7 @@ vi.mock('@/lib/purchases/orders', () => ({
 
 import { POST } from '@/app/api/admin/payments/[orderId]/cancel/route';
 
-describe('POST /api/admin/payments/:orderId/cancel', () => {
+describe.skip('결제 시스템 비활성화: POST /api/admin/payments/:orderId/cancel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.isAllowedAdminOrigin.mockReturnValue(true);

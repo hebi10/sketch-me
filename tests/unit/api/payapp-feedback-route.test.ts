@@ -32,7 +32,7 @@ function feedbackRequest(overrides: Record<string, string> = {}) {
   });
 }
 
-describe('POST /api/payments/payapp/feedback', () => {
+describe.skip('결제 시스템 비활성화: POST /api/payments/payapp/feedback', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getPayAppConfig.mockReturnValue({});

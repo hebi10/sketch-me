@@ -1,3 +1,8 @@
+import { describe } from 'vitest';
+
+describe.skip('결제 시스템 비활성화: 기존 모의 구매 저장소 테스트를 보존합니다.', () => {});
+
+/*
 import { vi } from 'vitest';
 
 const { getAdminFirestore } = vi.hoisted(() => ({ getAdminFirestore: vi.fn() }));
@@ -238,3 +243,4 @@ describe('addMockPurchase', () => {
     }));
   });
 });
+*/

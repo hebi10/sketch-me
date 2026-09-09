@@ -1,3 +1,8 @@
+import { describe } from 'vitest';
+
+describe.skip('결제 시스템 비활성화: 기존 페이앱 연동 테스트를 보존합니다.', () => {});
+
+/*
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -136,3 +141,4 @@ describe('페이앱 서버 연동', () => {
     }, config)).toBe(false);
   });
 });
+*/

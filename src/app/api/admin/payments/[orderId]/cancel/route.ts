@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 관리자 페이앱 전체 취소 처리입니다.
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -59,4 +60,14 @@ export async function POST(
       { status: 502 },
     );
   }
+}
+*/
+
+export async function POST(
+  _request?: Request,
+  _context?: { params: Promise<{ orderId: string }> },
+) {
+  void _request;
+  void _context;
+  return Response.json({ message: '결제 기능을 운영하지 않습니다.' }, { status: 410 });
 }

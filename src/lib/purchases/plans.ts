@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 유료 상품 정의를 보존합니다.
 import type { PurchaseProductId } from '@/lib/domain/types';
 
 export const purchasePlans = [
@@ -18,3 +19,6 @@ export type PurchasePlan = (typeof purchasePlans)[number];
 export function getPurchasePlan(productId: unknown) {
   return purchasePlans.find((plan) => plan.productId === productId) ?? null;
 }
+*/
+
+export {};

@@ -15,8 +15,9 @@ function getStatItems(stats: AdminDashboardStats): StatItem[] {
     { label: '오늘 생성', value: numberFormatter.format(stats.todaySketchbooks) },
     { label: '전체 친구 그림', value: numberFormatter.format(stats.totalDrawings) },
     { label: '오늘 제출', value: numberFormatter.format(stats.todayDrawings) },
-    { label: '결제 건수', value: `${numberFormatter.format(stats.succeededPurchaseCount)}건` },
-    { label: '결제 누적', value: `${numberFormatter.format(stats.succeededPurchaseAmount)}원` },
+    // 결제 시스템 비활성화: 기존 결제 통계를 보존합니다.
+    // { label: '결제 건수', value: `${numberFormatter.format(stats.succeededPurchaseCount)}건` },
+    // { label: '결제 누적', value: `${numberFormatter.format(stats.succeededPurchaseAmount)}원` },
   ];
 }
 
@@ -38,7 +39,8 @@ export function AdminDashboard({ stats }: { stats: AdminDashboardStats }) {
         ))}
       </dl>
 
-      <p className="admin-mock-note">결제 통계는 성공 건만 포함합니다.</p>
+      {/* 결제 시스템 비활성화: 기존 결제 통계 안내를 보존합니다.
+      <p className="admin-mock-note">결제 통계는 성공 건만 포함합니다.</p> */}
 
       <nav aria-label="관리 화면 바로가기" className="admin-quick-links">
         <Link aria-describedby="admin-sketchbooks-link-description" aria-label="스케치북 관리" className="admin-list-card" href="/admin/sketchbooks">
@@ -49,10 +51,11 @@ export function AdminDashboard({ stats }: { stats: AdminDashboardStats }) {
           <strong>그림 관리</strong>
           <span id="admin-drawings-link-description">친구 그림과 공개 상태 검토</span>
         </Link>
+        {/* 결제 시스템 비활성화: 기존 결제 내역 바로가기를 보존합니다.
         <Link aria-describedby="admin-payments-link-description" aria-label="결제 내역" className="admin-list-card" href="/admin/payments">
           <strong>결제 내역</strong>
           <span id="admin-payments-link-description">결제 성공 내역 확인</span>
-        </Link>
+        </Link> */}
       </nav>
     </section>
   );

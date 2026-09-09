@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 관리자 결제 내역 조회 화면입니다.
 import Link from 'next/link';
 
 import {
@@ -52,4 +53,13 @@ export default async function AdminPaymentsPage({
 
   const page = await listAdminPurchases({ cursor });
   return <AdminPaymentList page={page} />;
+}
+*/
+
+export default function AdminPaymentsPage() {
+  return (
+    <section className="admin-page" role="status">
+      <h1>결제 기능을 운영하지 않습니다.</h1>
+    </section>
+  );
 }

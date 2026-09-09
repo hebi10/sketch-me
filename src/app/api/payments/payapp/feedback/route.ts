@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 페이앱 결제 완료 통보 처리입니다.
 import { getPayAppConfig, verifyPayAppFeedback } from '@/lib/payments/payapp';
 import { applyPayAppFeedback } from '@/lib/purchases/orders';
 
@@ -44,4 +45,10 @@ export async function POST(request: Request) {
   } catch {
     return text('INVALID', 400);
   }
+}
+*/
+
+export async function POST(_request?: Request) {
+  void _request;
+  return new Response('DISABLED', { status: 410 });
 }

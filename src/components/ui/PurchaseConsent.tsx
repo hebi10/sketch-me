@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 결제·디지털 콘텐츠 동의 컴포넌트를 보존합니다.
 import Link from 'next/link';
 
 interface PurchaseConsentProps {
@@ -33,3 +34,4 @@ export function PurchaseConsent({ checked, disabled = false, id, onChange }: Pur
     </div>
   );
 }
+*/

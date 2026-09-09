@@ -182,7 +182,7 @@ export default async function PublicSketchbookPage({
             </div>
           ) : null}
           {isFull ? <span aria-disabled="true" className="button button--disabled board-draw-button">친구 그림 접수 마감</span> : <Link className="button button--primary board-draw-button" href={`/s/${publicId}/draw`}>✎ 그림 남기기</Link>}
-          <div className="board-progress"><span>기본 {FREE_PARTICIPANT_LIMIT}개 무료</span><strong>{sketchbook.participantCount} / {sketchbook.participantLimit}</strong></div>
+          <div className="board-progress"><span>기본 {FREE_PARTICIPANT_LIMIT}명 무료</span><strong>{sketchbook.participantCount} / {sketchbook.participantLimit}</strong></div>
         </section>
       ) : (
         <section className="public-empty-state" aria-labelledby="first-drawing-title">

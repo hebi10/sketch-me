@@ -5,7 +5,7 @@ vi.mock('@/lib/purchases/orders', () => ({ findPurchaseByOrderId }));
 
 import { GET, POST } from '@/app/api/payments/payapp/return/route';
 
-describe('/api/payments/payapp/return', () => {
+describe.skip('결제 시스템 비활성화: /api/payments/payapp/return', () => {
   beforeEach(() => {
     findPurchaseByOrderId.mockResolvedValue({ sketchbookPublicId: 'public-1' });
   });

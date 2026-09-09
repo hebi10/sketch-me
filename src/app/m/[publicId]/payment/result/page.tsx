@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 결제 결과 화면입니다.
 import { PaymentResult } from './PaymentResult';
 
 export default async function PaymentResultPage({
@@ -13,4 +14,12 @@ export default async function PaymentResultPage({
       <PaymentResult orderId={orderId} publicId={publicId} />
     </main>
   );
+}
+*/
+
+import { redirect } from 'next/navigation';
+
+export default async function PaymentResultPage({ params }: { params: Promise<{ publicId: string }> }) {
+  const { publicId } = await params;
+  redirect(`/m/${publicId}`);
 }

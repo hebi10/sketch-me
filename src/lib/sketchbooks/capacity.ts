@@ -1,4 +1,4 @@
-export const FREE_PARTICIPANT_LIMIT = 10;
+export const FREE_PARTICIPANT_LIMIT = 50;
 
 export function isSketchbookFull({
   participantCount,

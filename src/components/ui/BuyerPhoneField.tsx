@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 결제용 휴대전화번호 입력 컴포넌트를 보존합니다.
 'use client';
 
 interface BuyerPhoneFieldProps {
@@ -33,3 +34,4 @@ export function BuyerPhoneField({ disabled, error, id, onChange, value }: BuyerP
     </div>
   );
 }
+*/

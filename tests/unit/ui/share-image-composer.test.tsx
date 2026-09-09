@@ -154,7 +154,7 @@ describe('ShareImageComposer', () => {
     }));
   });
 
-  it('두 모드에서 디자인과 워터마크 권한을 공통으로 사용한다', () => {
+  it('워터마크를 기본으로 넣고 사용자가 해제할 수 있다', () => {
     render(
       <ShareImageComposer
         drawings={drawings}
@@ -174,10 +174,16 @@ describe('ShareImageComposer', () => {
     expect(preview).toHaveStyle({ backgroundImage: 'url(/story/story-theme-sky-sketch.webp)' });
     expect(screen.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
     expect(preview).toHaveTextContent('https://sketch.msgnote.kr/');
-    expect(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' })).toBeVisible();
+    const watermarkToggle = screen.getByRole('checkbox', { name: '워터마크 넣기' });
+    expect(watermarkToggle).toBeChecked();
+
+    fireEvent.click(watermarkToggle);
+
+    expect(watermarkToggle).not.toBeChecked();
+    expect(screen.queryByRole('img', { name: '스캐치북 워터마크' })).not.toBeInTheDocument();
   });
 
-  it('결제창을 열고 닫아도 제목, 검색, 선택, 디자인 상태를 유지한다', () => {
+  it('워터마크를 해제해도 제목, 검색, 선택, 디자인 상태를 유지한다', () => {
     render(
       <ShareImageComposer
         drawings={drawings}
@@ -197,13 +203,13 @@ describe('ShareImageComposer', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: '해비님의 그림 선택' }));
     fireEvent.click(screen.getByRole('button', { name: '푸른 하늘' }));
-    fireEvent.click(screen.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' }));
-    fireEvent.click(screen.getByRole('button', { name: '결제창 닫기' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: '워터마크 넣기' }));
 
     expect(screen.getByRole('textbox', { name: '이미지 제목' })).toHaveValue('한 장의 기억');
     expect(screen.getByRole('searchbox', { name: '그린 사람 이름' })).toHaveValue('해비');
     expect(within(screen.getByRole('region', { name: '현재 선택한 그림' }))
       .getByRole('button', { name: '해비님의 그림 선택' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '푸른 하늘' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('checkbox', { name: '워터마크 넣기' })).not.toBeChecked();
   });
 });

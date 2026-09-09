@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 브라우저 결제창 이동 코드를 보존합니다.
 export function openPaymentUrl(value: string): void {
   const url = new URL(value);
   if (
@@ -8,3 +9,6 @@ export function openPaymentUrl(value: string): void {
   }
   window.location.assign(url.toString());
 }
+*/
+
+export {};

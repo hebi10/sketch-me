@@ -1,3 +1,7 @@
+/*
+ * 결제 시스템 비활성화: 기존 페이앱 워터마크 제거 구매 UI입니다.
+ * 재도입 시 현재 무료 워터마크 토글과 정책을 검토한 뒤 이 주석을 해제합니다.
+ *
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -181,3 +185,4 @@ export function WatermarkPurchaseButton({ publicId }: WatermarkPurchaseButtonPro
     </>
   );
 }
+*/

@@ -18,21 +18,19 @@ describe('PrivacyPage', () => {
     expect(screen.queryByText(/참고 사진/)).not.toBeInTheDocument();
   });
 
-  it('72시간 생성 제한 해시와 콘텐츠·거래 기록의 분리 보관을 안내한다', () => {
+  it('72시간 생성 제한 해시와 무료 스케치북 삭제 기준을 안내한다', () => {
     render(<PrivacyPage />);
 
     expect(screen.getByText(/IP 원문은 저장하지 않고.*복원하기 어려운 해시.*최대 72시간/)).toBeVisible();
-    expect(screen.getByText(/계약.*대금결제.*5년/)).toBeVisible();
     expect(screen.getByText(/무료 스케치북의 Firestore 기록과 Storage 파일을 자동 삭제/)).toBeVisible();
-    expect(screen.getByText(/스케치북을 삭제하더라도 법정 거래 기록은 별도 저장소에 분리/)).toBeVisible();
-    expect(screen.getByText(/보존기간이 끝나면 지체 없이 파기/)).toBeVisible();
+    expect(screen.queryByText(/대금결제/)).not.toBeInTheDocument();
   });
 
-  it('결제 처리위탁과 권리 행사 연락처를 안내한다', () => {
+  it('제3자 제공 원칙과 권리 행사 연락처를 안내한다', () => {
     render(<PrivacyPage />);
 
     expect(screen.getByRole('heading', { name: '개인정보의 제3자 제공 및 처리위탁' })).toBeVisible();
-    expect(screen.getByText("주식회사 유디아이디(페이앱)")).toBeVisible();
+    expect(screen.getByText(/개인정보를 제3자에게 제공하지 않습니다/)).toBeVisible();
     expect(screen.getByRole('heading', { name: '이용자의 권리와 행사 방법' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'asdlkj0104@gmail.com' })).toHaveAttribute('href', 'mailto:asdlkj0104@gmail.com');
   });
@@ -46,22 +44,17 @@ describe('PrivacyPage', () => {
     expect(screen.queryByText(/이름, 관리용 비밀번호, 힌트.*sessionStorage/)).not.toBeInTheDocument();
   });
 
-  it('이메일로 접수된 소비자 불만과 분쟁 기록의 보관 기준을 안내한다', () => {
+  it('이메일 문의는 처리 목적이 끝나면 삭제한다고 안내한다', () => {
     render(<PrivacyPage />);
 
-    expect(screen.getByText(/이메일 등 문의 채널로 접수된 소비자 불만 또는 분쟁처리 기록/)).toBeVisible();
-    expect(screen.getByText(/처리 완료일로부터 3년/)).toBeVisible();
     expect(screen.getByText(/일반 문의는 처리 목적 달성 후 지체 없이 삭제/)).toBeVisible();
   });
 
-  it('결제 기록과 결제수단 정보의 저장 범위를 안내한다', () => {
+  it('무료 참여 인원 운영 목적을 안내한다', () => {
     render(<PrivacyPage />);
 
-    expect(screen.getByText(/결제에 따른 참여 가능 인원·워터마크 제거 권한과 구매 기록 관리/)).toBeVisible();
-    expect(screen.getByText(/카드번호 등 결제수단 정보는 직접 저장하지 않습니다/)).toBeVisible();
-    expect(screen.getAllByText(/결제용 휴대전화번호/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/끝 4자리만 저장/)).toBeVisible();
-    expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
+    expect(screen.getByText(/무료 참여 인원 50명 운영과 서비스 문의 처리/)).toBeVisible();
+    expect(screen.queryByText(/결제용 휴대전화번호/)).not.toBeInTheDocument();
   });
 
   it('갤러리 썸네일과 공개 캐시, 직접 삭제 동작을 안내한다', () => {
@@ -84,9 +77,9 @@ describe('PrivacyPage', () => {
     );
   });
 
-  it('디지털 혜택 제공 동의 기록의 처리 항목을 안내한다', () => {
+  it('결제 동의 기록을 처리하지 않는다', () => {
     render(<PrivacyPage />);
 
-    expect(screen.getByText(/동의 시각과 동의 문구 버전/)).toBeVisible();
+    expect(screen.queryByText(/동의 시각과 동의 문구 버전/)).not.toBeInTheDocument();
   });
 });

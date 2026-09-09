@@ -1,3 +1,8 @@
+import { describe } from 'vitest';
+
+describe.skip('결제 시스템 비활성화: 기존 관리자 결제 화면 테스트를 보존합니다.', () => {});
+
+/*
 import { render, screen, within } from '@testing-library/react';
 import { vi } from 'vitest';
 
@@ -53,8 +58,7 @@ beforeEach(() => {
   });
   listAdminPurchases.mockResolvedValue({ items: [], nextCursor: null });
 });
-
-describe('AdminPaymentList', () => {
+describe.skip('결제 시스템 비활성화: AdminPaymentList', () => {
   it('페이앱 결제 내역과 전체 취소 기능을 표시한다', () => {
     const page: AdminPage<AdminPurchaseListItem> = {
       items: [createPurchase({ provider: 'PAYAPP', providerOrderId: '2000' })],
@@ -138,7 +142,7 @@ describe('AdminPaymentList', () => {
   });
 });
 
-describe('AdminPaymentsPage 데이터 경계', () => {
+describe.skip('결제 시스템 비활성화: AdminPaymentsPage 데이터 경계', () => {
   it('페이지 인증이 거부되면 결제 저장소를 호출하지 않는다', async () => {
     getRequiredAdminIdentity.mockRejectedValue(new Error('NEXT_REDIRECT'));
 
@@ -188,3 +192,4 @@ describe('AdminPaymentsPage 데이터 경계', () => {
     expect(listAdminPurchases).not.toHaveBeenCalled();
   });
 });
+*/

@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { HeaderMenu } from '@/components/ui/HeaderMenu';
-import { BuyerPhoneField } from '@/components/ui/BuyerPhoneField';
-import { PurchaseConsent } from '@/components/ui/PurchaseConsent';
-import type { Drawing, ModerationStatus, PurchaseProductId, ShareThumbnailMode, SketchbookEntitlements, SketchbookRetentionTier } from '@/lib/domain/types';
-import { openPaymentUrl } from '@/lib/payments/browser';
-import { normalizeBuyerPhone } from '@/lib/payments/phone';
-import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
+import type { Drawing, ModerationStatus, ShareThumbnailMode, SketchbookEntitlements, SketchbookRetentionTier } from '@/lib/domain/types';
+// 결제 시스템 비활성화: 기존 결제 입력·동의·페이앱 연동 import를 보존합니다.
+// import { BuyerPhoneField } from '@/components/ui/BuyerPhoneField';
+// import { PurchaseConsent } from '@/components/ui/PurchaseConsent';
+// import { openPaymentUrl } from '@/lib/payments/browser';
+// import { normalizeBuyerPhone } from '@/lib/payments/phone';
+// import { getPurchasePlan, purchasePlans } from '@/lib/purchases/plans';
 import { ShareSketchbookButton } from './ShareSketchbookButton';
 import { ImageCreationEntry } from './share/ImageCreationEntry';
 
@@ -69,6 +70,8 @@ function ManageImage({ alt, className, onError, onLoad, ...props }: ImageProps) 
 }
 
 export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRank = null, ownerDrawingPath = null, participantCount, participantLimit, drawings, entitlements: initialEntitlements = { watermarkFree: false }, shareThumbnailMode: initialShareThumbnailMode = 'DEFAULT', retentionTier = 'LEGACY', retentionExpiresAt = null, retentionGuaranteedUntil = null }: ManageDashboardProps) {
+  // 결제 시스템 비활성화: 과거 결제 혜택 데이터 호환을 위해 prop 형태만 유지합니다.
+  void initialEntitlements;
   const [retentionReferenceTime] = useState(() => Date.now());
   const retentionExpirationDate = retentionExpiresAt ? new Date(retentionExpiresAt) : null;
   const retentionGuaranteeDate = retentionGuaranteedUntil ? new Date(retentionGuaranteedUntil) : null;
@@ -78,22 +81,25 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   const showRetentionWarning = retentionWarningStartsAt !== null && retentionReferenceTime >= retentionWarningStartsAt;
   const router = useRouter();
   const [limit] = useState(participantLimit);
-  const [entitlements] = useState(initialEntitlements);
   const [message, setMessage] = useState<string | null>(null);
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  /* 결제 시스템 비활성화: 기존 결제 대화상자 상태를 보존합니다.
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [buyerPhone, setBuyerPhone] = useState('');
   const [purchaseConsent, setPurchaseConsent] = useState(false);
+  */
   const [securityOpen, setSecurityOpen] = useState(false);
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [pinHint, setPinHint] = useState('');
   const [securityMessage, setSecurityMessage] = useState<string | null>(null);
   const [isSavingSecurity, setIsSavingSecurity] = useState(false);
+  /* 결제 시스템 비활성화: 기존 결제 처리 상태를 보존합니다.
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<PurchaseProductId>('FRIENDS_10');
+  */
   const [shareThumbnailMode, setShareThumbnailMode] = useState<ShareThumbnailMode>(initialShareThumbnailMode ?? 'DEFAULT');
   const [shareThumbnailMessage, setShareThumbnailMessage] = useState<string | null>(null);
   const [isSavingShareThumbnail, setIsSavingShareThumbnail] = useState(false);
@@ -102,14 +108,18 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   const [isDeletingDrawing, setIsDeletingDrawing] = useState(false);
   const [deleteDrawingError, setDeleteDrawingError] = useState<string | null>(null);
   const manageMainRef = useRef<HTMLElement>(null);
+  /* 결제 시스템 비활성화: 기존 결제 대화상자 참조를 보존합니다.
   const purchaseDialogRef = useRef<HTMLDialogElement>(null);
   const purchaseTriggerRef = useRef<HTMLButtonElement>(null);
+  */
   const securityDialogRef = useRef<HTMLDialogElement>(null);
   const securityTriggerRef = useRef<HTMLButtonElement>(null);
   const deleteDrawingDialogRef = useRef<HTMLDialogElement>(null);
   const deleteDrawingTriggerRef = useRef<HTMLButtonElement | null>(null);
+  /* 결제 시스템 비활성화: 기존 결제 요청 상태 참조를 보존합니다.
   const purchaseRequestIdRef = useRef('');
   const isPurchasingRef = useRef(false);
+  */
   const isSavingSecurityRef = useRef(false);
   const items = drawings.filter((drawing) => drawing.status !== 'DELETED');
   const bestDrawing = items.find((drawing) => (
@@ -118,14 +128,17 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
     && drawing.moderationStatus === 'ACTIVE'
   ));
 
+  /* 결제 시스템 비활성화: 기존 결제 진행 상태 동기화를 보존합니다.
   useEffect(() => {
     isPurchasingRef.current = isPurchasing;
   }, [isPurchasing]);
+  */
 
   useEffect(() => {
     isSavingSecurityRef.current = isSavingSecurity;
   }, [isSavingSecurity]);
 
+  /* 결제 시스템 비활성화: 기존 결제 대화상자의 접근성 제어를 보존합니다.
   useEffect(() => {
     if (!purchaseOpen) return;
     const dialog = purchaseDialogRef.current;
@@ -167,6 +180,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       trigger?.focus();
     };
   }, [purchaseOpen]);
+  */
 
   useEffect(() => {
     if (!securityOpen) return;
@@ -228,6 +242,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
     };
   }, [drawingToDelete]);
 
+  /* 결제 시스템 비활성화: 기존 결제 대화상자 열기 동작을 보존합니다.
   function openPurchaseDialog() {
     purchaseRequestIdRef.current = globalThis.crypto?.randomUUID?.() ?? `purchase_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     setMessage(null);
@@ -235,6 +250,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
     setPurchaseConsent(false);
     setPurchaseOpen(true);
   }
+  */
 
   function openSecurityDialog() {
     setSecurityMessage(null);
@@ -325,6 +341,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
     }
   }
 
+  /* 결제 시스템 비활성화: 기존 페이앱 결제 요청 동작을 보존합니다.
   async function purchase() {
     const plan = getPurchasePlan(selectedProductId);
     if (!plan || !purchaseConsent) return;
@@ -358,6 +375,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       setIsPurchasing(false);
     }
   }
+  */
 
   async function deleteSketchbook() {
     setIsDeleting(true);
@@ -431,7 +449,11 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
       <section className="manage-summary">
         <p>친구 그림 <strong>{participantCount}</strong> / {limit}</p>
         <progress max={limit} value={participantCount} />
-        <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">저장 공간 추가하기</button>
+        <p className="field-hint">50명을 초과하려면 문의해 주세요.</p>
+        {/*
+          결제 시스템 비활성화: 기존 추가 인원 구매 진입점입니다.
+          <button className="button button--secondary" onClick={openPurchaseDialog} ref={purchaseTriggerRef} type="button">저장 공간 추가하기</button>
+        */}
       </section>
       {retentionTier === 'FREE' && retentionExpirationDate ? (
         <section
@@ -572,6 +594,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         ) : <button className="button button--secondary danger-outline" onClick={() => setDeleteArmed(true)} type="button">스케치북 전체 삭제</button>}
       </section>
     </main>
+      {/* 결제 시스템 비활성화: 기존 상품 선택·페이앱 결제 대화상자입니다.
       {purchaseOpen ? (
         <div className="purchase-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !isPurchasing) setPurchaseOpen(false); }}>
           <dialog aria-labelledby="purchase-dialog-title" className="purchase-dialog" onCancel={(event) => { event.preventDefault(); if (!isPurchasing) setPurchaseOpen(false); }} ref={purchaseDialogRef}>
@@ -631,7 +654,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
             </p>
           </dialog>
         </div>
-      ) : null}
+      ) : null} */}
       {securityOpen ? (
           <dialog aria-labelledby="manage-security-title" className="manage-security-modal manage-system-sans" onCancel={(event) => { event.preventDefault(); if (!isSavingSecurity) setSecurityOpen(false); }} ref={securityDialogRef}>
           <form className="manage-security-form" onSubmit={updateSecurity}>

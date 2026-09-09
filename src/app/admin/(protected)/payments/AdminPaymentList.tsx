@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 관리자 결제 내역 표시·취소 UI입니다.
 import Link from 'next/link';
 import { useId } from 'react';
 
@@ -157,3 +158,4 @@ export function AdminPaymentList({
     </section>
   );
 }
+*/

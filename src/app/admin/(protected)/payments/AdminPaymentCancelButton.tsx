@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 관리자 페이앱 전체 취소 UI입니다.
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -41,3 +42,4 @@ export function AdminPaymentCancelButton({ orderId }: { orderId: string }) {
     </div>
   );
 }
+*/

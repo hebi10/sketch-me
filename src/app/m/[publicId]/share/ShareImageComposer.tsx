@@ -7,7 +7,7 @@ import { BestImagePreview } from './BestImagePreview';
 import { DrawingPicker } from './DrawingPicker';
 import { ShareImageMaker } from './ShareImageMaker';
 import { SingleImagePreview } from './SingleImagePreview';
-import { WatermarkPurchaseButton } from './WatermarkPurchaseButton';
+// 결제 시스템 비활성화: 기존 워터마크 결제 컴포넌트는 복구를 위해 파일에 주석으로 보관합니다.
 import {
   SINGLE_IMAGE_DEFAULT_HEADING,
   type ShareDrawingOption,
@@ -47,7 +47,9 @@ export function ShareImageComposer({
   const [savingHeading, setSavingHeading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [themeId, setThemeId] = useState<(typeof storyThemes)[number]['id']>(storyThemes[0].id);
-  const [watermarkFree, setWatermarkFree] = useState(initialWatermarkFree);
+  // 기존 유료 권한은 더 이상 공유 이미지 출력에 적용하지 않습니다.
+  void initialWatermarkFree;
+  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
   const theme = getStoryTheme(themeId);
   const selectedDrawing = drawings.find((drawing) => drawing.id === selectedId) ?? null;
   const fallbackHeading = mode === 'single' ? SINGLE_IMAGE_DEFAULT_HEADING : STORY_SHARED_HEADING;
@@ -150,7 +152,7 @@ export function ShareImageComposer({
           heading={previewHeading}
           name={name}
           themeBackgroundImage={theme.backgroundImage}
-          watermarkFree={watermarkFree}
+          watermarkFree={!watermarkEnabled}
         />
       ) : (
         <BestImagePreview
@@ -158,17 +160,24 @@ export function ShareImageComposer({
           heading={previewHeading}
           publicUrl={publicUrl}
           themeBackgroundImage={theme.backgroundImage}
-          watermarkFree={watermarkFree}
+          watermarkFree={!watermarkEnabled}
         />
       )}
       <p className="story-output-meta">
         {mode === 'single' ? '1080 × 1080 · 1:1 공유 이미지' : '1080 × 1440 · 3:4 공유 이미지'}
       </p>
-      {watermarkFree ? (
-        <p className="watermark-applied" role="status">워터마크 제거가 적용되어 있어요.</p>
-      ) : (
+      <label className="watermark-toggle">
+        <input
+          checked={watermarkEnabled}
+          onChange={(event) => setWatermarkEnabled(event.target.checked)}
+          type="checkbox"
+        />
+        워터마크 넣기
+      </label>
+      {/*
+        결제 시스템 비활성화: 기존 유료 워터마크 제거 진입점입니다.
         <WatermarkPurchaseButton onPurchased={() => setWatermarkFree(true)} publicId={publicId} />
-      )}
+      */}
       <ShareImageMaker
         backgroundImage={theme.backgroundImage}
         drawing={selectedDrawing}
@@ -177,7 +186,7 @@ export function ShareImageComposer({
         mode={mode}
         name={name}
         publicUrl={publicUrl}
-        watermarkFree={watermarkFree}
+        watermarkFree={!watermarkEnabled}
       />
     </>
   );

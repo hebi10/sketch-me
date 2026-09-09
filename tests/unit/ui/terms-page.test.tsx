@@ -5,21 +5,23 @@ import TermsPage, { metadata } from '@/app/terms/page';
 
 describe('TermsPage', () => {
   it('루트 제목 템플릿에 서비스명을 한 번만 붙일 수 있도록 페이지 제목만 제공한다', () => {
-    expect(metadata.title).toBe('서비스 이용 및 결제 안내');
+    expect(metadata.title).toBe('서비스 이용 안내');
   });
 
-  it('추가 인원과 1년 서비스 보장 조건을 안내한다', () => {
+  it('무료 50명 이용 범위와 문의 방법을 안내한다', () => {
     render(<TermsPage />);
 
-    expect(screen.getByRole('heading', { name: '서비스 이용 및 결제 안내' })).toBeVisible();
-    expect(screen.getByText(/구매한 추가 인원과 워터마크 제거 권한은 서비스 운영 중 만료되지 않습니다/)).toBeVisible();
-    expect(screen.getByText(/구매일로부터 최소 1년간 서비스 이용을 보장/)).toBeVisible();
+    expect(screen.getByRole('heading', { name: '서비스 이용 안내' })).toBeVisible();
+    expect(screen.getByText('스케치북 하나당 친구 그림 50명까지 무료로 받을 수 있습니다.')).toBeVisible();
+    expect(screen.getByText(/50명을 초과하는 참여가 필요하면 문의/)).toBeVisible();
     expect(screen.getByText(/무료 스케치북은 생성일로부터 6개월간 보관/)).toBeVisible();
     expect(screen.getByText(/자동 삭제 예정일은 관리 화면에서 안내/)).toBeVisible();
-    expect(screen.getByText(/1년 안에 운영자 사유로 서비스를 종료하면 해당 구매 금액을 전액 환불/)).toBeVisible();
+    expect(screen.getAllByRole('link', { name: 'asdlkj0104@gmail.com' }).some(
+      (link) => link.getAttribute('href') === 'mailto:asdlkj0104@gmail.com',
+    )).toBe(true);
   });
 
-  it('서비스 종료 공지와 환불 기한, 결제 완료 혜택을 안내한다', () => {
+  it.skip('결제 시스템 비활성화: 서비스 종료 공지와 환불 기한, 결제 완료 혜택을 안내한다', () => {
     render(<TermsPage />);
 
     expect(screen.getByText(/종료일 최소 30일 전/)).toBeVisible();
@@ -32,7 +34,7 @@ describe('TermsPage', () => {
     expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
   });
 
-  it('청약철회와 디지털 콘텐츠·미성년자 보호 기준을 구체적으로 안내한다', () => {
+  it.skip('결제 시스템 비활성화: 청약철회와 디지털 콘텐츠·미성년자 보호 기준을 구체적으로 안내한다', () => {
     render(<TermsPage />);
 
     expect(screen.getByText(/계약내용에 관한 서면을 받은 날.*7일 이내/)).toBeVisible();
@@ -44,7 +46,7 @@ describe('TermsPage', () => {
       .toHaveAttribute('href', expect.stringContaining('mailto:asdlkj0104@gmail.com'));
   });
 
-  it('현재 인원 추가 가격과 워터마크 제거 상품을 정확히 안내한다', () => {
+  it.skip('결제 시스템 비활성화: 현재 인원 추가 가격과 워터마크 제거 상품을 정확히 안내한다', () => {
     render(<TermsPage />);
 
     expect(screen.getByText('스케치북 하나당 친구 그림 10개까지 무료로 받을 수 있습니다.')).toBeVisible();
@@ -54,11 +56,11 @@ describe('TermsPage', () => {
     expect(screen.getByText('결과 이미지 워터마크 제거 · 1,000원')).toBeVisible();
   });
 
-  it('랜딩에서 개인정보와 이용·결제 정책으로 이동할 수 있다', () => {
+  it('랜딩에서 개인정보와 서비스 이용 정책으로 이동할 수 있다', () => {
     render(<LandingPage />);
 
     expect(screen.getAllByRole('link', { name: '개인정보 처리방침' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: '서비스 이용 및 결제 안내' }).some((link) => link.getAttribute('href') === '/terms')).toBe(true);
+    expect(screen.getAllByRole('link', { name: '서비스 이용 안내' }).some((link) => link.getAttribute('href') === '/terms')).toBe(true);
   });
 
   it('사업자등록증으로 확인한 판매자 정보를 공개하고 불필요한 개인정보는 제외한다', () => {

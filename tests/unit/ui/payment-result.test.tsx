@@ -1,9 +1,14 @@
+import { describe } from 'vitest';
+
+describe.skip('결제 시스템 비활성화: 기존 결제 결과 화면 테스트를 보존합니다.', () => {});
+
+/*
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PaymentResult } from '@/app/m/[publicId]/payment/result/PaymentResult';
 
-describe('PaymentResult', () => {
+describe.skip('결제 시스템 비활성화: PaymentResult', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('서버 주문이 완료된 경우에만 완료 결과를 표시한다', async () => {
@@ -82,3 +87,4 @@ describe('PaymentResult', () => {
     expect(screen.getByText(/혜택은 적용되지 않았습니다/)).toBeVisible();
   });
 });
+*/

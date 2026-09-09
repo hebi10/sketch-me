@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 
+/*
+ * 결제 시스템 비활성화: 기존 페이앱 결제 주문 생성·결제창 연결 구현입니다.
+ * 무료 운영 정책을 변경할 때까지 보존합니다.
+ *
 import {
   normalizeBuyerPhone,
   PayAppConfigurationError,
@@ -101,4 +105,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     }
     return NextResponse.json({ message: '결제창을 열지 못했습니다.' }, { status: 502 });
   }
+}
+*/
+
+export async function POST(
+  _request?: Request,
+  _context?: { params: Promise<{ publicId: string }> },
+) {
+  void _request;
+  void _context;
+  return NextResponse.json({ message: '결제 기능을 운영하지 않습니다.' }, { status: 410 });
 }

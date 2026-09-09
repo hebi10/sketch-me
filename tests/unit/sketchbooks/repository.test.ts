@@ -95,6 +95,34 @@ describe('공개 그림 저장소 운영자 차단', () => {
     );
   });
 
+  it('기존 무료 스케치북도 참여 인원을 50명까지 받도록 한도를 복원한다', async () => {
+    const get = vi.fn().mockResolvedValue({
+      docs: [{ data: () => ({ ...sketchbook, participantLimit: 10, retentionTier: 'FREE' }), id: sketchbook.id }],
+      empty: false,
+    });
+    const limit = vi.fn(() => ({ get }));
+    const where = vi.fn(() => ({ limit }));
+    getAdminFirestore.mockReturnValue({ collection: vi.fn(() => ({ where })) });
+
+    await expect(findSketchbookByPublicId('public-1')).resolves.toEqual(
+      expect.objectContaining({ participantLimit: 50 }),
+    );
+  });
+
+  it('보관 등급이 없는 기존 10명 스케치북도 참여 인원을 50명으로 복원한다', async () => {
+    const get = vi.fn().mockResolvedValue({
+      docs: [{ data: () => ({ ...sketchbook, participantLimit: 10 }), id: sketchbook.id }],
+      empty: false,
+    });
+    const limit = vi.fn(() => ({ get }));
+    const where = vi.fn(() => ({ limit }));
+    getAdminFirestore.mockReturnValue({ collection: vi.fn(() => ({ where })) });
+
+    await expect(findSketchbookByPublicId('public-1')).resolves.toEqual(
+      expect.objectContaining({ participantLimit: 50 }),
+    );
+  });
+
   it('한 장 이미지 제목이 없는 기존 스케치북은 기본 제목으로 복원한다', async () => {
     const get = vi.fn().mockResolvedValue({
       docs: [{ data: () => sketchbook, id: sketchbook.id }],
@@ -196,6 +224,44 @@ describe('공개 그림 저장소 운영자 차단', () => {
     await expect(saveDrawingWithinLimit(sketchbook, drawing, 'source-hash')).rejects.toThrow();
     expect(transaction.set).not.toHaveBeenCalled();
     expect(transaction.update).not.toHaveBeenCalled();
+  });
+
+  it('기존 무료 스케치북에 그림을 저장할 때 50명 한도를 함께 반영한다', async () => {
+    const sketchbookReference = { id: 'book-1', kind: 'sketchbook' };
+    const drawingReference = { id: 'drawing-1', kind: 'drawing' };
+    const submissionSourceReference = { id: 'source-hash', kind: 'submission-source' };
+    const transaction = {
+      get: vi.fn(async (reference: { kind: string }) => reference.kind === 'sketchbook'
+        ? {
+            data: () => ({
+              moderationStatus: 'ACTIVE',
+              participantCount: 10,
+              participantLimit: 10,
+              status: 'PUBLIC',
+            }),
+            exists: true,
+          }
+        : { data: () => undefined, exists: false }),
+      set: vi.fn(),
+      update: vi.fn(),
+    };
+    getAdminFirestore.mockReturnValue({
+      collection: vi.fn(() => ({
+        doc: vi.fn(() => ({
+          ...sketchbookReference,
+          collection: vi.fn((name: string) => name === 'drawings'
+            ? { doc: vi.fn(() => drawingReference) }
+            : { doc: vi.fn(() => submissionSourceReference) }),
+        })),
+      })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
+    });
+
+    await expect(saveDrawingWithinLimit(sketchbook, drawing, 'source-hash')).resolves.toEqual(drawing);
+    expect(transaction.update).toHaveBeenCalledWith(
+      expect.objectContaining(sketchbookReference),
+      expect.objectContaining({ participantCount: 11, participantLimit: 50 }),
+    );
   });
 
   it('새 친구 그림은 제출 트랜잭션에서 가장 낮은 빈 BEST 순위를 자동으로 받는다', async () => {

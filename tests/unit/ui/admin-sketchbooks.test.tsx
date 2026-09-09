@@ -273,8 +273,8 @@ describe('AdminSketchbookDetailPage 데이터 경계', () => {
     expect(screen.getByText('13 / 70')).toBeVisible();
     expect(screen.getByText('생성자 그림 있음')).toBeVisible();
     expect(screen.getByText('친구')).toBeVisible();
-    expect(screen.getByText('2건')).toBeVisible();
-    expect(screen.getByText('4,890원')).toBeVisible();
+    expect(screen.queryByText('2건')).not.toBeInTheDocument();
+    expect(screen.queryByText('4,890원')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '서비스에서 비활성화' })).toBeVisible();
     expect(screen.getByRole('button', { name: '스케치북 완전 삭제' })).toBeVisible();
     expect(screen.getByRole('link', { name: '공개 페이지 보기' })).toHaveAttribute('href', '/s/public-1');

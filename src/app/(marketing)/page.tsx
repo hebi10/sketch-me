@@ -13,7 +13,7 @@ export default function LandingPage() {
         <HeaderMenu label="빠른 메뉴">
           <Link aria-label="스케치북 만들기" href="/create" title="스케치북 만들기">제작</Link>
           <Link aria-label="개인정보 처리방침" href="/privacy" title="개인정보 처리방침">개인정보</Link>
-          <Link aria-label="서비스 이용 및 결제 안내" href="/terms" title="서비스 이용 및 결제 안내">이용안내</Link>
+          <Link aria-label="서비스 이용 안내" href="/terms" title="서비스 이용 안내">이용안내</Link>
         </HeaderMenu>
       </header>
 
@@ -43,7 +43,7 @@ export default function LandingPage() {
       <footer className="marketing-footer">
         <nav aria-label="정책 안내" className="marketing-footer-links">
           <Link href="/privacy">개인정보 처리방침</Link>
-          <Link href="/terms">서비스 이용 및 결제 안내</Link>
+          <Link href="/terms">서비스 이용 안내</Link>
         </nav>
         <BusinessDisclosure compact />
       </footer>

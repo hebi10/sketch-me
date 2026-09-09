@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 페이앱 결제 결과·영수증 UI입니다.
 'use client';
 
 import Link from 'next/link';
@@ -146,3 +147,4 @@ export function PaymentResult({ orderId, publicId }: PaymentResultProps) {
     </section>
   );
 }
+*/

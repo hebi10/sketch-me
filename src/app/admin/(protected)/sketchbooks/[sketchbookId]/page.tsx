@@ -81,6 +81,7 @@ export default async function AdminSketchbookDetailPage({
         </dl>
       </section>
 
+      {/* 결제 시스템 비활성화: 기존 스케치북별 결제 요약을 보존합니다.
       <section aria-labelledby="admin-sketchbook-purchases" className="admin-detail-section">
         <div className="admin-detail-section-heading">
           <h2 id="admin-sketchbook-purchases">결제 요약</h2>
@@ -90,7 +91,7 @@ export default async function AdminSketchbookDetailPage({
           <div><dt>결제 건수</dt><dd>{numberFormatter.format(sketchbook.purchaseSummary.count)}건</dd></div>
           <div><dt>누적 금액</dt><dd>{numberFormatter.format(sketchbook.purchaseSummary.amount)}원</dd></div>
         </dl>
-      </section>
+      </section> */}
 
       <section aria-labelledby="admin-sketchbook-drawings" className="admin-detail-section">
         <div className="admin-detail-section-heading">

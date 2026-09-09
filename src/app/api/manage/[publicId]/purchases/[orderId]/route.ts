@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+/* 결제 시스템 비활성화: 기존 결제 주문 조회 API를 보존합니다.
 import { getManagedPurchase } from '@/lib/purchases/orders';
 import { getManagedSketchbook } from '@/lib/sketchbooks/management';
 
@@ -28,4 +29,14 @@ export async function GET(
     productType: purchase.productType,
     providerPayType: purchase.providerPayType ?? null,
   });
+}
+*/
+
+export async function GET(
+  _request?: Request,
+  _context?: { params: Promise<{ orderId: string; publicId: string }> },
+) {
+  void _request;
+  void _context;
+  return NextResponse.json({ message: '결제 기능을 운영하지 않습니다.' }, { status: 410 });
 }

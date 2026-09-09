@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 주문 생성·완료·취소 처리 코드를 보존합니다.
 import { randomUUID } from 'node:crypto';
 
 import type { Purchase, Sketchbook } from '@/lib/domain/types';
@@ -319,3 +320,6 @@ export async function markPurchaseCancelRequested(orderId: string): Promise<void
     transaction.update(document.ref, { cancelRequestedAt: new Date(), updatedAt: new Date() });
   });
 }
+*/
+
+export {};

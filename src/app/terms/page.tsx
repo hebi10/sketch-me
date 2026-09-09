@@ -5,8 +5,8 @@ import { BrandWordmark } from '@/components/ui/BrandWordmark';
 import { BusinessDisclosure } from '@/components/ui/BusinessDisclosure';
 
 export const metadata: Metadata = {
-  title: '서비스 이용 및 결제 안내',
-  description: '스캐치북의 서비스 이용, 결제, 유료 상품 보장 및 서비스 종료 정책입니다.',
+  title: '서비스 이용 안내',
+  description: '스캐치북의 무료 이용 범위와 서비스 정책을 안내합니다.',
 };
 
 export default function TermsPage() {
@@ -20,16 +20,14 @@ export default function TermsPage() {
       <article className="legal-document">
         <header className="legal-intro">
           <p className="eyebrow">서비스 정책</p>
-          <h1>서비스 이용 및 결제 안내</h1>
-          <p>스캐치북을 안심하고 이용할 수 있도록 무료 이용 범위와 결제·서비스 종료 기준을 안내합니다.</p>
+          <h1>서비스 이용 안내</h1>
+          <p>스캐치북을 안심하고 이용할 수 있도록 무료 이용 범위와 서비스 정책을 안내합니다.</p>
           <p className="legal-effective-date">시행일: 2026년 9월 4일</p>
         </header>
 
         <nav aria-label="서비스 정책 목차" className="legal-toc">
           <a href="#service">서비스 이용</a>
-          <a href="#payment">결제 안내</a>
-          <a href="#guarantee">이용 보장</a>
-          <a href="#withdrawal">청약철회·환불</a>
+          <a href="#contact">문의</a>
           <a href="#seller">판매자 정보</a>
         </nav>
 
@@ -37,7 +35,8 @@ export default function TermsPage() {
           <h2>1. 서비스 이용</h2>
           <p>스캐치북은 공개 링크를 받은 친구가 그림을 남기고, 스케치북 소유자가 그 결과를 관리하는 참여형 서비스입니다.</p>
           <ul>
-            <li>스케치북 하나당 친구 그림 10개까지 무료로 받을 수 있습니다.</li>
+            <li>스케치북 하나당 친구 그림 50명까지 무료로 받을 수 있습니다.</li>
+            <li>50명을 초과하는 참여가 필요하면 문의해 주세요.</li>
             <li>공개 링크를 아는 사람은 별도 로그인 없이 친구 페이지를 열 수 있으므로 링크 관리에 주의해 주세요.</li>
             <li>소유자는 관리 화면에서 그림을 숨기거나 삭제하고 BEST 그림을 선택할 수 있습니다.</li>
             <li>무료 스케치북은 생성일로부터 6개월간 보관되며 보관기간이 지나면 그림과 함께 자동 삭제됩니다.</li>
@@ -45,6 +44,7 @@ export default function TermsPage() {
           </ul>
         </section>
 
+        {/* 결제 시스템 비활성화: 기존 유료 상품·페이앱·환불 정책입니다.
         <section id="payment">
           <h2>2. 결제 상품</h2>
           <ul>
@@ -56,13 +56,22 @@ export default function TermsPage() {
           <p>결제는 주식회사 유디아이디의 결제대행 서비스인 페이앱을 통해 처리됩니다. 결제 전 페이앱 화면에서 상품명, 금액, 결제수단을 확인해 주세요.</p>
           <p><strong>페이앱의 검증된 결제 완료 통보를 서버가 확인한 뒤 선택한 상품의 혜택이 적용됩니다.</strong> 통보 처리에 짧은 시간이 걸릴 수 있으며, 결제 결과 화면과 관리 화면에서 상태를 확인할 수 있습니다.</p>
         </section>
+        */}
 
+        <section id="contact">
+          <h2>2. 문의</h2>
+          <p>무료 참여 인원 50명을 초과해 이용하려면 <a href="mailto:asdlkj0104@gmail.com">asdlkj0104@gmail.com</a>으로 문의해 주세요.</p>
+        </section>
+
+        {/* 결제 시스템 비활성화: 기존 구매 혜택 보장 정책입니다.
         <section id="guarantee">
           <h2>3. 구매 혜택과 이용 보장</h2>
           <p><strong>구매한 추가 인원과 워터마크 제거 권한은 서비스 운영 중 만료되지 않습니다.</strong> 구매일로부터 최소 1년간 서비스 이용을 보장합니다.</p>
           <p>추가 구매가 있으면 가장 최근 구매일을 기준으로 최소 보장 기간을 다시 계산합니다. 이미 받은 그림은 사용자가 직접 삭제하거나 정책 위반으로 제한되지 않는 한 서비스 운영 중 유지됩니다.</p>
         </section>
+        */}
 
+        {/* 결제 시스템 비활성화: 기존 청약철회·환불 정책입니다.
         <section id="withdrawal">
           <h2>4. 청약철회와 환불</h2>
           <p>소비자는 계약내용에 관한 서면을 받은 날부터 7일 이내에 청약철회를 요청할 수 있습니다. 서면을 받은 때보다 혜택 제공이 늦게 시작된 경우에는 제공이 시작된 날부터 7일 이내에 요청할 수 있습니다.</p>
@@ -87,6 +96,7 @@ export default function TermsPage() {
           </ul>
           <p>이용자가 직접 스케치북을 삭제했거나 이용정책을 위반해 제한된 경우에는 위 종료 보장이 적용되지 않을 수 있습니다. 관련 법령이 더 유리한 보호 기준을 정한 경우에는 그 기준을 우선 적용합니다.</p>
         </section>
+        */}
 
         <section id="content">
           <h2>5. 이용자 콘텐츠와 운영 조치</h2>
@@ -102,7 +112,7 @@ export default function TermsPage() {
         <section id="changes">
           <h2>7. 정책 변경과 문의</h2>
           <p>정책을 변경하면 시행 10일 전에 안내하고, 이용자에게 불리한 중요한 변경은 시행 30일 전에 안내합니다. 법령상 즉시 반영이 필요한 경우에는 적용 후 지체 없이 알릴 수 있습니다.</p>
-          <p>서비스 및 결제 정책 문의: <a href="mailto:asdlkj0104@gmail.com">asdlkj0104@gmail.com</a></p>
+          <p>서비스 정책 문의: <a href="mailto:asdlkj0104@gmail.com">asdlkj0104@gmail.com</a></p>
         </section>
 
         <nav aria-label="관련 페이지" className="legal-page-links">

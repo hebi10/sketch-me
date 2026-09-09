@@ -89,7 +89,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(notice).toHaveTextContent('서비스 운영 중 계속 보관');
   });
 
-  it('기존 비활성 설정이 남아 있어도 구매 행동을 제공한다', () => {
+  it('무료 참여 인원 한도를 초과하면 문의하도록 안내한다', () => {
     getPublicPaymentMode.mockReturnValue('DISABLED');
 
     render(
@@ -97,14 +97,14 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
         drawings={[]}
         moderationStatus="ACTIVE"
         name="내 이름"
-        participantCount={5}
-        participantLimit={20}
+        participantCount={50}
+        participantLimit={50}
         publicId="payment-disabled"
       />,
     );
 
-    expect(screen.getByRole('button', { name: '저장 공간 추가하기' })).toBeEnabled();
-    expect(screen.queryByRole('status', { name: '결제 기능 준비 중' })).not.toBeInTheDocument();
+    expect(screen.getByText('50명을 초과하려면 문의해 주세요.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: '저장 공간 추가하기' })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: '상품 선택하기' })).not.toBeInTheDocument();
   });
 
@@ -479,6 +479,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     );
   });
 
+  /* 결제 시스템 비활성화: 기존 페이앱 구매 흐름 테스트입니다.
   it('휴대전화번호로 결제 요청 후 페이앱 결제창으로 이동한다', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({ orderId: 'order-public-random', payUrl: 'https://payapp.kr/pay/2000' }),
@@ -594,6 +595,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(screen.getByRole('main')).not.toHaveAttribute('inert');
     expect(trigger).toHaveFocus();
   });
+  */
 
   it('관리용 비밀번호 변경을 네이티브 dialog로 열고 Escape 뒤 실행 버튼에 포커스를 되돌린다', () => {
     render(

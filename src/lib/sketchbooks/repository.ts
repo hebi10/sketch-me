@@ -1,7 +1,9 @@
 import type { Drawing, Sketchbook } from '@/lib/domain/types';
 import { getAdminFirestore } from '@/lib/firebase/admin';
-import type { PurchasePlan } from '@/lib/purchases/plans';
+// 결제 시스템 비활성화: 기존 모의 구매 데이터 타입 import를 보존합니다.
+// import type { PurchasePlan } from '@/lib/purchases/plans';
 import { preservePurchaseRecordsBeforeSketchbookDeletion } from '@/lib/purchases/legal-retention';
+import { FREE_PARTICIPANT_LIMIT } from './capacity';
 import { SINGLE_IMAGE_DEFAULT_HEADING } from '@/lib/share/share-image';
 import {
   nextManagePinAttempt,
@@ -15,7 +17,8 @@ import {
   type PinManageSession,
 } from './manage-session';
 import { STORY_SHARED_HEADING } from '@/lib/share/story-layout';
-import { paidRetentionUpdate } from './retention';
+// 결제 시스템 비활성화: 기존 유료 보관 기간 갱신 import를 보존합니다.
+// import { paidRetentionUpdate } from './retention';
 
 const collectionName = 'sketchbooks';
 const adminDeletionJobCollectionName = 'adminSketchbookDeletionJobs';
@@ -100,6 +103,11 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
   const entitlements = data.entitlements && typeof data.entitlements === 'object'
     ? data.entitlements as Record<string, unknown>
     : {};
+  const retentionTier = data.retentionTier === 'FREE' || data.retentionTier === 'PAID'
+    ? data.retentionTier
+    : 'LEGACY';
+  const storedParticipantLimit = Number(data.participantLimit);
+  const participantLimit = Math.max(storedParticipantLimit, FREE_PARTICIPANT_LIMIT);
   return {
     id,
     publicId: String(data.publicId),
@@ -118,15 +126,13 @@ function toSketchbook(id: string, data: Record<string, unknown>): Sketchbook {
       : null) as Sketchbook['ownerBestRank'],
     ownerDrawingPath: data.ownerDrawingPath ? String(data.ownerDrawingPath) : null,
     entitlements: { watermarkFree: entitlements.watermarkFree === true },
-    participantLimit: Number(data.participantLimit),
+    participantLimit,
     participantCount: Number(data.participantCount),
     retentionExpiresAt: data.retentionExpiresAt ? toDate(data.retentionExpiresAt) : null,
     retentionGuaranteedUntil: data.retentionGuaranteedUntil
       ? toDate(data.retentionGuaranteedUntil)
       : null,
-    retentionTier: data.retentionTier === 'FREE' || data.retentionTier === 'PAID'
-      ? data.retentionTier
-      : 'LEGACY',
+    retentionTier,
     status: data.status as Sketchbook['status'],
     moderationStatus: data.moderationStatus === 'BLOCKED' ? 'BLOCKED' : 'ACTIVE',
     moderatedAt: data.moderatedAt ? toDate(data.moderatedAt) : null,
@@ -324,7 +330,9 @@ export async function saveDrawingWithinLimit(
       throw new Error('스캐치북을 찾을 수 없거나 공개되어 있지 않습니다.');
     }
 
-    if (Number(currentData.participantCount) >= Number(currentData.participantLimit)) {
+    const storedParticipantLimit = Number(currentData.participantLimit);
+    const participantLimit = Math.max(storedParticipantLimit, FREE_PARTICIPANT_LIMIT);
+    if (Number(currentData.participantCount) >= participantLimit) {
       throw new Error('친구 그림을 더 받을 수 있는 인원이 모두 찼습니다.');
     }
 
@@ -359,6 +367,7 @@ export async function saveDrawingWithinLimit(
     }, { merge: true });
     transaction.update(sketchbookReference, {
       participantCount: Number(currentData.participantCount) + 1,
+      ...(participantLimit !== storedParticipantLimit ? { participantLimit } : {}),
       updatedAt,
     });
   });
@@ -561,6 +570,7 @@ export async function clearOwnerBestDrawing(sketchbookId: string) {
   });
 }
 
+/* 결제 시스템 비활성화: 기존 모의 구매 처리 코드를 보존합니다.
 export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan, requestId: string) {
   const firestore = getAdminFirestore();
   const reference = firestore.collection(collectionName).doc(sketchbook.id);
@@ -609,6 +619,7 @@ export async function addMockPurchase(sketchbook: Sketchbook, plan: PurchasePlan
     return { entitlements, participantLimit };
   });
 }
+*/
 
 export async function deleteSketchbookPermanently(sketchbookId: string) {
   const firestore = getAdminFirestore();

@@ -1,3 +1,4 @@
+/* 결제 시스템 비활성화: 기존 페이앱 API 연동 코드를 보존합니다.
 import { timingSafeEqual } from 'node:crypto';
 
 import { normalizeBuyerPhone } from '@/lib/payments/phone';
@@ -244,3 +245,6 @@ export async function cancelPayAppPayment(
     throw new PayAppResponseError('결제 취소 요청을 처리하지 못했습니다.');
   }
 }
+*/
+
+export {};

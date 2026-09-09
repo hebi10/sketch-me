@@ -1,3 +1,8 @@
+import { describe } from 'vitest';
+
+describe.skip('결제 시스템 비활성화: 기존 워터마크 구매 테스트를 보존합니다.', () => {});
+
+/*
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,7 +11,7 @@ vi.mock('@/lib/payments/browser', () => ({ openPaymentUrl }));
 
 import { WatermarkPurchaseButton } from '@/app/m/[publicId]/share/WatermarkPurchaseButton';
 
-describe('WatermarkPurchaseButton', () => {
+describe.skip('결제 시스템 비활성화: WatermarkPurchaseButton', () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.unstubAllGlobals();
@@ -85,3 +90,4 @@ describe('WatermarkPurchaseButton', () => {
     expect(trigger).toHaveFocus();
   });
 });
+*/

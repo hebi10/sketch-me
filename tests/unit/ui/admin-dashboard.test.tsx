@@ -32,7 +32,7 @@ beforeEach(() => {
 });
 
 describe('AdminDashboard', () => {
-  it('운영에 필요한 여섯 개 통계와 결제 안내를 표시한다', () => {
+  it('무료 운영에 필요한 네 개 통계를 표시한다', () => {
     render(<AdminDashboard stats={stats} />);
 
     expect(screen.getByText('전체 스케치북')).toBeVisible();
@@ -43,20 +43,18 @@ describe('AdminDashboard', () => {
     expect(screen.getByText('9,876')).toBeVisible();
     expect(screen.getByText('오늘 제출')).toBeVisible();
     expect(screen.getByText('18')).toBeVisible();
-    expect(screen.getByText('결제 건수')).toBeVisible();
-    expect(screen.getByText('3건')).toBeVisible();
-    expect(screen.getByText('결제 누적')).toBeVisible();
-    expect(screen.getByText('12,870원')).toBeVisible();
-    expect(screen.getByText('결제 통계는 성공 건만 포함합니다.')).toBeVisible();
+    expect(screen.queryByText('결제 건수')).not.toBeInTheDocument();
+    expect(screen.queryByText('결제 누적')).not.toBeInTheDocument();
+    expect(screen.queryByText('결제 통계는 성공 건만 포함합니다.')).not.toBeInTheDocument();
     expect(screen.queryByText(/모의 결제/)).not.toBeInTheDocument();
   });
 
-  it('세 관리 화면으로 바로 이동할 수 있다', () => {
+  it('스케치북과 그림 관리 화면으로 바로 이동할 수 있다', () => {
     render(<AdminDashboard stats={stats} />);
 
     expect(screen.getByRole('link', { name: '스케치북 관리' })).toHaveAttribute('href', '/admin/sketchbooks');
     expect(screen.getByRole('link', { name: '그림 관리' })).toHaveAttribute('href', '/admin/drawings');
-    expect(screen.getByRole('link', { name: '결제 내역' })).toHaveAttribute('href', '/admin/payments');
+    expect(screen.queryByRole('link', { name: '결제 내역' })).not.toBeInTheDocument();
   });
 });
 
@@ -76,7 +74,7 @@ describe('AdminDashboardPage 데이터 경계', () => {
     expect(getCachedAdminStats).toHaveBeenCalledTimes(1);
     expect(getRequiredAdminIdentity.mock.invocationCallOrder[0])
       .toBeLessThan(getCachedAdminStats.mock.invocationCallOrder[0]);
-    expect(screen.getByText('12,870원')).toBeVisible();
+    expect(screen.getByText('1,234')).toBeVisible();
   });
 
   it('인증 후 통계 조회 오류를 페이지 오류 경계로 전달한다', async () => {
