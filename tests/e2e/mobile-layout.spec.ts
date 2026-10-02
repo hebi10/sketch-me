@@ -44,6 +44,23 @@ test('핵심 진입 화면이 모바일 뷰포트에서 넘치지 않는다', as
   }
 });
 
+test('대체 글꼴에서도 생성 입력창과 그림판 도구가 좁은 화면 안에 남는다', async ({ page }) => {
+  await page.setViewportSize({ width: 280, height: 780 });
+  await page.goto('/create');
+  await page.addStyleTag({ content: ':root { --font-handwriting: Arial !important; }' });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(280);
+
+  await page.setViewportSize({ width: 320, height: 780 });
+  await page.addStyleTag({ content: 'html { font-size: 160%; }' });
+  await page.getByRole('button', { name: '그림 그리기' }).click();
+  const canvas = await page.getByLabel('내 모습을 그리는 캔버스').boundingBox();
+  const tools = page.getByRole('button', { name: '그리기 도구 열기' });
+  const toolsBounds = await tools.boundingBox();
+  expect(toolsBounds!.y).toBeGreaterThanOrEqual(canvas!.y + canvas!.height);
+  await tools.click();
+  await expect(page.getByRole('button', { name: '가이드', exact: true })).toBeVisible();
+});
+
 test('이미지 제작 유형과 두 편집 화면이 모바일 너비에서 넘치지 않는다', async ({ page }) => {
   const createResponse = await page.request.post('/api/sketchbooks', {
     data: {
