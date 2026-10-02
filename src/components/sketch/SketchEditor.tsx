@@ -64,6 +64,10 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const stageRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<HTMLElement>(null);
     const fullscreenEntryRef = useRef<HTMLButtonElement>(null);
+    const importInputRef = useRef<HTMLInputElement>(null);
+    const lastEmittedDrawingRef = useRef<string | null>(null);
+    const imageLoadVersionRef = useRef(0);
+    const editingStartRef = useRef<{ draft: string | null; history: CanvasHistory | null; pixels: ImageData | null }>({ draft: null, history: null, pixels: null });
     const fullscreenRestoreFocusRef = useRef(false);
     const fullscreenConfirmRef = useRef<HTMLButtonElement>(null);
     const drawingRef = useRef(false);
@@ -81,6 +85,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const [penOpacity, setPenOpacity] = useState(100);
     const [eraser, setEraser] = useState(false);
     const [history, setHistory] = useState<CanvasHistory | null>(null);
+    const [isRestoring, setIsRestoring] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [controlsOpen, setControlsOpen] = useState(false);
     const [loupeEnabled, setLoupeEnabled] = useState(true);
@@ -104,6 +109,11 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     const context = useCallback(() => {
       return canvasRef.current?.getContext('2d', { willReadFrequently: true }) ?? null;
     }, []);
+
+    const publishDrawing = useCallback((dataUrl: string | null) => {
+      lastEmittedDrawingRef.current = dataUrl;
+      onDrawingChange?.(dataUrl);
+    }, [onDrawingChange]);
 
     function canvasPoint(event: React.PointerEvent<HTMLCanvasElement>) {
       const canvas = canvasRef.current;
@@ -179,8 +189,11 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     function snapshot() {
       const canvas = canvasRef.current;
       if (!canvas) return;
+      imageLoadVersionRef.current += 1;
+      setIsRestoring(false);
       const next = canvas.toDataURL('image/png');
       setHistory((current) => current ? pushSnapshot(current, next) : createCanvasHistory(next));
+      publishDrawing(currentDrawingHasContent() ? next : null);
     }
 
     const currentDrawingHasContent = useCallback(() => {
@@ -196,14 +209,20 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
 
     const requestExit = useCallback(() => {
       if (currentDrawingHasContent() && !window.confirm('그림을 그만두면 현재 작업이 사라집니다. 나가시겠어요?')) return;
+      imageLoadVersionRef.current += 1;
+      setIsRestoring(false);
       const drawingContext = context();
       drawingContext?.clearRect(0, 0, width, height);
-      setHistory((current) => current ? createCanvasHistory(current.snapshots[0]) : current);
+      const starting = editingStartRef.current;
+      setHistory(starting.history);
+      if (starting.pixels && drawingContext) drawingContext.putImageData(starting.pixels, 0, 0);
+      publishDrawing(starting.draft);
+      editingStartRef.current = { draft: null, history: null, pixels: null };
       setLoupeActive(false);
       setControlsOpen(false);
       setDrawingError(null);
       setIsFullscreen(false);
-    }, [context, currentDrawingHasContent]);
+    }, [context, currentDrawingHasContent, publishDrawing]);
 
     useImperativeHandle(ref, () => ({
       hasDrawing: () => Boolean(confirmedDrawing),
@@ -214,26 +233,39 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       const canvas = canvasRef.current;
       if (!canvas) return;
       setHistory(createCanvasHistory(canvas.toDataURL('image/png')));
+      return () => { imageLoadVersionRef.current += 1; };
     }, []);
 
     useEffect(() => {
-      if (!initialDrawingDataUrl) return;
+      if (!initialDrawingDataUrl || initialDrawingDataUrl === lastEmittedDrawingRef.current) return;
       const drawingContext = context();
       if (!drawingContext) return;
+      let isCurrent = true;
+      const version = ++imageLoadVersionRef.current;
       const image = new window.Image();
       image.onload = () => {
+        if (!isCurrent || version !== imageLoadVersionRef.current) return;
         drawingContext.globalAlpha = 1;
+        drawingContext.globalCompositeOperation = 'source-over';
         drawingContext.clearRect(0, 0, width, height);
         drawingContext.drawImage(image, 0, 0, width, height);
-        snapshot();
+        const next = canvasRef.current?.toDataURL('image/png');
+        if (next) setHistory((current) => current ? pushSnapshot(current, next) : createCanvasHistory(next));
+        lastEmittedDrawingRef.current = initialDrawingDataUrl.startsWith('data:image/') ? initialDrawingDataUrl : null;
         setConfirmedDrawing(initialDrawingDataUrl);
       };
       image.src = initialDrawingDataUrl;
+      return () => { isCurrent = false; };
     }, [context, initialDrawingDataUrl]);
 
     useEffect(() => {
-      if (!isFullscreen || window.localStorage.getItem(pinchHintStorageKey)) return;
-      window.localStorage.setItem(pinchHintStorageKey, 'true');
+      if (!isFullscreen) return;
+      try {
+        if (window.localStorage.getItem(pinchHintStorageKey)) return;
+        window.localStorage.setItem(pinchHintStorageKey, 'true');
+      } catch {
+        // The hint must not prevent drawing when browser storage is unavailable.
+      }
       setPinchHintVisible(true);
       const timeout = window.setTimeout(() => setPinchHintVisible(false), 1000);
       return () => window.clearTimeout(timeout);
@@ -243,7 +275,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       if (!isFullscreen) {
         if (fullscreenRestoreFocusRef.current) {
           fullscreenRestoreFocusRef.current = false;
-          fullscreenEntryRef.current?.focus();
+          (fullscreenEntryRef.current ?? importInputRef.current)?.focus();
         }
         return;
       }
@@ -344,6 +376,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }
 
     function pointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+      if (isRestoring) return;
       const point = canvasPoint(event);
       if (!point) return;
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -401,12 +434,18 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
       const drawingContext = context();
       const source = next.snapshots[next.index];
       if (!drawingContext || !source) return;
+      const version = ++imageLoadVersionRef.current;
+      setHistory(next);
+      setIsRestoring(true);
       const image = new window.Image();
       image.onload = () => {
+        if (version !== imageLoadVersionRef.current) return;
         drawingContext.globalAlpha = 1;
+        drawingContext.globalCompositeOperation = 'source-over';
         drawingContext.clearRect(0, 0, width, height);
         drawingContext.drawImage(image, 0, 0, width, height);
-        setHistory(next);
+        setIsRestoring(false);
+        publishDrawing(currentDrawingHasContent() ? source : null);
       };
       image.src = source;
     }
@@ -420,6 +459,13 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }
 
     function openDrawing() {
+      imageLoadVersionRef.current += 1;
+      setIsRestoring(false);
+      editingStartRef.current = {
+        draft: lastEmittedDrawingRef.current,
+        history,
+        pixels: confirmedDrawing ? context()?.getImageData(0, 0, width, height) ?? null : null,
+      };
       resetViewport();
       setControlsOpen(false);
       setDrawingError(null);
@@ -427,8 +473,11 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }
 
     function finishDrawing(output: string) {
+      imageLoadVersionRef.current += 1;
+      setIsRestoring(false);
+      editingStartRef.current = { draft: null, history: null, pixels: null };
       setConfirmedDrawing(output);
-      onDrawingChange?.(output);
+      publishDrawing(output);
       setControlsOpen(false);
       setDrawingError(null);
       resetViewport();
@@ -494,6 +543,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
     }
 
     function confirmDrawing() {
+      if (isRestoring) return;
       const canvas = canvasRef.current;
       if (!canvas || !currentDrawingHasContent()) {
         setDrawingError('그림을 한 번 이상 그린 뒤 확인해 주세요.');
@@ -522,7 +572,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
           <div className="drawing-import">
             <label className="button button--secondary drawing-import-button">
               이미지로 가져오기
-              <input accept="image/png,image/jpeg,image/webp" aria-label="이미지로 가져오기" onChange={importImage} type="file" />
+              <input accept="image/png,image/jpeg,image/webp" aria-label="이미지로 가져오기" onChange={importImage} ref={importInputRef} type="file" />
             </label>
             <p aria-live="polite" className="drawing-import-status" role="status">{importStatus}</p>
           </div>
@@ -571,7 +621,7 @@ export const SketchEditor = forwardRef<SketchEditorHandle, SketchEditorProps>(
               <button aria-label="그리기 나가기" className="fullscreen-exit" onClick={requestExit} type="button"><Image alt="" height={30} src="/icons/fullscreen-exit.webp" width={30} /></button>
               <button aria-label="그림 기록 한 단계 이전" className="fullscreen-undo" disabled={!history || history.index === 0} onClick={() => history && restore(undoSnapshot(history))} type="button"><Image alt="" height={30} src="/icons/fullscreen-back.webp" width={30} /></button>
               <button aria-expanded={controlsOpen} aria-label={controlsOpen ? '그리기 도구 닫기' : '그리기 도구 열기'} onClick={() => setControlsOpen((current) => !current)} type="button"><Image alt="" height={30} src="/icons/drawing-controls.webp" width={30} /></button>
-              <button aria-label="확인" className="fullscreen-confirm" onClick={confirmDrawing} ref={fullscreenConfirmRef} type="button"><Image alt="" height={30} src="/icons/fullscreen-confirm.webp" width={30} /></button>
+              <button aria-label="확인" className="fullscreen-confirm" disabled={isRestoring} onClick={confirmDrawing} ref={fullscreenConfirmRef} type="button"><Image alt="" height={30} src="/icons/fullscreen-confirm.webp" width={30} /></button>
             </div>
           </div>
         ) : null}

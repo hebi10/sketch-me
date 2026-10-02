@@ -2,12 +2,22 @@
 
 import { useState } from 'react';
 
-export function ShareSketchbookButton({ publicId, name, menuItem = false }: { publicId: string; name: string; menuItem?: boolean }) {
+export function ShareSketchbookButton({ publicId, name, menuItem = false, onStatusChange }: {
+  publicId: string;
+  name: string;
+  menuItem?: boolean;
+  onStatusChange?: (status: string | null) => void;
+}) {
   const [status, setStatus] = useState<string | null>(null);
+
+  function updateStatus(message: string | null) {
+    setStatus(message);
+    onStatusChange?.(message);
+  }
 
   async function share() {
     const url = `${window.location.origin}/s/${publicId}`;
-    setStatus(null);
+    updateStatus(null);
     try {
       if (navigator.share) {
         try {
@@ -16,18 +26,18 @@ export function ShareSketchbookButton({ publicId, name, menuItem = false }: { pu
             text: `${name}님을 기억나는 모습대로 그려주세요.`,
             url,
           });
-          setStatus('공유창을 열었어요.');
+          updateStatus('공유창을 열었어요.');
         } catch (error) {
           if (error instanceof DOMException && error.name === 'AbortError') return;
           await navigator.clipboard.writeText(url);
-          setStatus('공유창을 열지 못해 링크를 복사했어요.');
+          updateStatus('공유창을 열지 못해 링크를 복사했어요.');
         }
       } else {
         await navigator.clipboard.writeText(url);
-        setStatus('링크를 복사했어요.');
+        updateStatus('링크를 복사했어요.');
       }
     } catch {
-      setStatus('공유하지 못했어요. 링크를 다시 복사해 주세요.');
+      updateStatus('공유하지 못했어요. 링크를 다시 복사해 주세요.');
     }
   }
 

@@ -5,6 +5,7 @@ import { getManagedSketchbook } from '@/lib/sketchbooks/management';
 import {
   clearBestDrawing,
   deleteDrawingForManagement,
+  DrawingDeletedError,
   DrawingPublicPromotionBlockedError,
   setBestDrawing,
   updateDrawingForManagement,
@@ -30,7 +31,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pu
       return NextResponse.json({ ok: true });
     }
   } catch (error) {
-    if (error instanceof DrawingPublicPromotionBlockedError) {
+    if (error instanceof DrawingPublicPromotionBlockedError || error instanceof DrawingDeletedError) {
       return NextResponse.json({ message: error.message }, { status: 409 });
     }
     throw error;
@@ -52,9 +53,14 @@ export async function DELETE(
   });
   if (imagePaths) {
     const paths = [imagePaths.imagePath, imagePaths.thumbnailPath].filter((path): path is string => Boolean(path));
-    await Promise.all(paths.map((path) => (
+    const results = await Promise.allSettled(paths.map(async (path) => (
       getAdminStorage().bucket().file(path).delete({ ignoreNotFound: true })
     )));
+    if (results.some((result) => result.status === 'rejected')) {
+      return NextResponse.json({
+        message: '그림 파일을 모두 정리하지 못했습니다. 삭제를 다시 시도해 주세요.',
+      }, { status: 503 });
+    }
   }
   return NextResponse.json({ ok: true });
 }

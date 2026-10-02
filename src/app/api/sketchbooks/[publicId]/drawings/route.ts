@@ -8,7 +8,7 @@ import { getAdminStorage } from '@/lib/firebase/admin';
 import { getDrawingImagePath, getDrawingThumbnailPath } from '@/lib/firebase/storage';
 import { ImageOptimizationError, optimizeDrawingImages } from '@/lib/images/optimize';
 import { enforceAppCheck } from '@/lib/security/app-check-server';
-import { getDrawingSubmissionSourceHash } from '@/lib/security/drawing-submission-source';
+import { DrawingParticipantSessionError, getDrawingSubmissionSourceHash } from '@/lib/security/drawing-submission-source';
 import { enforcePublicMutationLimit } from '@/lib/security/rate-limit';
 import { findSketchbookByPublicId, saveDrawingWithinLimit } from '@/lib/sketchbooks/repository';
 
@@ -61,6 +61,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     return NextResponse.json({ message: '친구 그림을 더 받을 수 있는 인원이 모두 찼습니다.' }, { status: 409 });
   }
 
+  let submissionSourceHash: string;
+  try {
+    submissionSourceHash = getDrawingSubmissionSourceHash(request, sketchbook.manageTokenHash);
+  } catch (error) {
+    if (error instanceof DrawingParticipantSessionError) {
+      return NextResponse.json({ message: error.message }, { status: 403 });
+    }
+    console.error('Drawing participant session unavailable', error instanceof Error ? error.name : 'UnknownError');
+    return NextResponse.json({ message: '참여 확인을 준비하지 못했어요. 잠시 후 다시 시도해 주세요.' }, { status: 503 });
+  }
+
   const drawingId = randomUUID();
   const imagePath = getDrawingImagePath(sketchbook.id, drawingId);
   const thumbnailPath = getDrawingThumbnailPath(sketchbook.id, drawingId);
@@ -101,8 +112,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     message: parsed.data.message,
     createdAt: new Date(),
   });
-  const submissionSourceHash = getDrawingSubmissionSourceHash(request, sketchbook.manageTokenHash);
-
   try {
     await saveDrawingWithinLimit(sketchbook, drawing, submissionSourceHash);
   } catch (error) {
@@ -113,7 +122,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     if (error instanceof Error && error.message === '스케치북을 찾을 수 없거나 공개되어 있지 않습니다.') {
       return NextResponse.json({ message: '스케치북을 찾을 수 없어요.' }, { status: 404 });
     }
-    if (error instanceof Error && error.message === '한 친구는 같은 스캐치북에 그림을 2개까지만 남길 수 있어요.') {
+    if (error instanceof Error && error.message === '같은 브라우저에서는 이 스캐치북에 그림을 2개까지만 남길 수 있어요.') {
       return NextResponse.json({ message: error.message }, { status: 429 });
     }
     console.error('Drawing persistence failed', error instanceof Error ? error.name : 'UnknownError');

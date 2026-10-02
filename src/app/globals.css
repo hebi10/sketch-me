@@ -1242,6 +1242,11 @@ main {
   font-size: 1.15em;
 }
 
+.public-intro-action {
+  margin-top: 20px;
+  width: 100%;
+}
+
 .friend-board {
   padding: clamp(12px, 3.5vw, 18px);
 }

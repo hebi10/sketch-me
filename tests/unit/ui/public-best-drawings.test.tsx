@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { vi } from 'vitest';
 
 const { findSketchbookByPublicId, listVisibleDrawings } = vi.hoisted(() => ({
@@ -80,5 +80,49 @@ describe('공개 BEST 그림', () => {
     expect(screen.getByText('BEST 2')).toBeVisible();
     expect(screen.queryByText('선정 전')).not.toBeInTheDocument();
     expect(screen.queryByText('BEST 1')).not.toBeInTheDocument();
+  });
+
+  it('갤러리 위 소개에서 참여할 수 있고 갤러리 아래 참여 링크도 유지한다', async () => {
+    listVisibleDrawings.mockResolvedValue([drawing]);
+
+    render(await PublicSketchbookPage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    const intro = screen.getByRole('region', { name: '해비의 스케치북' });
+    const firstAction = within(intro).getByRole('link', { name: /그림 남기기/ });
+    const gallery = screen.getByRole('region', { name: '친구들이 그린 나' });
+    expect(firstAction).toHaveAttribute('href', '/s/public-1/draw');
+    expect(firstAction.compareDocumentPosition(gallery) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(gallery).getByRole('link', { name: /그림 남기기/ })).toHaveAttribute('href', '/s/public-1/draw');
+  });
+
+  it('한도가 가득 차면 소개와 갤러리 모두 접수 마감을 표시한다', async () => {
+    findSketchbookByPublicId.mockResolvedValue({ ...sketchbook, participantCount: 20 });
+    listVisibleDrawings.mockResolvedValue([drawing]);
+
+    render(await PublicSketchbookPage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    const intro = screen.getByRole('region', { name: '해비의 스케치북' });
+    const gallery = screen.getByRole('region', { name: '친구들이 그린 나' });
+    expect(within(intro).getByText('친구 그림 접수 마감')).toHaveAttribute('aria-disabled', 'true');
+    expect(within(gallery).getByText('친구 그림 접수 마감')).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByRole('link', { name: /그림 남기기/ })).not.toBeInTheDocument();
+  });
+
+  it('운영자 제한 스케치북에는 참여 링크를 표시하지 않는다', async () => {
+    findSketchbookByPublicId.mockResolvedValue({ ...sketchbook, moderationStatus: 'BLOCKED' });
+
+    render(await PublicSketchbookPage({
+      params: Promise.resolve({ publicId: 'public-1' }),
+      searchParams: Promise.resolve({}),
+    }));
+
+    expect(screen.queryByRole('link', { name: /그림 남기기/ })).not.toBeInTheDocument();
+    expect(listVisibleDrawings).not.toHaveBeenCalled();
   });
 });

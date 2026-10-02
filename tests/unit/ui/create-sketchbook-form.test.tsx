@@ -30,6 +30,21 @@ describe('CreateSketchbookForm 생성 초안과 PIN 검사', () => {
     expect(screen.getByText('50명을 초과하려면 문의해 주세요.')).toBeVisible();
   });
 
+  it('확인한 내 그림을 다시 수정하고 확인 뒤 수정 버튼으로 포커스를 돌려준다', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      clearRect: vi.fn(), drawImage: vi.fn(), fillRect: vi.fn(),
+      getImageData: vi.fn(() => ({ data: new Uint8ClampedArray([0, 0, 0, 255]) })),
+    } as unknown as CanvasRenderingContext2D);
+    render(<CreateSketchbookForm />);
+    fireEvent.click(screen.getByRole('button', { name: '그림 그리기' }));
+    fireEvent.click(screen.getByRole('button', { name: '확인' }));
+
+    const reopen = await screen.findByRole('button', { name: '그림 수정하기' });
+    expect(reopen).toHaveFocus();
+    fireEvent.click(reopen);
+    expect(screen.getByRole('dialog', { name: '전체 화면 그리기' })).toBeVisible();
+  });
+
   it('스케치북 생성 흐름에서 참고 사진 입력을 표시하지 않는다', async () => {
     render(<CreateSketchbookForm />);
 

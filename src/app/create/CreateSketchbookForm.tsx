@@ -149,7 +149,7 @@ export function CreateSketchbookForm() {
 
       <section aria-labelledby="owner-sketch-title">
         <div className="section-heading"><h2 id="owner-sketch-title">내가 그린 나 <span className="optional-label">선택</span></h2><p>그리지 않아도 스캐치북을 만들 수 있어요.</p></div>
-        <SketchEditor ariaLabel="내 모습을 그리는 캔버스" initialDrawingDataUrl={ownerImageDataUrl} onDrawingChange={setOwnerImageDataUrl} ref={editorRef} />
+        <SketchEditor ariaLabel="내 모습을 그리는 캔버스" initialDrawingDataUrl={ownerImageDataUrl} onDrawingChange={setOwnerImageDataUrl} ref={editorRef} reopenLabel="그림 수정하기" />
       </section>
 
       {error ? <p className="form-error" role="alert">{error}</p> : null}

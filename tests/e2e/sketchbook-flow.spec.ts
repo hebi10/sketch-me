@@ -52,6 +52,9 @@ test('모바일 BEST 이미지 제목을 저장하고 다시 방문해도 유지
   await page.getByRole('button', { name: '그림 그리기' }).click();
   await drawOnCanvas(page);
   await page.getByRole('button', { name: '확인' }).click();
+  await page.getByRole('button', { name: '그림 수정하기' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: '확인' }).click();
   await page.getByRole('button', { name: '내 스캐치북 만들기' }).click();
 
   await expect(page.getByRole('heading', { name: '스캐치북이 완성됐어요' })).toBeVisible({ timeout: 15_000 });
@@ -110,18 +113,25 @@ test('모바일에서 소유자 그림 수정과 첫 친구 그림 자동 BEST�
   await expect(page.getByRole('heading', { name: '내가 그린 나' })).toBeVisible();
   await expect(page.getByRole('img', { name: `${uniqueName}님이 직접 그린 모습` })).toBeVisible();
   await page.getByRole('link', { name: '첫 그림 남기기' }).click();
+  await page.getByLabel('내 이름').fill('첫 번째 친구');
+  await page.getByLabel('한마디 (선택)').fill('새로고침해도 남는 그림');
   await page.getByRole('button', { name: '그림 그리기' }).click();
   await drawOnCanvas(page);
+  await page.reload();
+  await expect(page.getByRole('img', { name: '그린 그림 미리보기' })).toBeVisible();
+  await expect(page.getByLabel('내 이름')).toHaveValue('첫 번째 친구');
+  await expect(page.getByLabel('한마디 (선택)')).toHaveValue('새로고침해도 남는 그림');
+  await page.getByRole('button', { name: '그림 수정하기' }).click();
   await page.getByRole('button', { name: '확인' }).click();
-  await page.getByLabel('내 이름').fill('첫 번째 친구');
   await page.getByRole('button', { name: '그림 남기기' }).click();
   await expect(page.getByRole('img', { exact: true, name: '첫 번째 친구님의 그림' })).toHaveCount(0);
   await expect(page.getByRole('img', { name: 'BEST 1, 첫 번째 친구님의 그림' })).toBeVisible();
   await expect(page.getByText('선정 전')).toHaveCount(0);
+  expect(await page.evaluate((id) => sessionStorage.getItem(`sketch-me:drawing-draft:${id}:v1`), publicId)).toBeNull();
 
   await page.goto(`/m/${publicId}`);
   const ownerDrawingCard = page.locator('article.owner-original-card');
-  await ownerDrawingCard.getByText('순위 선택', { exact: true }).click();
+  await ownerDrawingCard.getByText('그림 관리', { exact: true }).click();
   await ownerDrawingCard.getByRole('link', { name: '내 그림 수정하기' }).click();
   await expect(page).toHaveURL(`/m/${publicId}/owner/edit`);
   await page.getByRole('button', { name: '그림 편집 열기' }).click();
@@ -159,16 +169,8 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await ownerPage.getByRole('button', { name: '내 스캐치북 관리하기' }).click();
   await expect(ownerPage.getByText(`${uniqueName}님의 스케치북`)).toBeVisible();
   await expect(ownerPage.getByRole('heading', { name: '친구들이 그린 나' }).first()).toBeVisible();
-  await ownerPage.getByRole('button', { name: '저장 공간 추가하기' }).click();
-  await expect(ownerPage.getByRole('dialog', { name: '상품 선택하기' })).toBeVisible();
-  await ownerPage.getByRole('radio', { name: /50명 추가.*4,490원/ }).check();
-  await ownerPage.getByLabel('결제용 휴대전화번호').fill('010-1234-5678');
-  const capacityPurchaseButton = ownerPage.getByRole('button', { name: '4,490원 결제하기' });
-  await expect(capacityPurchaseButton).toBeDisabled();
-  await ownerPage.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ }).check();
-  await expect(capacityPurchaseButton).toBeEnabled();
-  await ownerPage.getByRole('button', { name: '결제창 닫기' }).click();
-  await expect(ownerPage.locator('.manage-summary p')).toContainText(/친구 그림\s*0\s*\/\s*10/);
+  await expect(ownerPage.getByRole('button', { name: '저장 공간 추가하기' })).toHaveCount(0);
+  await expect(ownerPage.locator('.manage-summary p').first()).toContainText(/친구 그림\s*0\s*\/\s*50/);
   const managePath = new URL(ownerPage.url()).pathname;
   const managementPublicId = managePath.split('/')[2];
   const publicPath = `/s/${managementPublicId}`;
@@ -222,7 +224,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
   await managerPage.goto(`/m/${managementPublicId}`);
   await expect(managerPage.getByText('모바일 친구', { exact: true })).toBeVisible();
   const friendDrawingCard = managerPage.locator('article.manage-drawing-card').filter({ hasText: '모바일 친구' });
-  await friendDrawingCard.getByText('순위 선택').click();
+  await friendDrawingCard.getByText('그림 관리').click();
   await friendDrawingCard.getByRole('button', { name: '그림 삭제' }).click();
   const deleteDrawingDialog = managerPage.getByRole('dialog', { name: '친구 그림 삭제' });
   await expect(deleteDrawingDialog).toBeVisible();
@@ -283,18 +285,7 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
     return bounds.width / bounds.height;
   });
   expect(previewRatio).toBeCloseTo(3 / 4, 2);
-  const watermarkTrigger = managerPage.getByRole('button', { name: '워터마크 없이 저장하기 · 1,000원' });
-  await watermarkTrigger.focus();
-  await watermarkTrigger.press('Enter');
-  const watermarkDialog = managerPage.getByRole('dialog', { name: '워터마크 없이 저장하기' });
-  await expect(watermarkDialog).toBeVisible();
-  await watermarkDialog.getByLabel('결제용 휴대전화번호').fill('010-1234-5678');
-  const watermarkPurchaseButton = watermarkDialog.getByRole('button', { name: '1,000원 결제하기' });
-  await expect(watermarkPurchaseButton).toBeDisabled();
-  await watermarkDialog.getByRole('checkbox', { name: /결제 완료 즉시 디지털 혜택 제공/ }).check();
-  await expect(watermarkPurchaseButton).toBeEnabled();
-  await managerPage.keyboard.press('Escape');
-  await expect(watermarkDialog).toBeHidden();
+  await expect(managerPage.getByRole('button', { name: /워터마크 없이 저장하기/ })).toHaveCount(0);
   await expect(managerPage.getByRole('img', { name: '스캐치북 워터마크' })).toBeVisible();
   const downloadPromise = managerPage.waitForEvent('download', { timeout: 15_000 });
   await managerPage.getByRole('button', { name: 'PNG로 저장하기' }).click({ force: true });
@@ -312,4 +303,38 @@ test('모바일에서 생성부터 BEST 스토리 저장까지 완료한다', as
 
   await friendContext.close();
   await ownerContext.close();
+});
+
+test('같은 Wi-Fi의 다른 브라우저는 각자 두 그림을 남길 수 있다', async ({ browser }, testInfo) => {
+  test.setTimeout(60_000);
+  test.skip(testInfo.project.name !== 'mobile-chrome', '참여 제한은 모바일 프로젝트에서 한 번만 확인합니다.');
+
+  const testIp = `10.2.${Math.floor(Math.random() * 200) + 20}.${Math.floor(Math.random() * 200) + 20}`;
+  const first = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': testIp } });
+  const second = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': testIp } });
+  try {
+    const createResponse = await first.request.post('/api/sketchbooks', {
+      data: { name: '함께 쓰는 스캐치북', managePin: '1234' },
+    });
+    expect(createResponse.status()).toBe(200);
+    const { publicUrl } = await createResponse.json() as { publicUrl: string };
+    const publicId = publicUrl.split('/')[2];
+    const image = await sharp({ create: { width: 8, height: 8, channels: 4, background: '#555555' } }).png().toBuffer();
+    const payload = { authorName: '같은 Wi-Fi 친구', imageDataUrl: `data:image/png;base64,${image.toString('base64')}` };
+    const submitUrl = `/api/sketchbooks/${publicId}/drawings`;
+
+    expect((await first.request.post(submitUrl, { data: payload })).status()).toBe(403);
+    expect((await first.request.get(`${publicUrl}/draw`)).status()).toBe(200);
+    expect((await second.request.get(`${publicUrl}/draw`)).status()).toBe(200);
+    for (const context of [first, second]) {
+      expect((await context.request.post(submitUrl, { data: payload })).status()).toBe(201);
+      expect((await context.request.post(submitUrl, { data: payload })).status()).toBe(201);
+      const limited = await context.request.post(submitUrl, { data: payload });
+      expect(limited.status()).toBe(429);
+      expect(await limited.json()).toMatchObject({ message: expect.stringContaining('같은 브라우저') });
+    }
+  } finally {
+    await first.close();
+    await second.close();
+  }
 });

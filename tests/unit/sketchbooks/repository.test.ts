@@ -628,18 +628,26 @@ describe('공개 그림 저장소 운영자 차단', () => {
   });
 
   it('차단된 그림의 hide는 비공개 방향이므로 허용한다', async () => {
-    const update = vi.fn();
+    const drawingReference = { id: 'drawing-1' };
+    const transaction = {
+      get: vi.fn().mockResolvedValue({
+        data: () => ({ moderationStatus: 'BLOCKED', status: 'VISIBLE' }),
+        exists: true,
+      }),
+      update: vi.fn(),
+    };
     getAdminFirestore.mockReturnValue({
       collection: vi.fn(() => ({
         doc: vi.fn(() => ({
-          collection: vi.fn(() => ({ doc: vi.fn(() => ({ update })) })),
+          collection: vi.fn(() => ({ doc: vi.fn(() => drawingReference) })),
         })),
       })),
+      runTransaction: vi.fn(async (callback: (value: typeof transaction) => Promise<void>) => callback(transaction)),
     });
 
     await updateDrawingForManagement('book-1', 'drawing-1', { status: 'HIDDEN' });
 
-    expect(update).toHaveBeenCalledWith(expect.objectContaining({
+    expect(transaction.update).toHaveBeenCalledWith(drawingReference, expect.objectContaining({
       bestRank: null,
       publicImageVersion: expect.stringMatching(/^[0-9a-f-]{36}$/),
       status: 'HIDDEN',

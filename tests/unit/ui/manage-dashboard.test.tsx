@@ -24,6 +24,46 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     vi.useRealTimers();
   });
 
+  it.each([
+    { label: '링크 복사 성공', shareResult: 'unavailable', copyFails: false, message: '링크를 복사했어요.' },
+    { label: '공유창 완료', shareResult: 'success', copyFails: false, message: '공유창을 열었어요.' },
+    { label: '공유창 실패 후 복사', shareResult: 'failure', copyFails: false, message: '공유창을 열지 못해 링크를 복사했어요.' },
+    { label: '공유와 복사 실패', shareResult: 'failure', copyFails: true, message: '공유하지 못했어요. 링크를 다시 복사해 주세요.' },
+  ])('$label 결과를 메뉴가 닫힌 뒤에도 화면에 알린다', async ({ shareResult, copyFails, message }) => {
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: shareResult === 'unavailable' ? undefined : shareResult === 'success'
+        ? vi.fn().mockResolvedValue(undefined)
+        : vi.fn().mockRejectedValue(new DOMException('공유할 수 없음', 'NotAllowedError')),
+    });
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: copyFails ? vi.fn().mockRejectedValue(new Error('복사 실패')) : vi.fn().mockResolvedValue(undefined) },
+    });
+    render(
+      <ManageDashboard
+        drawings={[]}
+        moderationStatus="ACTIVE"
+        name="내 이름"
+        participantCount={0}
+        participantLimit={50}
+        publicId="public-share"
+      />,
+    );
+
+    const menuTrigger = screen.getByLabelText('메뉴');
+    fireEvent.click(menuTrigger);
+    const menu = screen.getByRole('navigation', { name: '메뉴 항목' });
+    fireEvent.click(within(menu).getByRole('button', { name: '공유하기' }));
+
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent(message);
+    expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(status).toBeVisible();
+    expect(status.closest('details')).toBeNull();
+    expect(menuTrigger.closest('details')).not.toHaveAttribute('open');
+  });
+
   it('무료 스케치북의 자동 삭제일을 관리 화면에 안내한다', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-09-04T00:00:00.000Z'));
@@ -358,7 +398,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     );
 
     expect(screen.getByText('운영자 숨김')).toBeVisible();
-    fireEvent.click(screen.getByText('순위 선택'));
+    fireEvent.click(screen.getByText('그림 관리'));
     expect(screen.getByRole('button', { name: '친구 페이지에서 숨기기' })).toBeDisabled();
     screen.getAllByRole('button', { name: /^[1-4]위$/ }).forEach((button) => {
       expect(button).toBeDisabled();
@@ -398,7 +438,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
       />,
     );
 
-    fireEvent.click(screen.getByText('순위 선택'));
+    fireEvent.click(screen.getByText('그림 관리'));
     fireEvent.click(screen.getByRole('button', { name: '그림 삭제' }));
     const dialog = screen.getByRole('dialog', { name: '친구 그림 삭제' });
     expect(dialog).toBeVisible();
@@ -440,7 +480,7 @@ describe('ManageDashboard 친구 그림 추가 결제', () => {
     expect(ownerCard).not.toBeNull();
     expect(within(ownerCard as HTMLElement).getByText('내 그림')).toBeVisible();
     expect(within(ownerCard as HTMLElement).getByText('BEST 2')).toBeVisible();
-    fireEvent.click(within(ownerCard as HTMLElement).getByText('순위 선택'));
+    fireEvent.click(within(ownerCard as HTMLElement).getByText('그림 관리'));
     expect(within(ownerCard as HTMLElement).getByRole('button', { name: '2위' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(ownerCard as HTMLElement).getByRole('button', { name: 'BEST 해제' })).toBeEnabled();
   });

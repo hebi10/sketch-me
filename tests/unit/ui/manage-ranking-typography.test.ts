@@ -11,7 +11,7 @@ describe('관리 화면 순위 선택 타이포그래피', () => {
     document.body.innerHTML = `
       <main class="manage-system-sans">
         <details class="drawing-actions" open>
-          <summary>순위 선택</summary>
+          <summary>그림 관리</summary>
           <div class="drawing-action-panel">
             <div class="best-actions"><button type="button">1위</button></div>
             <a class="button button--secondary" href="#edit">내 그림 수정하기</a>

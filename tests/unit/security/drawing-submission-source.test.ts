@@ -1,45 +1,57 @@
 import { describe, expect, it } from 'vitest';
 
-import { getDrawingSubmissionSourceHash } from '@/lib/security/drawing-submission-source';
+import {
+  createDrawingParticipantToken,
+  DRAWING_PARTICIPANT_COOKIE,
+  DrawingParticipantSessionError,
+  getDrawingSubmissionSourceHash,
+  readDrawingParticipantId,
+} from '@/lib/security/drawing-submission-source';
 
 describe('친구 그림 제출 출처', () => {
-  it('같은 IP와 같은 스케치북 비밀값은 동일한 비식별 해시를 만든다', () => {
-    const request = new Request('https://example.com', {
-      headers: { 'x-forwarded-for': '203.0.113.10, 10.0.0.1' },
+  const signingSecret = 'test-only-participant-signing-secret';
+  const now = new Date('2026-10-02T00:00:00Z');
+  const firstToken = () => createDrawingParticipantToken(signingSecret, now);
+  function participantRequest(token: string, ip = '203.0.113.10') {
+    return new Request('https://example.com', {
+      headers: { cookie: `${DRAWING_PARTICIPANT_COOKIE}=${token}`, 'x-forwarded-for': ip },
     });
+  }
 
-    const first = getDrawingSubmissionSourceHash(request, 'sketchbook-secret');
-    const second = getDrawingSubmissionSourceHash(request, 'sketchbook-secret');
-
-    expect(first).toBe(second);
-    expect(first).toMatch(/^[a-f0-9]{64}$/);
-    expect(first).not.toContain('203.0.113.10');
+  it('같은 IP에서도 별도 브라우저는 제출 한도를 공유하지 않는다', () => {
+    const first = participantRequest(firstToken());
+    const second = participantRequest(firstToken());
+    expect(getDrawingSubmissionSourceHash(first, 'book-secret', signingSecret, now))
+      .not.toBe(getDrawingSubmissionSourceHash(second, 'book-secret', signingSecret, now));
   });
 
-  it('같은 IP라도 다른 스케치북 비밀값이면 별도 해시를 만든다', () => {
-    const request = new Request('https://example.com', {
-      headers: { 'x-forwarded-for': '203.0.113.10' },
-    });
-
-    expect(getDrawingSubmissionSourceHash(request, 'book-a-secret'))
-      .not.toBe(getDrawingSubmissionSourceHash(request, 'book-b-secret'));
+  it('같은 브라우저는 IP가 바뀌어도 같은 스케치북 한도를 유지한다', () => {
+    const token = firstToken();
+    expect(getDrawingSubmissionSourceHash(participantRequest(token), 'book-secret', signingSecret, now))
+      .toBe(getDrawingSubmissionSourceHash(participantRequest(token, '198.51.100.2'), 'book-secret', signingSecret, now));
   });
 
-  it('App Hosting 프록시 헤더보다 클라이언트가 임의로 보낼 수 있는 Cloudflare 헤더를 신뢰하지 않는다', () => {
-    const firstRequest = new Request('https://example.com', {
-      headers: {
-        'cf-connecting-ip': '198.51.100.20',
-        'x-forwarded-for': '203.0.113.10, 10.0.0.1',
-      },
-    });
-    const secondRequest = new Request('https://example.com', {
-      headers: {
-        'cf-connecting-ip': '198.51.100.21',
-        'x-forwarded-for': '203.0.113.10, 10.0.0.1',
-      },
-    });
+  it('서로 다른 스케치북에는 별도 비식별 해시를 사용한다', () => {
+    const request = participantRequest(firstToken());
+    const hash = getDrawingSubmissionSourceHash(request, 'book-a', signingSecret, now);
+    expect(hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(hash).not.toBe(getDrawingSubmissionSourceHash(request, 'book-b', signingSecret, now));
+  });
 
-    expect(getDrawingSubmissionSourceHash(firstRequest, 'sketchbook-secret'))
-      .toBe(getDrawingSubmissionSourceHash(secondRequest, 'sketchbook-secret'));
+  it('쿠키가 없거나 위조되면 IP 식별로 우회하지 않는다', () => {
+    for (const request of [new Request('https://example.com'), participantRequest('forged'), participantRequest(`${firstToken()}x`)]) {
+      expect(() => getDrawingSubmissionSourceHash(request, 'book-secret', signingSecret, now))
+        .toThrow(DrawingParticipantSessionError);
+    }
+  });
+
+  it('다른 서명 키와 만료된 쿠키를 거절한다', () => {
+    const token = firstToken();
+    expect(readDrawingParticipantId(token, 'different-secret', now)).toBeNull();
+    expect(readDrawingParticipantId(token, signingSecret, new Date('2027-10-02T00:00:00Z'))).toBeNull();
+  });
+
+  it('서명 키 누락은 설정 오류로 처리한다', () => {
+    expect(() => createDrawingParticipantToken('', now)).toThrow('DrawingParticipantSecretMissing');
   });
 });

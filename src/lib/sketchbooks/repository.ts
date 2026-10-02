@@ -86,9 +86,16 @@ export class DrawingPublicPromotionBlockedError extends Error {
   }
 }
 
+export class DrawingDeletedError extends Error {
+  constructor() {
+    super('삭제된 그림은 변경할 수 없습니다. 새로고침해 주세요.');
+    this.name = 'DrawingDeletedError';
+  }
+}
+
 export class DrawingSubmissionLimitError extends Error {
   constructor() {
-    super('한 친구는 같은 스캐치북에 그림을 2개까지만 남길 수 있어요.');
+    super('같은 브라우저에서는 이 스캐치북에 그림을 2개까지만 남길 수 있어요.');
     this.name = 'DrawingSubmissionLimitError';
   }
 }
@@ -389,26 +396,20 @@ export async function updateDrawingForManagement(
     updatedAt: new Date(),
   };
 
-  if (update.status === 'VISIBLE') {
-    await firestore.runTransaction(async (transaction) => {
-      const drawingDocument = await transaction.get(reference);
-      if (!drawingDocument.exists) throw new Error('변경할 그림을 찾을 수 없습니다.');
-      if (drawingDocument.data()?.moderationStatus === 'BLOCKED') {
-        throw new DrawingPublicPromotionBlockedError();
-      }
-      transaction.update(reference, changes);
-    });
-    return;
-  }
-
-  await reference.update({
-    ...changes,
+  await firestore.runTransaction(async (transaction) => {
+    const drawingDocument = await transaction.get(reference);
+    if (!drawingDocument.exists) throw new Error('변경할 그림을 찾을 수 없습니다.');
+    const drawing = drawingDocument.data();
+    if (drawing?.status === 'DELETED') throw new DrawingDeletedError();
+    if (update.status === 'VISIBLE' && drawing?.moderationStatus === 'BLOCKED') {
+      throw new DrawingPublicPromotionBlockedError();
+    }
+    transaction.update(reference, changes);
   });
 }
 
 export async function clearBestDrawing(sketchbookId: string, drawingId: string) {
-  const reference = getAdminFirestore().collection(collectionName).doc(sketchbookId).collection('drawings').doc(drawingId);
-  await reference.update({ bestRank: null, updatedAt: new Date() });
+  await updateDrawingForManagement(sketchbookId, drawingId, { bestRank: null });
 }
 
 export async function deleteDrawingForManagement(
@@ -429,7 +430,11 @@ export async function deleteDrawingForManagement(
       throw new Error('삭제할 그림을 찾을 수 없습니다.');
     }
     const drawing = drawingDocument.data();
-    if (drawing?.status === 'DELETED') return null;
+    const imagePaths = {
+      imagePath: String(drawing?.imagePath ?? ''),
+      thumbnailPath: drawing?.thumbnailPath ? String(drawing.thumbnailPath) : null,
+    };
+    if (drawing?.status === 'DELETED') return imagePaths;
     const updatedAt = new Date();
     const submissionSourceHash = typeof drawing?.submissionSourceHash === 'string'
       ? drawing.submissionSourceHash
@@ -460,10 +465,7 @@ export async function deleteDrawingForManagement(
         updatedAt,
       });
     }
-    return {
-      imagePath: String(drawing?.imagePath ?? ''),
-      thumbnailPath: drawing?.thumbnailPath ? String(drawing.thumbnailPath) : null,
-    };
+    return imagePaths;
   });
 }
 
@@ -482,6 +484,7 @@ export async function setBestDrawing(sketchbookId: string, drawingId: string, be
     if (!targetDocument.exists) {
       throw new Error('공개 중인 그림만 BEST로 선정할 수 있습니다.');
     }
+    if (targetDocument.data()?.status === 'DELETED') throw new DrawingDeletedError();
     if (targetDocument.data()?.moderationStatus === 'BLOCKED') {
       throw new DrawingPublicPromotionBlockedError();
     }
@@ -497,6 +500,7 @@ export async function setBestDrawing(sketchbookId: string, drawingId: string, be
 
     ranked.docs.forEach((document) => {
       if (document.id === drawingId) return;
+      if (document.data().status === 'DELETED') return;
       const rank = toBestRank(document.data().bestRank);
       if (rank === null) return;
       const key = `drawing:${document.id}`;
@@ -539,6 +543,7 @@ export async function setOwnerBestDrawing(sketchbookId: string, bestRank: 1 | 2 
     const references = new Map<string, (typeof ranked.docs)[number]['ref']>();
     const occupiedSlots = new Map<BestRank, string>();
     ranked.docs.forEach((document) => {
+      if (document.data().status === 'DELETED') return;
       const rank = toBestRank(document.data().bestRank);
       if (rank === null) return;
       const key = `drawing:${document.id}`;

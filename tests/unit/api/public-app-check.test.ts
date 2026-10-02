@@ -39,7 +39,10 @@ const {
 vi.mock('@/lib/security/app-check-server', () => ({ enforceAppCheck }));
 vi.mock('@/lib/security/app-check-client', () => ({ getPublicMutationHeaders }));
 vi.mock('@/lib/security/rate-limit', () => ({ enforcePublicMutationLimit }));
-vi.mock('@/lib/security/drawing-submission-source', () => ({ getDrawingSubmissionSourceHash }));
+vi.mock('@/lib/security/drawing-submission-source', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@/lib/security/drawing-submission-source')>(),
+  getDrawingSubmissionSourceHash,
+}));
 vi.mock('@/lib/firebase/admin', () => ({ getAdminStorage }));
 vi.mock('@/lib/images/optimize', () => ({
   ImageOptimizationError: class ImageOptimizationError extends Error {},
@@ -74,6 +77,7 @@ import { POST as createSketchbook } from '@/app/api/sketchbooks/route';
 import { POST as submitDrawing } from '@/app/api/sketchbooks/[publicId]/drawings/route';
 import { CreateSketchbookForm } from '@/app/create/CreateSketchbookForm';
 import { SketchCanvas } from '@/app/s/[publicId]/draw/SketchCanvas';
+import { DrawingParticipantSessionError } from '@/lib/security/drawing-submission-source';
 
 const appCheckRejection = new Response(
   JSON.stringify({ message: '보안 확인에 실패했어요. 페이지를 새로고침한 뒤 다시 시도해 주세요.' }),
@@ -208,8 +212,25 @@ describe('친구 그림 원본·썸네일 동시 저장', () => {
     );
   });
 
-  it('같은 스케치북의 IP 제출 한도를 넘으면 안내하고 업로드 파일을 정리한다', async () => {
-    saveDrawingWithinLimit.mockRejectedValueOnce(new Error('한 친구는 같은 스캐치북에 그림을 2개까지만 남길 수 있어요.'));
+  it('참여 쿠키가 없거나 위조되면 이미지 업로드 전에 거절한다', async () => {
+    getDrawingSubmissionSourceHash.mockImplementationOnce(() => { throw new DrawingParticipantSessionError(); });
+    const response = await submitDrawing(drawingRequest(), { params: Promise.resolve({ publicId: 'public-1' }) });
+    expect(response.status).toBe(403);
+    expect(optimizeDrawingImages).not.toHaveBeenCalled();
+    expect(fileSave).not.toHaveBeenCalled();
+    expect(saveDrawingWithinLimit).not.toHaveBeenCalled();
+  });
+
+  it('참여 서명 설정이 없으면 내부 오류를 숨기고 업로드 전에 503으로 거절한다', async () => {
+    getDrawingSubmissionSourceHash.mockImplementationOnce(() => { throw new Error('DrawingParticipantSecretMissing'); });
+    const response = await submitDrawing(drawingRequest(), { params: Promise.resolve({ publicId: 'public-1' }) });
+    expect(response.status).toBe(503);
+    expect(await response.text()).not.toContain('Secret');
+    expect(fileSave).not.toHaveBeenCalled();
+  });
+
+  it('같은 스케치북의 브라우저 제출 한도를 넘으면 안내하고 업로드 파일을 정리한다', async () => {
+    saveDrawingWithinLimit.mockRejectedValueOnce(new Error('같은 브라우저에서는 이 스캐치북에 그림을 2개까지만 남길 수 있어요.'));
 
     const response = await submitDrawing(drawingRequest(), {
       params: Promise.resolve({ publicId: 'public-1' }),
@@ -217,7 +238,7 @@ describe('친구 그림 원본·썸네일 동시 저장', () => {
 
     expect(response.status).toBe(429);
     await expect(response.json()).resolves.toEqual({
-      message: '한 친구는 같은 스캐치북에 그림을 2개까지만 남길 수 있어요.',
+      message: '같은 브라우저에서는 이 스캐치북에 그림을 2개까지만 남길 수 있어요.',
     });
     expect(fileDelete).toHaveBeenCalledTimes(2);
   });

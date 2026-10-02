@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { vi } from 'vitest';
 
 const { findSketchbookByPublicId, listVisibleDrawings, notFound } = vi.hoisted(() => ({
@@ -54,6 +54,10 @@ describe('공개 스케치북 소유자 그림', () => {
       'src',
       '/api/sketchbooks/public-1/owner/image',
     );
+    const intro = screen.getByRole('region', { name: '해비의 스케치북' });
+    const firstAction = within(intro).getByRole('link', { name: /그림 남기기/ });
+    expect(firstAction).toHaveAttribute('href', '/s/public-1/draw');
+    expect(firstAction.compareDocumentPosition(screen.getByRole('heading', { name: '내가 그린 나' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('소유자 그림이 없는 이전 스케치북에는 빈 소유자 섹션을 만들지 않는다', async () => {

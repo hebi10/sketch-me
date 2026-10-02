@@ -49,6 +49,7 @@ describe('빈 공개 스케치북', () => {
 
     expect(screen.getByRole('heading', { name: '첫 그림을 남겨주세요' })).toBeVisible();
     expect(screen.getByRole('link', { name: '첫 그림 남기기' })).toHaveAttribute('href', '/s/public-1/draw');
+    expect(screen.getAllByRole('link', { name: /그림 남기기/ })).toHaveLength(1);
     expect(screen.queryByRole('heading', { name: '♕ 베스트 그림' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '◷ 최근 올라온 그림' })).not.toBeInTheDocument();
   });

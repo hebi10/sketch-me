@@ -29,6 +29,7 @@ export default function LandingPage() {
             alt="친구들이 손으로 그린 네 장의 초상화 카드"
             height={1374}
             preload
+            sizes="(orientation: portrait) and (max-height: 720px) 28.333svh, (max-width: 478px) calc(100vw - clamp(32px, 10vw, 60px)), 430px"
             src="/brand/landing-sketch-collage-v2.png"
             width={1145}
           />

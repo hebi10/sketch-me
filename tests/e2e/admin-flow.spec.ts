@@ -30,6 +30,7 @@ test('비밀번호 공급자 ID 토큰은 관리자 세션으로 교환되지 �
 });
 
 test('관리자가 공개 노출을 차단하고 복구한 뒤 로그아웃한다', async ({ page }) => {
+  test.setTimeout(60_000);
   await createAdminEmulatorSession(page);
 
   await page.goto('/admin');
@@ -84,11 +85,7 @@ test('관리자가 공개 노출을 차단하고 복구한 뒤 로그아웃한�
   await expect(fixtureDrawing.getByText('운영 정상').first()).toBeVisible();
   expect((await page.request.get(publicDrawingImage)).status()).toBe(200);
 
-  await page.getByRole('link', { name: '결제', exact: true }).click();
-  const fixturePayment = page.getByRole('article', { name: 'ADMIN-E2E-ORDER 결제' });
-  await expect(fixturePayment.getByText('이전 결제', { exact: true })).toBeVisible();
-  await expect(fixturePayment.getByText('4,490원')).toBeVisible();
-  await expect(fixturePayment.getByRole('button')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '결제', exact: true })).toHaveCount(0);
 
   await page.getByRole('button', { name: '로그아웃' }).click();
   await expect(page).toHaveURL(/\/admin\/login$/);

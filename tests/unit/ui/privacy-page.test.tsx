@@ -7,7 +7,7 @@ describe('PrivacyPage', () => {
     render(<PrivacyPage />);
 
     expect(screen.getByRole('heading', { name: '개인정보 처리방침' })).toBeVisible();
-    expect(screen.getByText('시행일: 2026년 9월 4일')).toBeVisible();
+    expect(screen.getByText('시행일: 2026년 10월 2일')).toBeVisible();
     expect(screen.getByRole('heading', { name: '처리하는 개인정보' })).toBeVisible();
     expect(screen.getByText(/이름 또는 애칭, 관리용 비밀번호의 일방향 해시/)).toBeVisible();
     expect(screen.getByText(/무료 스케치북은 생성일로부터 6개월/)).toBeVisible();

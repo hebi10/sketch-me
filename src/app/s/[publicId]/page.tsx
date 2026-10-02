@@ -106,6 +106,13 @@ export default async function PublicSketchbookPage({
         <h2 className="intro-invitation">{sketchbook.name}님을 그려주세요</h2>
         <p>기억나는 모습, 성격, 분위기 모두 좋아요.</p>
         <p className="participant-copy">♧ 친구 <strong>{sketchbook.participantCount}명</strong>이 그림을 남겼어요.</p>
+        {hasDrawings || sketchbook.ownerDrawingPath ? (
+          isFull ? (
+            <span aria-disabled="true" className="button button--disabled public-intro-action">친구 그림 접수 마감</span>
+          ) : (
+            <Link className="button button--primary public-intro-action" href={`/s/${publicId}/draw`}>그림 남기기</Link>
+          )
+        ) : null}
       </section>
 
       {submitted ? (

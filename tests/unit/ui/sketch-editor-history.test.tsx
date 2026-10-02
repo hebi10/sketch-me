@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 
 import { SketchEditor } from '@/components/sketch/SketchEditor';
+import { createCanvasHistory, pushSnapshot, redoSnapshot, undoSnapshot } from '@/components/sketch/canvas-history';
 
 function createCanvasContext() {
   return {
@@ -40,6 +41,19 @@ function prepareCanvas() {
 }
 
 describe('SketchEditor 그리기 기록', () => {
+  it('100번의 되돌리기 기록만 보관하고 오래된 PNG 스냅샷은 해제한다', () => {
+    let history = createCanvasHistory('blank');
+    for (let index = 1; index <= 150; index += 1) history = pushSnapshot(history, `stroke-${index}`);
+
+    expect(history.snapshots).toHaveLength(101);
+    expect(history.snapshots[0]).toBe('stroke-50');
+    expect(history.snapshots[history.index]).toBe('stroke-150');
+    expect(redoSnapshot(undoSnapshot(history))).toEqual(history);
+    const replacement = pushSnapshot(undoSnapshot(history), 'replacement');
+    expect(replacement.snapshots.at(-1)).toBe('replacement');
+    expect(replacement.snapshots).not.toContain('stroke-150');
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();

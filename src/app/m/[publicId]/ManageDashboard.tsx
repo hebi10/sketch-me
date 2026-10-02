@@ -82,6 +82,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
   const router = useRouter();
   const [limit] = useState(participantLimit);
   const [message, setMessage] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   /* 결제 시스템 비활성화: 기존 결제 대화상자 상태를 보존합니다.
@@ -434,11 +435,12 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
         <HeaderMenu>
           <Link aria-label="친구 페이지 보기" href={`/s/${publicId}`} title="친구 페이지 보기">친구홈</Link>
           <ImageCreationEntry publicId={publicId}>스토리</ImageCreationEntry>
-          <ShareSketchbookButton menuItem name={name} publicId={publicId} />
+          <ShareSketchbookButton menuItem name={name} onStatusChange={setShareMessage} publicId={publicId} />
           <button aria-label="관리용 비밀번호 변경" onClick={openSecurityDialog} ref={securityTriggerRef} title="관리용 비밀번호 변경" type="button">비밀번호</button>
           <button aria-label="로그아웃" onClick={logout} title="로그아웃" type="button">로그아웃</button>
         </HeaderMenu>
       </header>
+      {shareMessage ? <p aria-live="polite" className="header-menu-status" role="status">{shareMessage}</p> : null}
       <section className="manage-heading"><p className="eyebrow">{name}님의 스케치북</p><h1>친구들이 그린 나</h1></section>
       {moderationStatus === 'BLOCKED' ? (
         <section className="manage-moderation-notice status-notice status-notice--warning" role="status">
@@ -535,7 +537,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
               <span>직접 그린 내 모습</span>
               <span aria-hidden="true" className="drawing-status drawing-card-placeholder">&nbsp;</span>
               <details className="drawing-actions">
-                <summary>순위 선택</summary>
+                <summary>그림 관리</summary>
                 <div className="drawing-action-panel">
                   <div className="best-actions" aria-label="내 그림 BEST 순위 지정">
                     {[1, 2, 3, 4].map((rank) => (
@@ -562,7 +564,7 @@ export function ManageDashboard({ publicId, name, moderationStatus, ownerBestRan
                   : drawing.status === 'VISIBLE' ? '공개 중' : '숨김'}
               </span>
               <details className="drawing-actions">
-                <summary>순위 선택</summary>
+                <summary>그림 관리</summary>
                 <div className="drawing-action-panel">
                   <button disabled={drawing.moderationStatus === 'BLOCKED'} onClick={() => updateDrawing(drawing.id, { action: drawing.status === 'VISIBLE' ? 'hide' : 'show' })} type="button">
                     {drawing.status === 'VISIBLE' ? '친구 페이지에서 숨기기' : '친구 페이지에 공개하기'}

@@ -8,10 +8,12 @@ function optimizerRequest(source: string) {
 }
 
 describe('Next image optimizer 공개 이미지 경계', () => {
-  it('Next 16 Proxy를 image optimizer 경로에만 적용한다', () => {
-    expect(config).toEqual({ matcher: '/_next/image' });
+  it('Next 16 Proxy를 image optimizer와 공개 참여 경로에만 적용한다', () => {
+    expect(config).toEqual({ matcher: ['/_next/image', '/s/:path*'] });
     expect(unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: '/_next/image?url=%2Fbrand%2Flogo.webp&w=640&q=75' })).toBe(true);
     expect(unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: '/brand/logo.webp' })).toBe(false);
+    expect(unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: '/s/public-1/draw' })).toBe(true);
+    expect(unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: '/api/sketchbooks/public-1/drawings' })).toBe(false);
   });
 
   it.each([

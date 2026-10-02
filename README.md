@@ -1,6 +1,6 @@
 # 스캐치북
 
-친구들이 그린 나를 한 권에 모으는 모바일 중심 참여형 초상화 서비스입니다. Next.js App Router와 Firebase Firestore·Storage를 사용하며, 유료 상품은 페이앱을 통해 결제합니다.
+친구들이 그린 나를 한 권에 모으는 모바일 중심 참여형 초상화 서비스입니다. Next.js App Router와 Firebase Firestore·Storage를 사용합니다. 현재 친구 그림 50개까지 무료이며, 결제 기능은 비활성화되어 있습니다. 추가 인원은 운영자에게 문의합니다.
 
 ## 공유 이미지 제작
 
@@ -21,6 +21,15 @@ npm run dev
 
 `.env.local`에는 Firebase 웹 앱의 공개 설정값을 입력합니다. 서버는 Firebase Application Default Credentials를 사용하며, 서비스 계정 키 파일은 저장소에 커밋하지 않습니다. 배포 주소는 `NEXT_PUBLIC_APP_URL`에 입력해야 공유 미리보기 주소가 정확히 생성됩니다. App Check는 기본 비활성이므로 외부 사이트 키 없이도 로컬 개발·테스트·빌드가 동작합니다.
 
+`PUBLIC_MUTATION_RATE_LIMIT_SECRET`도 로컬 전용 무작위 값으로 설정해야 합니다. 생성 요청의 IP 해시와 익명 참여 쿠키의 서명에 사용하며, 비어 있으면 생성·참여 API는 503으로 거절합니다. 운영 비밀값을 로컬 테스트에 복사하지 않습니다. Playwright는 격리 서버에 매 실행마다 임의 테스트 키와 Firebase Emulator 설정을 자동으로 제공합니다.
+
+## 참여 및 초안
+
+- 공개 페이지 방문 시 서버가 서명한 HTTP 전용 익명 쿠키를 발급하고, 같은 브라우저의 스케치북당 제출을 2개로 제한합니다. 같은 Wi-Fi의 다른 브라우저는 한도를 공유하지 않습니다.
+- 쿠키는 최대 180일 유지됩니다. 쿠키 삭제·별도 브라우저까지 동일인으로 식별하지 않으며, IP별 시간당 제출 요청 제한과 App Check를 별도로 유지합니다.
+- 생성 화면과 친구 제출 화면은 이름·그림 등 초안을 sessionStorage에 보관해 같은 탭의 새로고침에서 복구합니다. 관리 PIN은 저장하지 않습니다. 제출이 성공하면 해당 초안을 제거합니다.
+- 그림 확인 후에도 다시 편집할 수 있습니다. 삭제된 그림의 상태 변경은 거절하며, 이미지 정리에 실패한 삭제 요청은 중복 차감 없이 재시도할 수 있습니다.
+
 ## 검증 명령
 
 ```bash
@@ -38,7 +47,7 @@ Firebase 규칙 통합 테스트와 전체 E2E는 Firestore·Storage 에뮬레�
 npm run test:e2e -- --project=mobile-chrome
 ```
 
-Playwright가 Emulator를 직접 시작할 때는 `firebase.json`의 기본 포트(9099/8080/9199)를 사용합니다. 다른 격리 포트가 필요하면 `PLAYWRIGHT_SKIP_WEBSERVER=1`을 설정하고, 동일한 포트로 구성한 Auth·Firestore·Storage Emulator와 Next.js를 먼저 직접 실행한 뒤 `PLAYWRIGHT_*_EMULATOR_HOST`를 지정합니다. webServer를 사용하는 상태에서 포트만 바꾸면 설정 오류로 즉시 중단됩니다. `PLAYWRIGHT_BASE_URL`은 canonical HTTP loopback Origin과 원문이 정확히 같아야 합니다. 외부 주소, `0.0.0.0`, 자격 증명, 공백, trailing slash, 경로, query와 hash는 거부합니다.
+Playwright가 Emulator를 직접 시작할 때는 `firebase.json`의 기본 포트(9099/8080/9199)와 실행별 임시 저장 폴더를 사용합니다. Storage Emulator가 다른 프로젝트와 임시 파일을 공유하지 않도록 분리합니다. 다른 격리 포트가 필요하면 `PLAYWRIGHT_SKIP_WEBSERVER=1`을 설정하고, 동일한 포트로 구성한 Auth·Firestore·Storage Emulator와 Next.js를 먼저 직접 실행한 뒤 `PLAYWRIGHT_*_EMULATOR_HOST`를 지정합니다. webServer를 사용하는 상태에서 포트만 바꾸면 설정 오류로 즉시 중단됩니다. `PLAYWRIGHT_BASE_URL`은 canonical HTTP loopback Origin과 원문이 정확히 같아야 합니다. 외부 주소, `0.0.0.0`, 자격 증명, 공백, trailing slash, 경로, query와 hash는 거부합니다.
 
 기존 로컬 서버를 재사용할 때도 주소만 보고 신뢰하지 않습니다. 다음은 기본 Emulator 포트와 별도 앱 포트 13000을 사용하는 PowerShell 예시입니다. 각 블록을 별도 터미널에서 실행합니다. 계정 값은 고정 테스트 픽스처이며 운영 UID·이메일이나 서비스 계정 키를 넣지 않습니다.
 
@@ -103,7 +112,7 @@ Firebase 규칙·동시성 통합 테스트는 `FIREBASE_PROJECT_ID=sketch-me-lo
 - `apphosting.yaml`의 `maxInstances: 1`을 유지합니다. 메모리 요청 제한은 인스턴스 사이에서 상태를 공유하지 않으므로, 이 값을 2 이상으로 바꾸기 전 Redis·Cloud Armor 등 공유 limiter 구현과 검증을 먼저 완료해야 합니다. 이 값은 Storage·Firestore 등 다른 비용까지 자동 차단하지는 않습니다.
 - Firebase·Google Cloud 월 예산을 정한 뒤 70%, 90%, 100% 도달 알림을 운영 이메일에 설정합니다. 예산 금액과 수신자는 운영자가 실제 월 한도를 결정한 뒤 Console에서 입력하며 저장소에 기록하지 않습니다.
 - 예산 알림은 비용 발생을 자동 중단하지 않습니다. 알림을 받으면 App Hosting, Cloud Run, Firestore 읽기·쓰기, Storage 저장량·전송량을 함께 확인합니다.
-- 공개 생성·제출 API에는 인스턴스 단위 속도 제한이 적용됩니다. 여러 인스턴스로 확장할 때는 Redis 또는 Cloud Armor 같은 공유 제한 장치로 교체합니다.
+- 생성 API에는 Firestore 기반 영속 제한(IP별 시간당 3개·72시간당 9개, 전체 시간당 60개)이 적용됩니다. 그림 제출 API의 시간당 요청 제한은 인스턴스 메모리를 사용하므로 여러 인스턴스로 확장하기 전에 공유 제한 장치를 준비합니다.
 - Firebase App Check는 아래 절차로 공개 토큰 발급 플래그와 서버 검증 강제를 모두 명시적으로 활성화하기 전까지 동작하지 않습니다. `apphosting.yaml`은 공개 플래그와 서버 강제를 활성화하고 사이트 키의 Secret Manager 연결만 선언하며, 실제 사이트 키나 서비스 계정 키는 저장소에 넣지 않습니다.
 - 오류율과 Storage·Firestore 사용량 알림은 Firebase Console에서 별도로 설정합니다.
 - 배포 전 `/privacy` 안내와 관리 화면의 전체 삭제 동작을 에뮬레이터에서 확인합니다.
@@ -113,11 +122,11 @@ Firebase 규칙·동시성 통합 테스트는 `FIREBASE_PROJECT_ID=sketch-me-lo
 
 - 친구 그림 제출 시 최대 720px WebP 보관용 원본과 320×320 WebP 갤러리 썸네일을 함께 저장합니다. 공개 갤러리는 썸네일만 사용합니다.
 - 공개 썸네일은 버전이 포함된 주소로 최대 5분간 공유 캐시합니다. 숨김·공개 전환·삭제 시 버전을 바꾸거나 접근을 막아 이전 캐시 주소가 다시 사용되지 않게 합니다.
-- 무료 스케치북의 자동 만료·180일 보관 정책은 아직 적용하지 않습니다. 현재는 소유자가 관리 화면에서 직접 삭제할 때 관련 원본·썸네일과 기록을 삭제합니다.
+- 신규 무료 스케치북에는 생성일로부터 6개월 보관 기한이 설정됩니다. 자동 정리 API와 스케줄러 운영 요건은 `docs/operations/cost-safety-and-retention.md`를 확인합니다. 기존 `LEGACY` 데이터는 소급 만료하지 않습니다. 소유자의 직접 삭제도 지원합니다.
 
 ## 선택적 Firebase App Check
 
-공개 생성·그림 제출 Route Handler만 선택적으로 App Check 토큰을 검증합니다. `NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED=true`와 `NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY`가 모두 있을 때만 브라우저가 Firebase App Check를 초기화하고 토큰을 발급합니다. 서버는 `FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED=true`를 포함한 세 설정이 모두 활성화된 경우에만 토큰을 검증합니다. 세 값이 모두 비활성이면 로컬 개발 모드로 동작하고, 일부만 설정된 불완전한 조합은 Firebase 초기화나 토큰 검증 전에 503으로 거절합니다. 활성 상태에서는 각 공개 mutation 요청의 첫 단계에서 정확히 한 번 검증하며, 유효하지 않거나 없는 토큰은 401로 응답합니다. 기존 인스턴스 메모리 기반 속도 제한은 그대로 유지하며, Firebase 무료 할당량을 소모하는 Firestore 기반 rate limiter로 바꾸지 않습니다.
+공개 생성·그림 제출 Route Handler만 선택적으로 App Check 토큰을 검증합니다. `NEXT_PUBLIC_FIREBASE_APP_CHECK_ENABLED=true`와 `NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY`가 모두 있을 때만 브라우저가 Firebase App Check를 초기화하고 토큰을 발급합니다. 서버는 `FIREBASE_APP_CHECK_ENFORCEMENT_ENABLED=true`를 포함한 세 설정이 모두 활성화된 경우에만 토큰을 검증합니다. 세 값이 모두 비활성이면 로컬 개발 모드로 동작하고, 일부만 설정된 불완전한 조합은 Firebase 초기화나 토큰 검증 전에 503으로 거절합니다. 활성 상태에서는 각 공개 mutation 요청의 첫 단계에서 정확히 한 번 검증하며, 유효하지 않거나 없는 토큰은 401로 응답합니다. App Check와 별도로 생성 요청에는 Firestore 기반의 지속형 속도 제한을, 그림 제출 요청에는 인스턴스 메모리 기반 속도 제한을 적용합니다.
 
 1. 별도 승인된 Firebase 프로젝트의 App Check에서 현재 웹 앱과 reCAPTCHA v3 공급자를 등록하고 공개 사이트 키를 발급합니다.
 2. Secret Manager에 `NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY`를 등록하고 App Hosting 빌드·런타임 서비스 계정의 접근 권한을 확인합니다. `apphosting.yaml`의 두 플래그와 사이트 키 연결은 모두 `BUILD`, `RUNTIME`에서 사용할 수 있어야 합니다. 공개 플래그와 사이트 키는 빌드 시 번들에 고정되므로 세 설정을 동시에 새 빌드로 배포합니다.

@@ -54,7 +54,7 @@ function drawing(book: Sketchbook, id: string): Drawing {
   };
 }
 
-describe.skipIf(!hasSafeFirestoreEmulator)('친구 그림 IP 제출 한도 동시성', () => {
+describe.skipIf(!hasSafeFirestoreEmulator)('친구 그림 브라우저 제출 한도 동시성', () => {
   const createdSketchbookIds: string[] = [];
 
   afterEach(async () => {
